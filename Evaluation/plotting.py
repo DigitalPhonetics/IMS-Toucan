@@ -3,6 +3,7 @@ from matplotlib.ticker import MultipleLocator
 import numpy as np
 
 EMOTIONS = ["anger", "joy", "neutral", "sadness", "surprise"]
+EMOTIONS_SHORT = ["a", "j", "n", "sa", "su"]
 COLORS = ['red', 'green', 'blue', 'gray', 'orange']
 
 def barplot_counts(d: dict, v, save_dir):
@@ -196,15 +197,15 @@ def barplot_pref3(d, save_dir):
 def barplot_pref_total(d, save_dir):
 
     # Define the x-axis tick labels
-    x_ticks = ['Baseline', 'Proposed', 'No Preference']
+    x_ticks = ['Baseline', 'Prompt Conditioned', 'No Preference']
     colors = ['black', 'gray', 'lightgray'] 
 
     # Initialize the plot
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 6))
 
     # Set the x-axis tick locations and labels
     ax.set_xticks(np.arange(len(x_ticks)))
-    ax.set_xticklabels(x_ticks)
+    ax.set_xticklabels(x_ticks, fontsize=20)
 
     # Calculate the width of each bar
     bar_width = 0.5
@@ -221,24 +222,160 @@ def barplot_pref_total(d, save_dir):
         percentages = [count / total_counts * 100 for count in counts]
         positions = i
         ax.bar(positions, percentages, width=bar_width, color=colors[i], align='center')
-        plt.text(i, round(percentages[0], 2), str(round(percentages[0], 2)), ha='center', va='bottom', fontsize=14)
+        plt.text(i, round(percentages[0], 2), str(round(percentages[0], 2)), ha='center', va='bottom', fontsize=20)
 
     # Set the plot title and axis labels
-    ax.set_ylabel('Percentage (%)', fontsize=16)
+    ax.set_ylabel('Percentage (%)', fontsize=20)
 
     # Adjust the x-axis limits and labels
     #ax.set_xlim(-2 * bar_width - bar_width, len(x_ticks) - 1 + 2 * bar_width + bar_width)
     ax.set_xticks(np.arange(len(x_ticks)))
     ax.set_ylim(0, 60)
 
-    ax.tick_params(axis='x', labelsize=16)
-    ax.tick_params(axis='y', labelsize=16)
+    ax.tick_params(axis='x', labelsize=20)
+    ax.tick_params(axis='y', labelsize=20)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
     # Save the plot
-    plt.savefig(save_dir)
+    plt.savefig(save_dir, format="pdf")
+    plt.close()
+
+def horizontal_barplot_pref_total(d, save_dir):
+    plt.rc('font', size=20)
+
+    # Define the scenarios and corresponding colors
+    labels = ['Baseline', 'Prompt Conditioned', 'No Preference']
+    scenarios = [1.0, 2.0, 3.0]
+    colors = ['black', '#404040', '#696969']
+
+    # Calculate total count
+    total_count = sum(d.values())
+
+    # Calculate percentages for each scenario
+    percentages = [d[scenario] / total_count * 100 for scenario in scenarios]
+
+    # Initialize the plot
+    fig, ax = plt.subplots(figsize=(10, 3))
+
+    # Plot the horizontal bar
+    left = 0
+    bar_height = 0.3  # Adjust the height of the bar
+    for i, (scenario, percentage, color) in enumerate(zip(labels, percentages, colors)):
+        ax.barh(0, percentage, height=bar_height, color=color, left=left)
+        ax.text(left + percentage / 2, -0.2, f"{percentage:.1f}%", ha='center', va='top', color=color)
+        ax.text(left + percentage / 2, 0.2, f"{scenario}", ha='center', va='bottom', color=color)
+        left += percentage
+
+    # Set the y-axis limits and labels
+    ax.set_ylim(-0.5, 0.5)
+    ax.set_yticks([])
+    ax.set_xlabel('Percentage (%)')
+
+    # Set the title
+    #ax.set_title('Preference Distribution')
+
+    # Remove spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # Save the plot
+    plt.tight_layout()
+    plt.savefig(save_dir, format="pdf")
+    plt.close()
+
+def pie_barplot_pref_total(d, save_dir):
+    plt.rc('font', size=20)
+
+    # Define the scenarios and corresponding colors
+    labels = ['Baseline', 'Prompt Conditioned', 'No Preference']
+    scenarios = [1.0, 2.0, 3.0]
+    colors = ['black', 'gray', 'lightgray']
+
+    # Calculate total count
+    total_count = sum(d.values())
+
+    # Calculate percentages for each scenario
+    percentages = [d[scenario] / total_count * 100 for scenario in scenarios]
+
+    # Initialize the plot
+    fig, ax = plt.subplots(figsize=(7.5, 7.5))  # Make the figure square for a pie chart
+
+    # Plot the pie chart
+    wedges, texts, autotexts = ax.pie(percentages, labels=labels, colors=colors, autopct='%1.1f%%', startangle=140)
+
+    # Set the color of all percentage labels to black
+    for autotext in autotexts:
+        autotext.set_color('black')
+
+    # Set the color of the percentage label on the "Baseline" slice to white
+    autotexts[0].set_color('white')
+
+    # Equal aspect ratio ensures that pie is drawn as a circle
+    ax.axis('equal')
+
+    # Set the title
+    #ax.set_title('Preference Distribution')
+
+    # Save the plot
+    plt.tight_layout()
+    plt.savefig(save_dir, format="pdf")
+    plt.close()
+
+def pie_barplot_pref(emotion_dicts, save_dir):
+    plt.rc('font', size=28)
+
+    # Define the scenarios and corresponding colors
+    labels = ['Baseline', 'Prompt Conditioned', 'No Preference']
+    scenarios = [1.0, 2.0, 3.0]
+    colors = [(0.6, 0.85, 0.6), (0.8, 0.6, 0.5), (0.7, 0.9, 1.0)]
+
+    num_emotions = len(emotion_dicts)
+
+    fig, axs = plt.subplots(2, 3, figsize=(20, 10))  # Create a 2x3 grid layout
+
+    # Loop over each emotion dictionary
+    for i, (emotion, d) in enumerate(emotion_dicts.items()):
+        # Calculate total count
+        total_count = sum(d.values())
+
+        # Calculate percentages for each scenario
+        percentages = [d[scenario] / total_count * 100 for scenario in scenarios]
+
+        # Get the axis for the current subplot
+        ax_row = i // 3
+        ax_col = i % 3
+        ax = axs[ax_row, ax_col]
+
+        # Plot the pie chart
+        wedges, _ = ax.pie(percentages, colors=colors, startangle=140)
+
+        # Equal aspect ratio ensures that pie is drawn as a circle
+        ax.axis('equal')
+
+        # Set the title as the emotion label
+        ax.set_title(f'{emotion.capitalize()}')
+
+    # Remove the bottom right subplot
+    axs[1, 2].remove()
+
+    # Add a single subplot spanning both columns for the bottom row
+    bottom_ax = fig.add_subplot(2, 2, (3, 4))
+    bottom_ax.axis('off')  # Turn off axis for the centered subplot
+
+    # Plot centered pie charts
+    # You can plot your desired centered pie charts here using the bottom_ax
+
+    # Create a legend with labels and colors at the right of the last subplot
+    last_ax = axs[1, 1]  # Assuming the last subplot is at row 1, col 1 (modify if needed)
+    fig.legend(labels, loc='center left', bbox_to_anchor=(last_ax.get_position().x1 + 0.05, 0.3))
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+
+    # Save the plot
+    plt.savefig(save_dir, format="pdf")
     plt.close()
 
 def barplot_sim(data, save_dir):
@@ -424,6 +561,68 @@ def heatmap_emotion(d: dict, save_dir):
 
     # Save the heatmap
     plt.savefig(save_dir)
+    plt.close()
+
+def heatmap_emotion_multiple(dicts: list, titles: list, save_dir):
+    emotions = EMOTIONS
+    emotions_short = EMOTIONS_SHORT
+    num_dicts = len(dicts)
+    fig, axs = plt.subplots(1, num_dicts, figsize=(5*num_dicts, 8))
+
+    max_rows = max(len(ax.get_yticklabels()) for ax in axs)  # Get the maximum number of rows in the heatmaps
+
+    for idx, (d, title) in enumerate(zip(dicts, titles)):
+        # Create a numpy array to store the counts
+        counts = np.array([[d[emotion].get(label, 0) for emotion in emotions] for label in emotions])
+        # normalize counts for each emotion category
+        normalized_counts = np.around(counts / counts.sum(axis=0, keepdims=True), decimals=2)
+
+        # Plot heatmap with consistent colormap
+        im = axs[idx].imshow(normalized_counts, cmap='viridis', vmin=0, vmax=1, interpolation=None)
+
+        # Show counts as text in each cell
+        for i in range(len(emotions)):
+            for j in range(len(emotions)):
+                # Get the brightness of the cell's color
+                brightness = np.mean(im.norm(normalized_counts[j, i]))
+                # Set text color based on brightness
+                if brightness > 0.7:
+                    color = 'black'
+                else:
+                    color = 'white'
+                text = axs[idx].text(i, j, normalized_counts[j, i], ha='center', va='center', color=color, fontsize=20)
+
+        # Set the axis labels and title
+        if idx == 0:  # Only label the y-axis for the first subplot
+            axs[idx].set_yticks(np.arange(len(emotions_short)))
+            axs[idx].set_yticklabels(emotions_short, fontsize=20)
+            axs[idx].set_ylabel('Emotion Labels', fontsize=20)
+        else:
+            axs[idx].set_yticks([])  # Remove y-ticks for the other subplots
+
+        axs[idx].set_xticks(np.arange(len(emotions_short)))
+        axs[idx].set_xticklabels(emotions_short, fontsize=20)
+        axs[idx].tick_params(axis='x', rotation=45, labelsize=20)
+
+        # Set title
+        axs[idx].set_title(title, fontsize=20)
+
+    # Calculate color bar height based on the number of rows in the heatmaps
+    color_bar_height = 0.45
+
+    # Create a colorbar
+    cbar_ax = fig.add_axes([0.92, 0.27, 0.02, color_bar_height])  # [left, bottom, width, height]
+    cbar = fig.colorbar(im, cax=cbar_ax)
+    cbar.set_label('Relative Frequency', fontsize=20)
+
+    # Set font size for color bar tick labels
+    cbar.ax.tick_params(labelsize=20)
+
+    # Adjust layout
+    plt.subplots_adjust(wspace=0.1)  # Reduce the space between heatmaps
+
+    # Save the heatmap as PDF
+    plt.savefig(save_dir, format='pdf')
     plt.close()
 
 def scatterplot_va(v: dict, a: dict, save_dir: str):
