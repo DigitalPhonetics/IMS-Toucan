@@ -1,4 +1,5 @@
 import os
+import time
 
 import torch
 
@@ -37,15 +38,19 @@ def test_sentence(version,
     sentence1 = "You can write an email."
     sentence2 = "They will arrive tomorrow."
     tts.read_to_file(text_list=[sentence1], 
-                     file_location=f"audios/{version}/case_study_fear_1.flac", 
+                     file_location=f"audios/{version}/paper1.wav", 
                      increased_compatibility_mode=True, 
                      view_contours=True,
-                     plot_name="fear1")
+                     plot_name="paper1")
+    start_time = time.time()
     tts.read_to_file(text_list=[sentence2], 
-                     file_location=f"audios/{version}/case_study_fear_2.flac", 
+                     file_location=f"audios/{version}/paper2.wav", 
                      increased_compatibility_mode=True, 
-                     view_contours=True,
-                     plot_name="fear2")
+                     view_contours=False,
+                     plot_name="paper2")
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print("Elapsed time:", elapsed_time, "seconds")
 
 def test_tales_emotion(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -560,11 +565,12 @@ if __name__ == '__main__':
         #prompt = "Ew, this is disgusting."
         #prompt = "What a surprise!"
         #prompt = "This is very sad."
-        prompt = "I am so scared."
-        #prompt = "I am so angry!"
+        #prompt = "I am so scared."
         #prompt = "I love that."
         #prompt = "He was furious."
         #prompt = "She didn't expect that."
+        prompt = "That's ok."
+        #prompt = "Oh, really?"
     else:
         prompt = None
 
