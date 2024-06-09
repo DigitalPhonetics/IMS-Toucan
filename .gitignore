@@ -12,6 +12,8 @@ split/
 singing/
 toucan_conda_venv/
 venv/
+.venv/
+.hypothesis
 vis/
 wandb/
 wav2vec2_checkpoints/
