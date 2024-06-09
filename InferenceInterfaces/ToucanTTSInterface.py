@@ -281,7 +281,7 @@ class ToucanTTSInterface(torch.nn.Module):
 
         if view or return_plot_as_filepath:
             from Utility.utils import cumsum_durations
-            fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
+            fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 4))
             ax[0].plot(wave.cpu().numpy())
             lbd.specshow(mel.cpu().numpy(),
                          ax=ax[1],
@@ -339,7 +339,7 @@ class ToucanTTSInterface(torch.nn.Module):
                 return wave, f"{plot_name}.png"
         if view_contours:
             from Utility.utils import cumsum_durations
-            fig, ax = plt.subplots(figsize=(9,6))
+            fig, ax = plt.subplots(figsize=(8,4))
             lbd.specshow(mel.cpu().numpy(),
                          ax=ax,
                          sr=16000,
@@ -356,7 +356,7 @@ class ToucanTTSInterface(torch.nn.Module):
                 phones = text.replace(" ", "|")
             else:
                 phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
-            ax.set_xticklabels(phones)
+            ax.set_xticklabels(phones, fontsize=28)
             word_boundaries = list()
             for label_index, phone in enumerate(phones):
                 if phone == "|":
@@ -370,31 +370,31 @@ class ToucanTTSInterface(torch.nn.Module):
                     prev_word_boundary = word_boundary
                 word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
 
-                secondary_ax = ax.secondary_xaxis('bottom')
-                secondary_ax.tick_params(axis="x", direction="out", pad=24)
-                secondary_ax.set_xticks(word_label_positions, minor=False)
-                secondary_ax.set_xticklabels(text.split())
-                secondary_ax.tick_params(axis='x', colors='black', labelsize=16)
-                secondary_ax.xaxis.label.set_color('black')
+                #secondary_ax = ax.secondary_xaxis('bottom')
+                #secondary_ax.tick_params(axis="x", direction="out", pad=24)
+                #secondary_ax.set_xticks(word_label_positions, minor=False)
+                #secondary_ax.set_xticklabels(text.split())
+                #secondary_ax.tick_params(axis='x', colors='black', labelsize=16)
+                #secondary_ax.xaxis.label.set_color('black')
             except ValueError:
                 ax.set_title(text)
             except IndexError:
                 ax.set_title(text)
 
             #ax.vlines(x=duration_splits, colors="black", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-            ax.vlines(x=word_boundaries, colors="black", linestyles="solid", ymin=0.0, ymax=8000, linewidth=1.2)
+            #ax.vlines(x=word_boundaries, colors="black", linestyles="solid", ymin=0.0, ymax=8000, linewidth=1.2)
             pitch_array = pitch.cpu().numpy()
             for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
                 if pitch_array[pitch_index] != 0:
                     ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="red",
-                                 linestyles="solid", linewidth=2.5)
+                                 linestyles="solid", linewidth=5)
             #energy_array = energy.cpu().numpy()
             #for energy_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
              #   if energy_array[energy_index] != 0:
               #      ax.hlines(energy_array[energy_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="orange",
                #                  linestyles="solid", linewidth=2.5)
             plt.subplots_adjust(left=0.05, bottom=0.12, right=0.95, top=.9, wspace=0.0, hspace=0.0)
-            plt.savefig(f"{plot_name}.png")
+            plt.savefig(f"{plot_name}.pdf", format="pdf")
             plt.close()
         return wave
 
