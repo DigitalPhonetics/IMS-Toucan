@@ -12,11 +12,12 @@ class GanWrapper:
         self.mean = None
         self.std = None
         self.wgan = None
-        self.normalize = False
+        self.normalize = True
 
         self.load_model(path_wgan)
 
         self.U = self.compute_controllability()
+
         self.z_list = list()
         for _ in range(1100):
             self.z_list.append(self.wgan.G.module.sample_latent(1, 32))

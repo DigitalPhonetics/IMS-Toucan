@@ -29,7 +29,7 @@ def train_loop(generator,
                batch_size=32,
                epochs=100,
                resume=False,
-               generator_steps_per_discriminator_step=3,
+               generator_steps_per_discriminator_step=5,
                generator_warmup=30000,
                use_wandb=False,
                finetune=False
@@ -52,10 +52,10 @@ def train_loop(generator,
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batch_size,
                               shuffle=True,
-                              num_workers=4,
+                              num_workers=8,
                               pin_memory=True,
                               drop_last=True,
-                              prefetch_factor=6,
+                              prefetch_factor=2,
                               persistent_workers=True)
 
     if resume:

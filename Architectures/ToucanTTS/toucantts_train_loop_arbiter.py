@@ -18,7 +18,6 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                # the monolingual case will do this once per epoch, regardless of the steps.
                path_to_checkpoint=None,  # path to a trained checkpoint to either continue training or fine-tune from.
                lr=0.0001,  # learning rate of the model.
-               path_to_embed_model="Models/Embedding/embedding_function.pt",  # path to the utterance embedding function that is to be used.
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
                warmup_steps=12000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
                use_wandb=False,  # whether to use online experiment tracking with weights and biases. Requires prior CLI login.
@@ -26,7 +25,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                eval_lang="eng",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                steps=200000,  # how many updates to run until training is completed
-               train_embed=False,  # whether to train the embedding function. Only relevant for single-language case
+               use_less_loss=False,  # whether to use the loss that enforces a structure in the language embedding space
                ):
     torch.multiprocessing.set_start_method('spawn', force=True)
     if type(datasets) != list:
@@ -43,12 +42,12 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                             lr=lr,
                             lang=eval_lang,
                             path_to_checkpoint=path_to_checkpoint,
-                            path_to_embed_model=path_to_embed_model,
                             resume=resume,
                             fine_tune=fine_tune,
                             warmup_steps=warmup_steps,
                             use_wandb=use_wandb,
-                            gpu_count=gpu_count
+                            gpu_count=gpu_count,
+                            use_less_loss=use_less_loss,
                             )
     else:
         mono_language_loop(net=net,
@@ -61,12 +60,10 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            lr=lr,
                            warmup_steps=warmup_steps,
                            path_to_checkpoint=path_to_checkpoint,
-                           path_to_embed_model=path_to_embed_model,
                            fine_tune=fine_tune,
                            resume=resume,
                            steps=steps,
                            use_wandb=use_wandb,
-                           train_embed=train_embed,
                            gpu_count=gpu_count,
                            steps_per_checkpoint=steps_per_checkpoint
                            )
