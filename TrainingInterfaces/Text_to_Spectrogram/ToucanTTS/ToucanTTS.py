@@ -1,4 +1,5 @@
 import torch
+from torchvision.ops import SqueezeExcitation
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
@@ -96,7 +97,10 @@ class ToucanTTS(torch.nn.Module):
 
                  # additional features
                  utt_embed_dim=64,
-                 lang_embs=8000):
+                 lang_embs=8000,
+                 sent_embed_dim=None,
+                 word_embed_dim=None,
+                 static_speaker_embed=False):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -105,6 +109,27 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.use_sent_embed = sent_embed_dim is not None
+        self.use_word_embed = word_embed_dim is not None
+        self.static_speaker_embed = static_speaker_embed
+
+        if self.static_speaker_embed:
+            # emovdb - 4, cremad - 91, esds - 10, ravdess - 24, ljspeech - 1, librittsr - 1230, tess - 2
+            self.speaker_embedding = torch.nn.Embedding(10 + 24 + 1 + 1230 + 2, utt_embed_dim)
+
+        if self.use_sent_embed:
+            self.sentence_embedding_adaptation = Linear(sent_embed_dim, 512)
+            sent_embed_dim = 512
+
+            self.squeeze_excitation = SqueezeExcitation(utt_embed_dim + sent_embed_dim, 192)
+            self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 512),
+                                                         Tanh(),
+                                                         Linear(512, 192))
+            utt_embed_dim = 192
+        else:
+            if utt_embed_dim is not None:
+                self.speaker_embedding_adaptation = Linear(utt_embed_dim, 192)
+                utt_embed_dim = 192
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
@@ -125,7 +150,9 @@ class ToucanTTS(torch.nn.Module):
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
-                                 use_output_norm=True)
+                                 word_embed_dim=word_embed_dim,
+                                 use_output_norm=True,
+                                 conformer_encoder=True)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
@@ -172,6 +199,7 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
+                                 utt_embed=utt_embed_dim,
                                  use_output_norm=False)
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
@@ -215,7 +243,10 @@ class ToucanTTS(torch.nn.Module):
                 gold_durations,
                 gold_pitch,
                 gold_energy,
-                utterance_embedding,
+                utterance_embedding=None,
+                speaker_id=None,
+                sentence_embedding=None,
+                word_embedding=None,
                 return_mels=False,
                 lang_ids=None,
                 run_glow=True
@@ -247,6 +278,9 @@ class ToucanTTS(torch.nn.Module):
                                   gold_pitch=gold_pitch,
                                   gold_energy=gold_energy,
                                   utterance_embedding=utterance_embedding,
+                                  speaker_id=speaker_id,
+                                  sentence_embedding=sentence_embedding,
+                                  word_embedding=word_embedding,
                                   is_inference=False,
                                   lang_ids=lang_ids,
                                   run_glow=run_glow)
@@ -268,7 +302,7 @@ class ToucanTTS(torch.nn.Module):
         if return_mels:
             if after_outs is None:
                 after_outs = before_outs
-            return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, after_outs
+            return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, after_outs,
         return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss
 
     def _forward(self,
@@ -281,6 +315,9 @@ class ToucanTTS(torch.nn.Module):
                  gold_energy=None,
                  is_inference=False,
                  utterance_embedding=None,
+                 speaker_id=None,
+                 sentence_embedding=None,
+                 word_embedding=None,
                  lang_ids=None,
                  run_glow=True):
 
@@ -290,12 +327,44 @@ class ToucanTTS(torch.nn.Module):
         if not self.multispeaker_model:
             utterance_embedding = None
         else:
-            utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
+            if self.static_speaker_embed:
+                utterance_embedding = self.speaker_embedding(speaker_id)
+            else:
+                utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
+
+        if not self.use_sent_embed:
+            sentence_embedding = None
+            utterance_embedding = self.speaker_embedding_adaptation(utterance_embedding)
+        else:
+            sentence_embedding = torch.nn.functional.normalize(sentence_embedding)
+            sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
+            utterance_embedding = torch.cat([utterance_embedding, sentence_embedding], dim=1)
+            utterance_embedding = self.squeeze_excitation(utterance_embedding.transpose(0, 1).unsqueeze(-1)).squeeze(-1).transpose(0, 1)
+            utterance_embedding = self.style_embedding_projection(utterance_embedding)
+
+        if not self.use_word_embed:
+            word_embedding = None
+            word_boundaries_batch = None
+        else:
+            # get word boundaries
+            word_boundaries_batch = []
+            for batch_id, batch in enumerate(text_tensors):
+                word_boundaries = []
+                for phoneme_index, phoneme_vector in enumerate(batch):
+                    if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                        word_boundaries.append(phoneme_index)
+                word_boundaries.append(text_lengths[batch_id].cpu().numpy()-1) # marker for last word of sentence
+                word_boundaries_batch.append(torch.tensor(word_boundaries))
 
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
         padding_masks = make_pad_mask(text_lengths, device=text_lengths.device)
-        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
+        encoded_texts, _ = self.encoder(text_tensors,
+                                        text_masks,
+                                        utterance_embedding=utterance_embedding,
+                                        word_embedding=word_embedding,
+                                        word_boundaries=word_boundaries_batch,
+                                        lang_ids=lang_ids)  # (B, Tmax, adim)
 
         if is_inference:
             # predicting pitch, energy and durations
@@ -331,7 +400,9 @@ class ToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
-        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks)
+        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts,
+                                        decoder_masks,
+                                        utterance_embedding=utterance_embedding)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
         refined_spectrogram = decoded_spectrogram + self.conv_postnet(decoded_spectrogram.transpose(1, 2)).transpose(1, 2)
@@ -351,6 +422,7 @@ class ToucanTTS(torch.nn.Module):
                                            mel_out=refined_spectrogram.detach().clone(),
                                            encoded_texts=upsampled_enriched_encoded_texts.detach().clone(),
                                            tgt_nonpadding=decoder_masks)
+        
         if is_inference:
             return decoded_spectrogram.squeeze(), \
                    refined_spectrogram.squeeze(), \
@@ -370,6 +442,9 @@ class ToucanTTS(torch.nn.Module):
                   text,
                   speech=None,
                   utterance_embedding=None,
+                  speaker_id=None,
+                  sentence_embedding=None,
+                  word_embedding=None,
                   return_duration_pitch_energy=False,
                   lang_id=None,
                   run_postflow=True):
@@ -392,7 +467,10 @@ class ToucanTTS(torch.nn.Module):
             ys = y.unsqueeze(0)
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0)
-        utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
+        utterance_embeddings = utterance_embedding.unsqueeze(0).to(x.device) if utterance_embedding is not None else None
+        sentence_embeddings = sentence_embedding.unsqueeze(0).to(x.device) if sentence_embedding is not None else None
+        word_embeddings = word_embedding.unsqueeze(0).to(x.device) if word_embedding is not None else None
+        speaker_id = speaker_id.to(x.device) if speaker_id is not None else None
 
         before_outs, \
         after_outs, \
@@ -403,6 +481,9 @@ class ToucanTTS(torch.nn.Module):
                                            ys,
                                            is_inference=True,
                                            utterance_embedding=utterance_embeddings,
+                                           speaker_id=speaker_id,
+                                           sentence_embedding=sentence_embeddings,
+                                           word_embedding=word_embeddings,
                                            lang_ids=lang_id,
                                            run_glow=run_postflow)  # (1, L, odim)
         self.train()
