@@ -23,7 +23,7 @@ class EnCodec(nn.Module):
         self.hop_length = np.prod(ratios)  # 计算乘积
         self.encoder = SEANetEncoder(n_filters=n_filters, dimension=D, ratios=ratios)
         n_q = int(1000 * target_bandwidths[-1] // (math.ceil(sample_rate / self.hop_length) * 10))
-        self.frame_rate = math.ceil(sample_rate / np.prod(ratios))  # 75
+        self.frame_rate = math.ceil(sample_rate / np.prod(ratios))  # 50
         self.bits_per_codebook = int(math.log2(bins))
         self.target_bandwidths = target_bandwidths
         self.quantizer = ResidualVectorQuantizer(dimension=D, n_q=n_q, bins=bins)

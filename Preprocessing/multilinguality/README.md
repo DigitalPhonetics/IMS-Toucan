@@ -1,0 +1,1 @@
+This directory contains all scripts that are needed to reproduce the meta learning for zero-shot part of our system. These scripts allow you to predict representations of languages purely based on distances between them, as measured by a variety of linguistically informed metrics, or even better, a learned combination thereof.

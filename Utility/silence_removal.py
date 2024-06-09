@@ -1,6 +1,5 @@
 import librosa
 import soundfile as sf
-import torch
 from tqdm import tqdm
 
 from Preprocessing.TextFrontend import get_feature_to_index_lookup

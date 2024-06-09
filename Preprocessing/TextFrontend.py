@@ -540,12 +540,21 @@ class ArticulatoryCombinedTextFrontend:
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
         if self.phonemizer == "espeak":
-            self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
-                                                    punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
-                                                    preserve_punctuation=True,
-                                                    language_switch='remove-flags',
-                                                    with_stress=self.use_stress)
-
+            try:
+                self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
+                                                        punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
+                                                        preserve_punctuation=True,
+                                                        language_switch='remove-flags',
+                                                        with_stress=self.use_stress)
+            except RuntimeError:
+                print("Error in loading espeak! \n"
+                      "Maybe espeak is not installed on your system? \n"
+                      "Falling back to transphone.")
+                from transphone.g2p import read_g2p
+                self.g2p_lang = self.language
+                self.phonemizer = "transphone"
+                self.expand_abbreviations = lambda x: x
+                self.transphone = read_g2p()
         self.phone_to_vector = generate_feature_table()
         self.phone_to_id = get_phone_to_id()
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
@@ -621,6 +630,9 @@ class ArticulatoryCombinedTextFrontend:
             elif char == '̃':
                 # nasalized (vowel)
                 phones_vector[-1][get_feature_to_index_lookup()["nasal"]] = 1
+            elif char == "̧":
+                # palatalized
+                phones_vector[-1][get_feature_to_index_lookup()["palatal"]] = 1
             elif char == "˥":
                 # very high tone
                 phones_vector[-1][get_feature_to_index_lookup()["very-high-tone"]] = 1
@@ -664,12 +676,23 @@ class ArticulatoryCombinedTextFrontend:
         return torch.Tensor(phones_vector, device=device)
 
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
+        if text == "":
+            return ""
         # expand abbreviations
         utt = self.expand_abbreviations(text)
 
         # convert the graphemes to phonemes here
         if self.phonemizer == "espeak":
-            phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
+            try:
+                phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
+            except:
+                print(f"There was an error with espeak. \nFalling back to transphone.\nSentence: {utt} \nLanguage {self.g2p_lang}")
+                from transphone.g2p import read_g2p
+                self.g2p_lang = self.language
+                self.phonemizer = "transphone"
+                self.expand_abbreviations = lambda x: x
+                self.transphone = read_g2p()
+                return self.get_phone_string(text, include_eos_symbol, for_feature_extraction, for_plot_labels)
         elif self.phonemizer == "transphone":
             replacements = [
                 # punctuation in languages with non-latin script
@@ -730,10 +753,9 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('3', "˧˥")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
             phones = phones.replace('4', "˦˧˥")
             phones = phones.replace('5', "˧˩˧")
-            phones = phones.replace('6', "˧˩ʔ˨")  # very weird tone, because the tone introduces another phoneme
+            phones = phones.replace('6', "˧˩˨ʔ")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
         # TODO add more of this handling for more tonal languages
-
         return self.postprocess_phoneme_string(phones, for_feature_extraction, include_eos_symbol, for_plot_labels)
 
     def postprocess_phoneme_string(self, phoneme_string, for_feature_extraction, include_eos_symbol, for_plot_labels):

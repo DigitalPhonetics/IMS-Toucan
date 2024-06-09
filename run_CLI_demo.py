@@ -38,4 +38,5 @@ if __name__ == '__main__':
                        blocking=False,
                        duration_scaling_factor=1.0,
                        energy_variance_scale=1.0,
-                       pitch_variance_scale=1.0)
+                       pitch_variance_scale=1.0,
+                       glow_sampling_temperature=0.2)

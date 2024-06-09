@@ -7,11 +7,21 @@ import librosa
 import numpy
 import soundfile as sf
 import torch
+import torchaudio
 from torch.utils.data import Dataset
 from torchvision.transforms.v2 import GaussianBlur
 from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
+
+
+def random_pitch_shifter(x):
+    n_steps = random.choice([-12, -9, -6, 3, 12])  # when using 12 steps per octave, these are the only ones that are pretty fast. I benchmarked it and the variance is many orders of magnitude.
+    return torchaudio.transforms.PitchShift(sample_rate=24000, n_steps=n_steps)(x)
+
+
+def polarity_inverter(x):
+    return x * -1
 
 
 class HiFiGANDataset(Dataset):
@@ -47,8 +57,11 @@ class HiFiGANDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
-        self.blurrer = GaussianBlur(kernel_size=(3, 3))
-        self.augs = [self.blurrer, lambda x: x]
+        self.blurrer = GaussianBlur(kernel_size=(5, 5), sigma=(0.5, 2.0))  # simulating the smoothness of a generated spectrogram
+        # self.masker = torchaudio.transforms.FrequencyMasking(freq_mask_param=16, iid_masks=True)  # up to 16 consecutive bands can be masked, each element in the batch gets a different mask. Taken out because it seems too extreme.
+        self.spec_augs = [self.blurrer, lambda x: x, lambda x: x, lambda x: x, lambda x: x]
+        self.wave_augs = [random_pitch_shifter, polarity_inverter, lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # just some data augmentation
+        self.wave_distortions = [CodecSimulator(), lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # simulating the fact, that we train the TTS on codec-compressed waves
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split):
@@ -80,20 +93,92 @@ class HiFiGANDataset(Dataset):
                 # add some true silence in the mix, so the vocoder is exposed to that as well during training
             wave = torch.Tensor(wave)
 
+            if self.use_random_corruption:
+                # augmentations for the wave
+                wave = random.choice(self.wave_augs)(wave.unsqueeze(0)).squeeze(0)  # it is intentional that this affects the target as well. This is not a distortion, but an augmentation.
+
             max_audio_start = len(wave) - self.samples_per_segment
             audio_start = random.randint(0, max_audio_start)
             segment = wave[audio_start: audio_start + self.samples_per_segment]
 
-            resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
-            melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
+            resampled_segment = self.melspec_ap.resample(segment).float()  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
+            if self.use_random_corruption:
+                # augmentations for the wave
+                resampled_segment = random.choice(self.wave_distortions)(resampled_segment.unsqueeze(0)).squeeze(0)
+            melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment,
                                                                explicit_sampling_rate=16000,
                                                                normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
             if self.use_random_corruption:
-                melspec = random.choice(self.augs)(melspec.unsqueeze(0)).squeeze(0)
-            return segment, melspec
+                # augmentations for the spec
+                melspec = random.choice(self.spec_augs)(melspec.unsqueeze(0)).squeeze(0)
+            return segment.detach(), melspec.detach()
         except RuntimeError:
             print("encountered a runtime error, using fallback strategy")
+            if index == 0:
+                index = len(self.waves) - 1
             return self.__getitem__(index - 1)
 
     def __len__(self):
         return len(self.waves)
+
+
+class CodecSimulator(torch.nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.encoder = torchaudio.transforms.MuLawEncoding(quantization_channels=64)
+        self.decoder = torchaudio.transforms.MuLawDecoding(quantization_channels=64)
+
+    def forward(self, x):
+        return self.decoder(self.encoder(x))
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+
+    wav, sr = sf.read("../../audios/speaker_references/female_high_voice.wav")
+    resampled_wave = torch.Tensor(librosa.resample(y=wav, orig_sr=sr, target_sr=24000))
+    audio = torch.tensor(resampled_wave)
+    melspec_ap = AudioPreprocessor(input_sr=24000,
+                                   output_sr=16000,
+                                   cut_silence=False)
+
+    spec = melspec_ap.audio_to_mel_spec_tensor(melspec_ap.resample(resampled_wave).float(),
+                                               explicit_sampling_rate=16000,
+                                               normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+
+    cs = CodecSimulator()
+    blurrer = GaussianBlur(kernel_size=(5, 5), sigma=(0.5, 2.0))
+    masker = torchaudio.transforms.FrequencyMasking(freq_mask_param=16, iid_masks=True)  # up to 8 consecutive bands can be masked
+
+    # testing codec simulator
+    out = cs(resampled_wave.unsqueeze(0)).squeeze(0)
+
+    plt.plot(resampled_wave, alpha=0.5)
+    plt.plot(out, alpha=0.5)
+    plt.title("Codec Simulator")
+    plt.show()
+
+    # testing Gaussian blur
+    blurred_spec = blurrer(spec.unsqueeze(0)).squeeze(0)
+    plt.imshow(blurred_spec.cpu().numpy(), origin="lower", cmap='GnBu')
+    plt.title("Blurred Spec")
+    plt.show()
+
+    # testing spectrogram masking
+    for _ in range(5):
+        masked_spec = masker(spec.unsqueeze(0)).squeeze(0)
+        print(masked_spec)
+        plt.imshow(masked_spec.cpu().numpy(), origin="lower", cmap='GnBu')
+        plt.title("Masked Spec")
+        plt.show()
+
+    # testing pitch shift
+    for _ in range(5):
+        shifted_wave = random_pitch_shifter(resampled_wave.unsqueeze(0)).squeeze(0)
+        shifted_spec = melspec_ap.audio_to_mel_spec_tensor(melspec_ap.resample(shifted_wave).float(),
+                                                           explicit_sampling_rate=16000,
+                                                           normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+        plt.imshow(shifted_spec.detach().cpu().numpy(), origin="lower", cmap='GnBu')
+        plt.title("Pitch Shifted Spec")
+        plt.show()

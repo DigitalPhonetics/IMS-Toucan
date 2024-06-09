@@ -6,18 +6,14 @@ find mispronunciations or errors in the labels. The TTS scorer
 can help you find outliers in the audio part of text-audio pairs.
 """
 
-import os
-
 import torch
 import torch.multiprocessing
 from tqdm import tqdm
 
-from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.corpus_preparation import prepare_tts_corpus
-from Utility.storage_config import MODELS_DIR
 
 
 class TTSScorer:
@@ -25,7 +21,6 @@ class TTSScorer:
     def __init__(self,
                  path_to_model,
                  device,
-                 path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")
                  ):
         self.device = device
         self.path_to_score = dict()
@@ -36,11 +31,7 @@ class TTSScorer:
         checkpoint = torch.load(path_to_model, map_location='cpu')
         weights = checkpoint["model"]
         self.tts.load_state_dict(weights)
-        self.style_embedding_function = StyleEmbedding().to(device)
-        check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
-        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.tts.to(self.device)
-        self.style_embedding_function.to(device)
         self.nans_removed = False
         self.current_dset = None
         self.ap = CodecAudioPreprocessor(input_sr=-1, device=device)
@@ -73,9 +64,7 @@ class TTSScorer:
                 mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
             gold_speech_sample = mel.clone().to(self.device).unsqueeze(0)
 
-            style_embedding = self.style_embedding_function(batch_of_feature_sequences=gold_speech_sample,
-                                                            batch_of_feature_sequence_lengths=speech_lengths)
-            utterance_embedding = torch.cat([style_embedding, datapoint[7].unsqueeze(0).to(self.device)], dim=-1)
+            utterance_embedding = datapoint[7].unsqueeze(0).to(self.device)
             try:
                 regression_loss, _, duration_loss, pitch_loss, energy_loss = self.tts(text_tensors=text_tensors,
                                                                                       text_lengths=text_lengths,

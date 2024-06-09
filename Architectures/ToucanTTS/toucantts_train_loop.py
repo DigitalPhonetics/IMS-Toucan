@@ -8,7 +8,6 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
@@ -44,12 +43,10 @@ def train_loop(net,
                lr,
                warmup_steps,
                path_to_checkpoint,
-               path_to_embed_model,
                fine_tune,
                resume,
                steps,
                use_wandb,
-               train_embed,
                train_sampler,
                gpu_count,
                steps_per_checkpoint
@@ -69,25 +66,6 @@ def train_loop(net,
         print(f"too much warmup given the amount of steps, reducing warmup to {warmup_steps} steps")
         warmup_steps = steps // 5
 
-    style_embedding_function = StyleEmbedding().to(device)
-
-    if path_to_embed_model is not None:
-        check_dict = torch.load(path_to_embed_model, map_location=device)
-        style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-        if not train_embed:
-            style_embedding_function.eval()
-            style_embedding_function.requires_grad_(False)
-
-    if gpu_count > 1 and (train_embed or path_to_embed_model is None):
-        style_embedding_function.to(rank)
-        style_embedding_function = torch.nn.parallel.DistributedDataParallel(
-            style_embedding_function,
-            device_ids=[rank],
-            output_device=rank,
-            find_unused_parameters=True,
-        )
-        torch.distributed.barrier()
-
     torch.multiprocessing.set_sharing_strategy('file_system')
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
     train_loader = DataLoader(dataset=train_dataset,
@@ -103,22 +81,15 @@ def train_loop(net,
 
     if isinstance(net, torch.nn.parallel.DistributedDataParallel):
         model = net.module
-        if train_embed or path_to_embed_model is None:
-            style_embedding_function = style_embedding_function.module
     else:
         model = net
-    if train_embed or path_to_embed_model is None:
-        optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'post_flow' not in name] + list(style_embedding_function.parameters()), lr=lr)
-    else:
-        optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr)
-    flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr * 8)
+    optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr)
+    flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
-    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 8, warmup_steps=(warmup_steps // 4), max_steps=steps)
+    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     epoch = 0
-    first_time_glow = True
-    final_steps = False
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
@@ -160,31 +131,9 @@ def train_loop(net,
             gold_speech = pad_sequence(speech_batch, batch_first=True).to(device)
 
             run_glow = step_counter > (warmup_steps * 2) or fine_tune
-            if run_glow:
-                if first_time_glow is not False and not fine_tune:
-                    # We freeze the model and the embedding function for the first few steps of the flow,
-                    # because at this point bad spikes can happen, that take a while to recover from.
-                    # So we protect our nice weights at this point.
-                    if first_time_glow != 2:
-                        model.requires_grad_(False)
-                        style_embedding_function.requires_grad_(False)
-                        model.post_flow.requires_grad_(True)
-                        first_time_glow = 2
-                    if step_counter > ((warmup_steps * 2) + (warmup_steps // 4)):
-                        first_time_glow = False
-                        model.requires_grad_(True)
-                        if path_to_embed_model is None or train_embed:
-                            style_embedding_function.requires_grad_(True)
-            if step_counter > steps - warmup_steps and not final_steps:
-                # for the final few steps, only the decoder, postnet and variance predictors are trained, inspired by the TorToiSE trick.
-                final_steps = True
-                model.encoder.requires_grad_(False)
-                style_embedding_function.requires_grad_(False)
 
             train_loss = 0.0
-            style_embedding = style_embedding_function(batch_of_feature_sequences=gold_speech,
-                                                       batch_of_feature_sequence_lengths=speech_lengths)
-            utterance_embedding = torch.cat([style_embedding, batch[9].to(device)], dim=-1)
+            utterance_embedding = batch[9].to(device)
             regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss = net(
                 text_tensors=text_tensors,
                 text_lengths=text_lengths,
@@ -199,44 +148,45 @@ def train_loop(net,
                 run_glow=run_glow
             )
 
-            if step_counter % (warmup_steps // 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
-                # the computationally very expensive style token regularization loss to spread out the vectors
-                print("calculating the style token regularization loss. This will take a while.")
-                emb_reg_loss = style_embedding_function.style_encoder.calculate_ada4_regularization_loss()
-                train_loss = train_loss + emb_reg_loss
-            if not torch.isnan(regression_loss) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + regression_loss
-            if glow_loss is not None:
-                if not first_time_glow:
-                    glow_losses_total.append(glow_loss.item())
-                else:
-                    glow_losses_total.append(0)
-                if not torch.isnan(glow_loss):
-                    train_loss = train_loss + glow_loss
-            else:
-                glow_losses_total.append(0)
-            if not torch.isnan(duration_loss) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + duration_loss
-            if not torch.isnan(pitch_loss) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + pitch_loss
-            if not torch.isnan(energy_loss) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + energy_loss
+            if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss):
+                print("One of the losses turned to NaN! Skipping this batch ...")
+                continue
+
+            train_loss = train_loss + duration_loss
+            train_loss = train_loss + pitch_loss
+            train_loss = train_loss + energy_loss
+            train_loss = train_loss + regression_loss
 
             regression_losses_total.append(regression_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
 
+            if glow_loss is not None:
+
+                if torch.isnan(glow_loss):
+                    print("Glow loss turned to NaN! Skipping this batch ...")
+                    continue
+
+                if glow_loss < 0.0:
+                    glow_losses_total.append(glow_loss.item())
+                else:
+                    glow_losses_total.append(0.1)
+
+                train_loss = train_loss + glow_loss
+            else:
+                glow_losses_total.append(0)
+
             optimizer.zero_grad()
             flow_optimizer.zero_grad()
+            if type(train_loss) is float:
+                print("There is no loss for this step! Skipping ...")
+                continue
             train_loss.backward()
-            if train_embed or path_to_embed_model is None:
-                torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name] + list(style_embedding_function.parameters()), 1.0, error_if_nonfinite=False)
-            else:
-                torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
+            torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
             optimizer.step()
             scheduler.step()
-            if run_glow:
+            if glow_loss is not None:
                 torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
                 flow_optimizer.step()
                 flow_scheduler.step()
@@ -245,14 +195,7 @@ def train_loop(net,
                 # evaluation interval is happening
                 if rank == 0:
                     net.eval()
-                    style_embedding_function.eval()
-                    with torch.inference_mode():
-                        wave = ap.indexes_to_audio(train_dataset[0][2].int().to(device)).detach()
-                        mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
-                    default_embedding = torch.cat([style_embedding_function(
-                        batch_of_feature_sequences=mel.clone().unsqueeze(0).to(device),
-                        batch_of_feature_sequence_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze(),
-                                                   train_dataset[0][9].to(device)], dim=-1)
+                    default_embedding = train_dataset[0][9].to(device)
                     torch.save({
                         "model"         : model.state_dict(),
                         "optimizer"     : optimizer.state_dict(),
@@ -263,10 +206,7 @@ def train_loop(net,
                         "default_emb"   : default_embedding,
                         "config"        : model.config
                     }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-                    if path_to_embed_model is None or train_embed:
-                        torch.save({
-                            "style_emb_func": style_embedding_function.state_dict()
-                        }, os.path.join(save_directory, "embedding_function.pt"))
+
                     delete_old_checkpoints(save_directory, keep=5)
 
                     print(f"\nEpoch:                  {epoch}")
@@ -309,7 +249,5 @@ def train_loop(net,
                         return  # DONE
 
                     net.train()
-                    if train_embed or path_to_embed_model is None:
-                        style_embedding_function.train()
 
         print("\n\n\nEPOCH COMPLETE\n\n\n")
