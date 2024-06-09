@@ -2,12 +2,13 @@ import json
 import os
 import pickle
 import random
-
+import argparse
 import torch
 from tqdm import tqdm
 
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Preprocessing.multilinguality.SimilaritySolver import load_json_from_path
+from Preprocessing.multilinguality.create_distance_lookups import CacheCreator
 from Utility.storage_config import MODELS_DIR
 
 
@@ -37,13 +38,28 @@ class EnsembleModel(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    checkpoint = torch.load(os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"), map_location='cpu')  # this assumes that MODELS_DIR is an absolute path, the relative path will fail at this location
+    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model_path", "-m", type=str, default=default_model_path, help="model path from which to obtain pretrained language embeddings")
+    args = parser.parse_args()
+    checkpoint = torch.load(args.model_path, map_location='cpu')
     embedding_provider = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"]).encoder.language_embedding
     embedding_provider.requires_grad_(False)
     language_list = load_json_from_path("supervised_languages.json")
-    tree_dist = load_json_from_path('lang_1_to_lang_2_to_tree_dist.json')
-    map_dist = load_json_from_path('lang_1_to_lang_2_to_map_dist.json')
-    with open("asp_dict.pkl", 'rb') as dictfile:
+    tree_lookup_path = "lang_1_to_lang_2_to_tree_dist.json"
+    map_lookup_path = "lang_1_to_lang_2_to_map_dist.json"
+    asp_dict_path = "asp_dict.pkl"
+    if not os.path.exists(tree_lookup_path) or not os.path.exists(map_lookup_path):
+        cc = CacheCreator()
+        if not os.path.exists(tree_lookup_path):
+            cc.create_tree_cache()
+        if not os.path.exists(map_lookup_path):
+            cc.create_map_cache()
+    if not os.path.exists(asp_dict_path):
+        raise FileNotFoundError(f"{asp_dict_path} must be downloaded separately.")
+    tree_dist = load_json_from_path(tree_lookup_path)
+    map_dist = load_json_from_path(map_lookup_path)
+    with open(asp_dict_path, 'rb') as dictfile:
         asp_sim = pickle.load(dictfile)
     lang_list = list(asp_sim.keys())
     largest_value_map_dist = 0.0

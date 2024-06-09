@@ -188,7 +188,7 @@ class LangDistDatasetCreator():
 if __name__ == "__main__":
     default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location    
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", type=str, default=default_model_path, help="model path from which to obtain pretrained language embeddings")
+    parser.add_argument("--model_path", "-m", type=str, default=default_model_path, help="model path from which to obtain pretrained language embeddings")
     parser.add_argument("--learned_dist_path", type=str, default="lang_1_to_lang_2_to_learned_dist.json", 
                         help="filepath of JSON file containing the meta-learned pairwise distances")
     args = parser.parse_args()
