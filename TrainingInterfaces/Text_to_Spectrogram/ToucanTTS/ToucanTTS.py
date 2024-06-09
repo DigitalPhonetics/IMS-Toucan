@@ -3,8 +3,6 @@ from torchvision.ops import SqueezeExcitation
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
-from torch.nn import LeakyReLU
-from torch.nn import LayerNorm
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
