@@ -253,8 +253,7 @@ The basic PyTorch modules of FastSpeech 2 and GST are taken from
 HiFi-GAN are taken from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN).
 Some modules related to the Glow based PostNet as outlined in PortaSpeech are taken
 from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech).
-We use audio watermarking from [audioseal](https://github.com/facebookresearch/audioseal) and speech restoration
-from [resemble enhance](https://github.com/resemble-ai/resemble-enhance) as postprocessing. For
+We use audio watermarking from [audioseal](https://github.com/facebookresearch/audioseal). For
 grapheme-to-phoneme conversion, we rely on the aforementioned eSpeak-NG as
 well as [transphone](https://github.com/xinjli/transphone). We
 use [encodec, a neural audio codec](https://github.com/yangdongchao/AcademiCodec) as intermediate representation

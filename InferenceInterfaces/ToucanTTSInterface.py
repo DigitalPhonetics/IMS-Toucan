@@ -13,8 +13,6 @@ from omegaconf import OmegaConf
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
-from Architectures.Enhancer.enhancer.inference import inference
-from Architectures.Enhancer.enhancer.inference import load_enhancer
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -32,12 +30,10 @@ class ToucanTTSInterface(torch.nn.Module):
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
-                 enhance=None
+                 enhance=None  # legacy argument
                  ):
         super().__init__()
         self.device = device
-        if enhance is None:
-            enhance = device != "cpu" and device != torch.device("cpu")
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
@@ -76,15 +72,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.vocoder.load_state_dict(vocoder_checkpoint)
         self.vocoder = self.vocoder.to(device).eval()
         self.vocoder.remove_weight_norm()
-        self.meter = pyloudnorm.Meter(24000 if enhance == False else 44100)
-
-        ################################
-        #  load mel to wave model      #
-        ################################
-        if enhance:
-            self.enhancer = load_enhancer(f"{MODELS_DIR}/Enhancer", device)
-            self.enhancer.configurate_(nfe=128, solver="midpoint", lambd=0.2, tau=0.5)
-        self.enhance = enhance
+        self.meter = pyloudnorm.Meter(24000)
 
         ################################
         #  set defaults                #
@@ -170,12 +158,8 @@ class ToucanTTSInterface(torch.nn.Module):
 
             wave, _, _ = self.vocoder(mel.unsqueeze(0))
             wave = wave.squeeze().cpu()
-        if self.enhance:
-            wave, sr = inference(model=self.enhancer, dwav=wave, sr=24000, device=self.device)
-            wave = wave.detach().cpu().numpy()
-        else:
-            wave = wave.numpy()
-            sr = 24000
+        wave = wave.numpy()
+        sr = 24000
         try:
             loudness = self.meter.integrated_loudness(wave)
             wave = pyloudnorm.normalize.loudness(wave, loudness, loudness_in_db)
@@ -183,7 +167,7 @@ class ToucanTTSInterface(torch.nn.Module):
             # if the audio is too short, a value error will arise
             pass
         with torch.inference_mode():
-            wave = (torch.tensor(wave) + self.watermark.get_watermark(torch.tensor(wave).to(self.device).unsqueeze(0).unsqueeze(0)).squeeze().detach().cpu()).detach().numpy()
+            wave = (torch.tensor(wave) + 0.3 * self.watermark.get_watermark(torch.tensor(wave).to(self.device).unsqueeze(0).unsqueeze(0)).squeeze().detach().cpu()).detach().numpy()
 
         if view or return_plot_as_filepath:
             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 5))
@@ -268,7 +252,7 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_list = []
         if not energy_list:
             energy_list = []
-        silence = torch.zeros([14300]) if not self.enhance else torch.zeros([25800])
+        silence = torch.zeros([14300])
         wav = silence.clone()
         for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
             if text.strip() != "":

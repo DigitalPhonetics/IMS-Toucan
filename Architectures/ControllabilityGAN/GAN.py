@@ -20,14 +20,14 @@ class GanWrapper:
 
         self.z_list = list()
         for _ in range(1100):
-            self.z_list.append(self.wgan.G.module.sample_latent(1, 16))
+            self.z_list.append(self.wgan.G.module.sample_latent(1, 32))
         self.z = self.z_list[0]
 
     def set_latent(self, seed):
         self.z = self.z = self.z_list[seed]
 
     def reset_default_latent(self):
-        self.z = self.wgan.G.module.sample_latent(1, 16)
+        self.z = self.wgan.G.module.sample_latent(1, 32)
 
     def load_model(self, path):
         gan_checkpoint = torch.load(path, map_location="cpu")
