@@ -4,6 +4,7 @@ Corpora/
 Models/
 audios/
 Preprocessing/glottolog/
+Preprocessing/multilinguality/datasets/
 apex/
 pretrained_models/
 .tmp/

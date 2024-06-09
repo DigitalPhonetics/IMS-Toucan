@@ -7,6 +7,7 @@ from Preprocessing.multilinguality.SimilaritySolver import SimilaritySolver
 from Utility.storage_config import MODELS_DIR
 import argparse
 from copy import deepcopy
+from tqdm import tqdm
 
 ISO_LOOKUP_PATH = "iso_lookup.json"
 ISO_TO_FULLNAME_PATH = "iso_to_fullname.json"
@@ -14,6 +15,7 @@ LANG_PAIRS_MAP_PATH = "lang_1_to_lang_2_to_map_dist.json"
 LANG_PAIRS_TREE_PATH = "lang_1_to_lang_2_to_tree_dist.json"
 LANG_PAIRS_ASP_PATH = "asp_dict.pkl"
 LANG_PAIRS_LEARNED_DIST_PATH = "lang_1_to_lang_2_to_learned_dist.json"
+LANG_PAIRS_ORACLE_PATH = "lang_1_to_lang_2_to_oracle_dist.json"
 SUPVERVISED_LANGUAGES_PATH = "supervised_languages.json"
 DATASET_SAVE_DIR = "distance_datasets/"
 
@@ -21,37 +23,49 @@ DATASET_SAVE_DIR = "distance_datasets/"
 class LangDistDatasetCreator():
     def __init__(self, model_path, learned_dist_path=None):
         self.model_path = model_path
-        (self.lang_pairs_map, 
-         self.lang_pairs_tree, 
-         self.lang_pairs_asp, 
-         self.lang_pairs_learned_dist,
-         self.lang_embs, 
-         self.supervised_langs, # only keys are used to get all supervised languages, no mapping to langembs
-         self.iso_lookup) = self.load_feature_and_embedding_data(learned_dist_path)
+        self.lang_pairs_map = None
+        self.largest_value_map_dist = None
+        self.lang_pairs_tree = None
+        self.lang_pairs_asp = None
+        self.lang_pairs_learned_dist = None
+        self.lang_pairs_oracle = None
+        self.supervised_langs = load_json_from_path(SUPVERVISED_LANGUAGES_PATH)
+        self.iso_lookup = load_json_from_path(ISO_LOOKUP_PATH)
+        self.iso_to_fullname = load_json_from_path(ISO_TO_FULLNAME_PATH)
 
-    def load_feature_and_embedding_data(self, learned_dist_path):
-        """Load supervised languages, all features, as well as the language embeddings."""
-        print("Loading feature and embedding data...")
+    def load_required_distance_lookups(self, distance_type, excluded_distances=[]):
+        # init required distance lookups
+        print(f"Loading required distance lookups for distance_type '{distance_type}'.")
         try:
-            supervised_langs = load_json_from_path(SUPVERVISED_LANGUAGES_PATH)
-            lang_pairs_map = load_json_from_path(LANG_PAIRS_MAP_PATH)
-            lang_pairs_tree = load_json_from_path(LANG_PAIRS_TREE_PATH)
-            if not learned_dist_path:
-                learned_dist_path = LANG_PAIRS_LEARNED_DIST_PATH
-            lang_pairs_learned_dist = load_json_from_path(learned_dist_path)        
-            with open(LANG_PAIRS_ASP_PATH, "rb") as f:
-                lang_pairs_asp = pickle.load(f)
+            if distance_type == "combined":
+                if "map" not in excluded_distances and not self.lang_pairs_map:
+                    self.lang_pairs_map = load_json_from_path(LANG_PAIRS_MAP_PATH)
+                    self.largest_value_map_dist = 0.0
+                    for _, values in self.lang_pairs_map.items():
+                        for _, value in values.items():
+                            self.largest_value_map_dist = max(self.largest_value_map_dist, value)
+                if "tree" not in excluded_distances and not self.lang_pairs_tree:
+                    self.lang_pairs_tree = load_json_from_path(LANG_PAIRS_TREE_PATH)
+                if "asp" not in excluded_distances and not self.lang_pairs_asp:
+                    with open(LANG_PAIRS_ASP_PATH, "rb") as f:
+                        self.lang_pairs_asp = pickle.load(f)
+            elif distance_type == "map" and not self.lang_pairs_map:
+                self.lang_pairs_map = load_json_from_path(LANG_PAIRS_MAP_PATH)
+                self.largest_value_map_dist = 0.0
+                for _, values in self.lang_pairs_map.items():
+                    for _, value in values.items():
+                        self.largest_value_map_dist = max(self.largest_value_map_dist, value)
+            elif distance_type == "tree" and not self.lang_pairs_tree:
+                self.lang_pairs_tree = load_json_from_path(LANG_PAIRS_TREE_PATH)
+            elif distance_type == "asp" and not self.lang_pairs_asp:
+                with open(LANG_PAIRS_ASP_PATH, "rb") as f:
+                    self.lang_pairs_asp = pickle.load(f)         
+            elif distance_type == "learned" and not self.lang_pairs_learned_dist:
+                self.lang_pairs_learned_dist = load_json_from_path(LANG_PAIRS_LEARNED_DIST_PATH)
+            elif distance_type == "oracle" and not self.lang_pairs_oracle:
+                self.lang_pairs_oracle = load_json_from_path(LANG_PAIRS_ORACLE_PATH)
         except FileNotFoundError as e:
             raise FileNotFoundError("Please create all lookup files via create_distance_lookups.py") from e
-        lang_embs = self.get_pretrained_language_embeddings()
-        iso_lookup = load_json_from_path(ISO_LOOKUP_PATH)
-        return (lang_pairs_map, lang_pairs_tree, lang_pairs_asp, lang_pairs_learned_dist, lang_embs, supervised_langs, 
-                iso_lookup)
-
-    def get_pretrained_language_embeddings(self):
-        model = torch.load(self.model_path, map_location="cpu")
-        lang_embs = model["model"]["encoder.language_embedding.weight"]
-        return lang_embs
 
     def create_dataset(self, 
                        distance_type: str = "learned",
@@ -64,10 +78,18 @@ class LangDistDatasetCreator():
                        write_to_csv=True):
         """Create dataset with a given feature's distance in a dict, and saves it to a CSV file."""
         distance_types = ["learned", "map", "tree", "asp", "combined", "random", "oracle"]
-        if distance_type not in distance_type:
-            raise ValueError(f"Invalid distance type {distance_type}. Expected one of {distance_type}")
+        if distance_type not in distance_types:
+            raise ValueError(f"Invalid distance type '{distance_type}'. Expected one of {distance_types}")
         dataset_dict = dict()
-        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
+        self.load_required_distance_lookups(distance_type, excluded_distances)
+
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, 
+                                      map_dist=self.lang_pairs_map,
+                                      largest_value_map_dist=self.largest_value_map_dist,
+                                      asp_dict=self.lang_pairs_asp,
+                                      learned_dist=self.lang_pairs_learned_dist,
+                                      oracle_dist=self.lang_pairs_oracle,
+                                      iso_to_fullname=self.iso_to_fullname)
         supervised_langs = sorted(self.supervised_langs)
         remove_langs_suffix = ""
         if len(excluded_languages) > 0:
@@ -94,9 +116,9 @@ class LangDistDatasetCreator():
         failed_langs = []
         if distance_type == "random":
             random_seed = 0
+        sorted_by = "closest" if not find_furthest else "furthest"
 
-        for lang in lang_codes:
-
+        for lang in tqdm(lang_codes, desc=f"Retrieving {sorted_by} distances"):
             if distance_type == "combined":
                 feature_dict = sim_solver.find_closest_combined_distance(lang,
                                                             supervised_langs,
@@ -119,7 +141,6 @@ class LangDistDatasetCreator():
                                                        supervised_langs, 
                                                        k=n_closest,
                                                        find_furthest=find_furthest)
-
             # discard incomplete results
             if len(feature_dict) < n_closest:
                 failed_langs.append(lang)
@@ -158,7 +179,9 @@ class LangDistDatasetCreator():
             out_path = os.path.join(DATASET_SAVE_DIR, f"dataset_{distance_type}_top{n_closest}{furthest_suffix}{zero_shot_suffix}{remove_langs_suffix}{excluded_feat_suffix}{individual_dist_suffix}" + ".csv")
             os.makedirs(DATASET_SAVE_DIR, exist_ok=True)
             df.to_csv(out_path, sep="|", index=False)
-        print(f"Failed to retrieve distances for the following languages: {failed_langs}")
+        print(f"Successfully retrieved distances for {len(lang_codes)-len(failed_langs)}/{len(lang_codes)} languages.")
+        if len(failed_langs) > 0:
+            print(f"Failed to retrieve distances for the following {len(failed_langs)} languages:\n{failed_langs}")
         return df
 
 
@@ -171,12 +194,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dc = LangDistDatasetCreator(args.model_path, learned_dist_path=args.learned_dist_path)
-    excluded_langs = ["deu"]
 
+    excluded_langs = []
+
+    # create datasets for evaluation of approx. lang emb methods on supervised languages
     dataset = dc.create_dataset(distance_type="tree", n_closest=30, zero_shot=False)
     dataset = dc.create_dataset(distance_type="map", n_closest=30, zero_shot=False, excluded_languages=excluded_langs)
-    dataset = dc.create_dataset(distance_type="asp", n_closest=30, zero_shot=False, find_furthest=True)
+    dataset = dc.create_dataset(distance_type="map", n_closest=30, zero_shot=False, find_furthest=True)
+    dataset = dc.create_dataset(distance_type="asp", n_closest=30, zero_shot=False)
     dataset = dc.create_dataset(distance_type="random", n_closest=30, zero_shot=False, excluded_languages=excluded_langs)
-    dataset = dc.create_dataset(distance_type="combined", individual_distances=True, n_closest=30, zero_shot=False, excluded_languages=excluded_langs)
+    dataset = dc.create_dataset(distance_type="combined", n_closest=30, zero_shot=False, individual_distances=True)
     dataset = dc.create_dataset(distance_type="learned", n_closest=30, zero_shot=False)
     dataset = dc.create_dataset(distance_type="oracle", n_closest=30, zero_shot=False)

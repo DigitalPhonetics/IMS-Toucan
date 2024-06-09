@@ -9,6 +9,7 @@ matplotlib.rcParams['font.family'] = 'STIXGeneral'
 matplotlib.rcParams['font.size'] = 7
 import matplotlib.pyplot as plt
 from Preprocessing.TextFrontend import load_json_from_path
+from Utility.storage_config import MODELS_DIR
 
 def compute_loss_for_approximated_embeddings(csv_path, iso_lookup, language_embeddings, weighted_avg=False, min_n_langs=5, max_n_langs=30, threshold_percentile=95, loss_fn="MSE"):
     df = pd.read_csv(csv_path, sep="|")
@@ -82,7 +83,9 @@ def compute_loss_for_approximated_embeddings(csv_path, iso_lookup, language_embe
 
 
 if __name__ == "__main__":
+    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model_path", type=str, default=default_model_path, help="model path that should be used for creating oracle lang emb distance cache")
     parser.add_argument("--min_n_langs", type=int, default=5, help="minimum amount of languages used for averaging")
     parser.add_argument("--max_n_langs", type=int, default=30, help="maximum amount of languages used for averaging")
     parser.add_argument("--threshold_percentile", type=int, default=95, help="percentile of the furthest used languages \
@@ -90,6 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--loss_fn", choices=["MSE", "L1"], type=str, default="MSE", help="loss function used")
     args = parser.parse_args()
     csv_paths = [
+        "distance_datasets/dataset_map_top30_furthest.csv",
         "distance_datasets/dataset_random_top30.csv",
         "distance_datasets/dataset_asp_top30.csv",
         "distance_datasets/dataset_tree_top30.csv",
@@ -99,10 +103,12 @@ if __name__ == "__main__":
         "distance_datasets/dataset_oracle_top30.csv",
     ]
     weighted = [False]
-    lang_embs_path = "LangEmbs/final_model_with_less_loss_fixed_tree_distance.pt"
-    language_embeddings = torch.load(lang_embs_path)
+    lang_embs = torch.load(args.model_path)["model"]["encoder.language_embedding.weight"]
+    lang_embs.requires_grad_(False)
     iso_lookup = load_json_from_path("iso_lookup.json")
     losses_of_multiple_datasets = []
+    OUT_DIR = "plots"
+    os.makedirs(OUT_DIR, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(3.15022, 3.15022*(2/3)), constrained_layout=True)
     plt.ylabel(args.loss_fn)
@@ -111,7 +117,7 @@ if __name__ == "__main__":
         for condition in weighted:
             losses = compute_loss_for_approximated_embeddings(csv_path, 
                                                          iso_lookup, 
-                                                         language_embeddings, 
+                                                         lang_embs, 
                                                          condition, 
                                                          min_n_langs=args.min_n_langs, 
                                                          max_n_langs=args.max_n_langs,
@@ -122,6 +128,7 @@ if __name__ == "__main__":
 
     bp_dict = ax.boxplot(losses_of_multiple_datasets, 
                          labels = [
+                             "map furthest",
                              "random", 
                              "inv. ASP", 
                              "tree", 
@@ -148,4 +155,4 @@ if __name__ == "__main__":
     plt.title(f"min. {args.min_n_langs} kNN, max. {args.max_n_langs}\nthreshold: {args.threshold_percentile}th-percentile distance of {args.max_n_langs}th-closest language")
     plt.xticks(rotation=45)
 
-    plt.savefig("plots/combined_boxplot_release.pdf", bbox_inches='tight')
+    plt.savefig(os.path.join(OUT_DIR, "example_boxplot_release.pdf"), bbox_inches='tight')

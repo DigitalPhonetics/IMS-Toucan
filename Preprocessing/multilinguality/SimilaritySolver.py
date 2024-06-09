@@ -12,6 +12,7 @@ class SimilaritySolver():
                  tree_dist=None, 
                  map_dist=None, 
                  asp_dict=None,
+                 largest_value_map_dist=None,
                  tree_dist_path=None, 
                  map_dist_path=None, 
                  asp_dict_path=None,
@@ -19,45 +20,37 @@ class SimilaritySolver():
                  iso_to_fullname_path=None,
                  learned_dist=None,
                  learned_dist_path=None,
-                 lang_emb_dist=None,
-                 lang_emb_dist_path=None):
-        if tree_dist:
-            self.lang_1_to_lang_2_to_tree_dist = tree_dist
-        else:
+                 oracle_dist=None,
+                 oracle_dist_path=None,
+                 force_reload=False):
+        self.lang_1_to_lang_2_to_tree_dist = tree_dist
+        self.lang_1_to_lang_2_to_map_dist = map_dist
+        self.largest_value_map_dist = largest_value_map_dist
+        self.asp_dict = asp_dict
+        self.lang_1_to_lang_2_to_learned_dist = learned_dist
+        self.lang_1_to_lang_2_to_oracle_dist = oracle_dist
+        self.iso_to_fullname = iso_to_fullname
+        iso_to_fullname_path = "iso_to_fullname.json" if not iso_to_fullname_path else iso_to_fullname_path
+
+        if force_reload:
             tree_dist_path = 'lang_1_to_lang_2_to_tree_dist.json' if not tree_dist_path else tree_dist_path
             self.lang_1_to_lang_2_to_tree_dist = load_json_from_path(tree_dist_path)
-        if map_dist:
-            self.lang_1_to_lang_2_to_map_dist = map_dist
-        else:
             map_dist_path = 'lang_1_to_lang_2_to_map_dist.json' if not map_dist_path else map_dist_path
             self.lang_1_to_lang_2_to_map_dist = load_json_from_path(map_dist_path)
-        self.largest_value_map_dist = 0.0
-        for _, values in self.lang_1_to_lang_2_to_map_dist.items():
-            for _, value in values.items():
-                self.largest_value_map_dist = max(self.largest_value_map_dist, value)
-        if learned_dist:
-            self.lang_1_to_lang_2_to_learned_dist = learned_dist
-        else:
+            self.largest_value_map_dist = 0.0
+            for _, values in self.lang_1_to_lang_2_to_map_dist.items():
+                for _, value in values.items():
+                    self.largest_value_map_dist = max(self.largest_value_map_dist, value)            
             learned_dist_path = 'lang_1_to_lang_2_to_learned_dist.json' if not learned_dist_path else tree_dist_path
-            self.lang_1_to_lang_2_to_learned_dist = load_json_from_path(learned_dist_path)          
-            
-        if lang_emb_dist:
-            self.lang_1_to_lang_2_to_lang_emb_dist = lang_emb_dist
-        else:
-            lang_emb_dist_path = 'lang_1_to_lang_2_to_lang_emb_dist.json' if not lang_emb_dist_path else lang_emb_dist_path
-            self.lang_1_to_lang_2_to_lang_emb_dist = load_json_from_path(lang_emb_dist_path)                      
-        if asp_dict:
-            self.asp_dict = asp_dict
-        else:
+            self.lang_1_to_lang_2_to_learned_dist = load_json_from_path(learned_dist_path)
+            oracle_dist_path = 'lang_1_to_lang_2_to_oracle_dist.json' if not oracle_dist_path else oracle_dist_path
+            self.lang_1_to_lang_2_to_oracle_dist = load_json_from_path(oracle_dist_path)
             asp_dict_path = "asp_dict.pkl" if not asp_dict_path else asp_dict_path
             with open(asp_dict_path, "rb") as f:
                 self.asp_dict = pickle.load(f)
-        if iso_to_fullname:
-            self.iso_to_fullname = iso_to_fullname
-        else:
-            iso_to_fullname_path = "iso_to_fullname.json" if not iso_to_fullname_path else iso_to_fullname_path
-        self.iso_to_fullname = load_json_from_path(iso_to_fullname_path)
-        
+            self.iso_to_fullname = load_json_from_path(iso_to_fullname_path)
+
+
         pop_keys = list()
         for el in self.iso_to_fullname:
             if "Sign Language" in self.iso_to_fullname[el]:
@@ -80,7 +73,8 @@ class SimilaritySolver():
         Returns a dict of dicts (`individual_distances` optional) of the format {"supervised_lang_1": 
                                                 {"euclidean_distance": 5.39, "individual_distances": [<map_dist>, <tree_dist>, <asp_dist>]},
                                               "supervised_lang_2":
-                                                {...}, ...}"""
+                                                {...}, ...}"""         
+
         if combined_distance not in ["average", "euclidean"]:
             raise ValueError("distance needs to be `average` or `euclidean`")
         combined_dict = {}
@@ -135,7 +129,7 @@ class SimilaritySolver():
         Returns a dict {language: distance} sorted by distance."""
         distance_types = ["learned", "map", "tree", "asp", "random", "oracle"]
         if distance_type not in distance_types:
-            raise ValueError(f"Invalid distance type {distance_type}. Expected one of {distance_types}")        
+            raise ValueError(f"Invalid distance type '{distance_type}'. Expected one of {distance_types}")        
         langs_to_dist = dict()
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
         # avoid error with `urk`
@@ -167,7 +161,7 @@ class SimilaritySolver():
                     langs_to_dist[sup_lang] = asp_dist
         elif distance_type == "oracle":
             for sup_lang in supervised_langs:
-                dist = self.get_lang_emb_distance(lang, sup_lang)
+                dist = self.get_oracle_distance(lang, sup_lang)
                 if dist is not None:
                     langs_to_dist[sup_lang] = dist
         elif distance_type == "random":
@@ -227,14 +221,14 @@ class SimilaritySolver():
                 return None
         return dist
     
-    def get_lang_emb_distance(self, lang_1, lang_2):
+    def get_oracle_distance(self, lang_1, lang_2):
         """Returns oracle language embedding distance (MSE) between two languages.
         If no value can be retrieved, returns None."""
         try:
-            dist = self.lang_1_to_lang_2_to_lang_emb_dist[lang_1][lang_2]
+            dist = self.lang_1_to_lang_2_to_oracle_dist[lang_1][lang_2]
         except KeyError:
             try:
-                dist = self.lang_1_to_lang_2_to_lang_emb_dist[lang_2][lang_1]
+                dist = self.lang_1_to_lang_2_to_oracle_dist[lang_2][lang_1]
             except KeyError:
                 return None
         return dist    
