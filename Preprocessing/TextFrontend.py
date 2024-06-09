@@ -136,7 +136,7 @@ class ArticulatoryCombinedTextFrontend:
             self.phonemizer = "espeak"
 
         elif language == "pes":
-            self.g2p_lang = "fa"  # Farsi
+            self.g2p_lang = "fa"  # Western Farsi
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
@@ -943,7 +943,10 @@ def get_language_id(language):
     try:
         iso_codes_to_ids = load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[-1]
     except FileNotFoundError:
-        iso_codes_to_ids = load_json_from_path("multilinguality/iso_lookup.json")[-1]
+        try:
+            iso_codes_to_ids = load_json_from_path("multilinguality/iso_lookup.json")[-1]
+        except FileNotFoundError:
+            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
     if language not in iso_codes_to_ids:
         print("Please specify the language as ISO 639-2 code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)")
         return None
