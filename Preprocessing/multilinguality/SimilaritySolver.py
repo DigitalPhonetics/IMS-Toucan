@@ -1,22 +1,24 @@
 import json
-import pickle
 import os
-import numpy as np
+import pickle
 import random
 
+import numpy as np
+
 from Preprocessing.multilinguality.create_distance_lookups import CacheCreator
+from Utility.utils import load_json_from_path
 
 
-class SimilaritySolver():
-    def __init__(self, 
-                 tree_dist=None, 
-                 map_dist=None, 
+class SimilaritySolver:
+    def __init__(self,
+                 tree_dist=None,
+                 map_dist=None,
                  asp_dict=None,
                  largest_value_map_dist=None,
-                 tree_dist_path=None, 
-                 map_dist_path=None, 
+                 tree_dist_path=None,
+                 map_dist_path=None,
                  asp_dict_path=None,
-                 iso_to_fullname=None, 
+                 iso_to_fullname=None,
                  iso_to_fullname_path=None,
                  learned_dist=None,
                  learned_dist_path=None,
@@ -255,11 +257,7 @@ def load_asp_dict(path_to_dict):
             asp_dict = pickle.load(dictfile)
         return asp_dict
 
-def load_json_from_path(path):
-    with open(path, "r", encoding="utf8") as f:
-        obj = json.loads(f.read())
 
-    return obj
 
 
 if __name__ == '__main__':

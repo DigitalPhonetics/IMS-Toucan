@@ -1,13 +1,14 @@
-import pandas as pd
+import argparse
 import os
 import pickle
-import torch
-from Preprocessing.TextFrontend import load_json_from_path
+from copy import deepcopy
+
+import pandas as pd
+from tqdm import tqdm
+
 from Preprocessing.multilinguality.SimilaritySolver import SimilaritySolver
 from Utility.storage_config import MODELS_DIR
-import argparse
-from copy import deepcopy
-from tqdm import tqdm
+from Utility.utils import load_json_from_path
 
 ISO_LOOKUP_PATH = "iso_lookup.json"
 ISO_TO_FULLNAME_PATH = "iso_to_fullname.json"
@@ -21,17 +22,18 @@ DATASET_SAVE_DIR = "distance_datasets/"
 
 
 class LangDistDatasetCreator():
-    def __init__(self, model_path, learned_dist_path=None):
+    def __init__(self, model_path, cache_root="."):
         self.model_path = model_path
+        self.cache_root = cache_root
         self.lang_pairs_map = None
         self.largest_value_map_dist = None
         self.lang_pairs_tree = None
         self.lang_pairs_asp = None
         self.lang_pairs_learned_dist = None
         self.lang_pairs_oracle = None
-        self.supervised_langs = load_json_from_path(SUPVERVISED_LANGUAGES_PATH)
-        self.iso_lookup = load_json_from_path(ISO_LOOKUP_PATH)
-        self.iso_to_fullname = load_json_from_path(ISO_TO_FULLNAME_PATH)
+        self.supervised_langs = load_json_from_path(os.path.join(cache_root, SUPVERVISED_LANGUAGES_PATH))
+        self.iso_lookup = load_json_from_path(os.path.join(cache_root, ISO_LOOKUP_PATH))
+        self.iso_to_fullname = load_json_from_path(os.path.join(cache_root, ISO_TO_FULLNAME_PATH))
 
     def load_required_distance_lookups(self, distance_type, excluded_distances=[]):
         # init required distance lookups
@@ -39,37 +41,37 @@ class LangDistDatasetCreator():
         try:
             if distance_type == "combined":
                 if "map" not in excluded_distances and not self.lang_pairs_map:
-                    self.lang_pairs_map = load_json_from_path(LANG_PAIRS_MAP_PATH)
+                    self.lang_pairs_map = load_json_from_path(os.path.join(self.cache_root, LANG_PAIRS_MAP_PATH))
                     self.largest_value_map_dist = 0.0
                     for _, values in self.lang_pairs_map.items():
                         for _, value in values.items():
                             self.largest_value_map_dist = max(self.largest_value_map_dist, value)
                 if "tree" not in excluded_distances and not self.lang_pairs_tree:
-                    self.lang_pairs_tree = load_json_from_path(LANG_PAIRS_TREE_PATH)
+                    self.lang_pairs_tree = load_json_from_path(os.path.join(self.cache_root, LANG_PAIRS_TREE_PATH))
                 if "asp" not in excluded_distances and not self.lang_pairs_asp:
-                    with open(LANG_PAIRS_ASP_PATH, "rb") as f:
+                    with open(os.path.join(self.cache_root, LANG_PAIRS_ASP_PATH), "rb") as f:
                         self.lang_pairs_asp = pickle.load(f)
             elif distance_type == "map" and not self.lang_pairs_map:
-                self.lang_pairs_map = load_json_from_path(LANG_PAIRS_MAP_PATH)
+                self.lang_pairs_map = load_json_from_path(os.path.join(self.cache_root, LANG_PAIRS_MAP_PATH))
                 self.largest_value_map_dist = 0.0
                 for _, values in self.lang_pairs_map.items():
                     for _, value in values.items():
                         self.largest_value_map_dist = max(self.largest_value_map_dist, value)
             elif distance_type == "tree" and not self.lang_pairs_tree:
-                self.lang_pairs_tree = load_json_from_path(LANG_PAIRS_TREE_PATH)
+                self.lang_pairs_tree = load_json_from_path(os.path.join(self.cache_root, LANG_PAIRS_TREE_PATH))
             elif distance_type == "asp" and not self.lang_pairs_asp:
-                with open(LANG_PAIRS_ASP_PATH, "rb") as f:
-                    self.lang_pairs_asp = pickle.load(f)         
+                with open(os.path.join(self.cache_root, LANG_PAIRS_ASP_PATH), "rb") as f:
+                    self.lang_pairs_asp = pickle.load(f)
             elif distance_type == "learned" and not self.lang_pairs_learned_dist:
-                self.lang_pairs_learned_dist = load_json_from_path(LANG_PAIRS_LEARNED_DIST_PATH)
+                self.lang_pairs_learned_dist = load_json_from_path(os.path.join(self.cache_root, LANG_PAIRS_LEARNED_DIST_PATH))
             elif distance_type == "oracle" and not self.lang_pairs_oracle:
-                self.lang_pairs_oracle = load_json_from_path(LANG_PAIRS_ORACLE_PATH)
+                self.lang_pairs_oracle = load_json_from_path(os.path.join(self.cache_root, LANG_PAIRS_ORACLE_PATH))
         except FileNotFoundError as e:
             raise FileNotFoundError("Please create all lookup files via create_distance_lookups.py") from e
 
-    def create_dataset(self, 
+    def create_dataset(self,
                        distance_type: str = "learned",
-                       zero_shot: bool =False, 
+                       zero_shot: bool = False,
                        n_closest: int = 50,
                        excluded_languages: list = [],
                        excluded_distances: list = [],
@@ -83,7 +85,7 @@ class LangDistDatasetCreator():
         dataset_dict = dict()
         self.load_required_distance_lookups(distance_type, excluded_distances)
 
-        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, 
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree,
                                       map_dist=self.lang_pairs_map,
                                       largest_value_map_dist=self.largest_value_map_dist,
                                       asp_dict=self.lang_pairs_asp,
@@ -102,8 +104,8 @@ class LangDistDatasetCreator():
                 individual_dist_suffix = "_indiv-dists"
             if len(excluded_distances) > 0:
                 excluded_feat_suffix = "_excl-" + "-".join(excluded_distances)
-        furthest_suffix = "_furthest" if find_furthest else ""                
-        zero_shot_suffix= ""
+        furthest_suffix = "_furthest" if find_furthest else ""
+        zero_shot_suffix = ""
         if zero_shot:
             iso_codes_to_ids = deepcopy(self.iso_lookup)[-1]
             zero_shot_suffix = "_zeroshot"
@@ -121,24 +123,24 @@ class LangDistDatasetCreator():
         for lang in tqdm(lang_codes, desc=f"Retrieving {sorted_by} distances"):
             if distance_type == "combined":
                 feature_dict = sim_solver.find_closest_combined_distance(lang,
-                                                            supervised_langs,
-                                                            k=n_closest,
-                                                            individual_distances=individual_distances,
-                                                            excluded_features=excluded_distances,
-                                                            find_furthest=find_furthest)
+                                                                         supervised_langs,
+                                                                         k=n_closest,
+                                                                         individual_distances=individual_distances,
+                                                                         excluded_features=excluded_distances,
+                                                                         find_furthest=find_furthest)
             elif distance_type == "random":
                 random_seed += 1
-                dataset_dict[lang] = [lang] # target language as first column
-                feature_dict = sim_solver.find_closest(distance_type, 
+                dataset_dict[lang] = [lang]  # target language as first column
+                feature_dict = sim_solver.find_closest(distance_type,
                                                        lang,
-                                                       supervised_langs, 
+                                                       supervised_langs,
                                                        k=n_closest,
                                                        find_furthest=find_furthest,
-                                                       random_seed=random_seed)                
+                                                       random_seed=random_seed)
             else:
-                feature_dict = sim_solver.find_closest(distance_type, 
+                feature_dict = sim_solver.find_closest(distance_type,
                                                        lang,
-                                                       supervised_langs, 
+                                                       supervised_langs,
                                                        k=n_closest,
                                                        find_furthest=find_furthest)
             # discard incomplete results
@@ -146,7 +148,7 @@ class LangDistDatasetCreator():
                 failed_langs.append(lang)
                 continue
 
-            dataset_dict[lang] = [lang] # target language as first column
+            dataset_dict[lang] = [lang]  # target language as first column
             # create entry for a single close lang (`feature_dict` must be sorted by distance)
             for _, close_lang in enumerate(feature_dict):
                 if distance_type == "combined":
@@ -160,7 +162,7 @@ class LangDistDatasetCreator():
                     close_lang_feature_list = [close_lang, dist]
                 # column order: compared close language, {feature}_dist (plus optionally indiv dists)
                 dataset_dict[lang].extend(close_lang_feature_list)
-        
+
         # prepare df columns
         dataset_columns = ["target_lang"]
         for i in range(n_closest):
@@ -176,24 +178,24 @@ class LangDistDatasetCreator():
         df.columns = dataset_columns
 
         if write_to_csv:
-            out_path = os.path.join(DATASET_SAVE_DIR, f"dataset_{distance_type}_top{n_closest}{furthest_suffix}{zero_shot_suffix}{remove_langs_suffix}{excluded_feat_suffix}{individual_dist_suffix}" + ".csv")
-            os.makedirs(DATASET_SAVE_DIR, exist_ok=True)
+            out_path = os.path.join(os.path.join(self.cache_root, DATASET_SAVE_DIR), f"dataset_{distance_type}_top{n_closest}{furthest_suffix}{zero_shot_suffix}{remove_langs_suffix}{excluded_feat_suffix}{individual_dist_suffix}" + ".csv")
+            os.makedirs(os.path.join(self.cache_root, DATASET_SAVE_DIR), exist_ok=True)
             df.to_csv(out_path, sep="|", index=False)
-        print(f"Successfully retrieved distances for {len(lang_codes)-len(failed_langs)}/{len(lang_codes)} languages.")
+        print(f"Successfully retrieved distances for {len(lang_codes) - len(failed_langs)}/{len(lang_codes)} languages.")
         if len(failed_langs) > 0:
             print(f"Failed to retrieve distances for the following {len(failed_langs)} languages:\n{failed_langs}")
         return df
 
 
 if __name__ == "__main__":
-    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location    
+    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt")  # MODELS_DIR must be absolute path, the relative path will fail at this location
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", "-m", type=str, default=default_model_path, help="model path from which to obtain pretrained language embeddings")
-    parser.add_argument("--learned_dist_path", type=str, default="lang_1_to_lang_2_to_learned_dist.json", 
+    parser.add_argument("--learned_dist_path", type=str, default="lang_1_to_lang_2_to_learned_dist.json",
                         help="filepath of JSON file containing the meta-learned pairwise distances")
     args = parser.parse_args()
 
-    dc = LangDistDatasetCreator(args.model_path, learned_dist_path=args.learned_dist_path)
+    dc = LangDistDatasetCreator(args.model_path)
 
     excluded_langs = []
 

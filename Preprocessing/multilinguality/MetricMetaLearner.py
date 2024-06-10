@@ -2,14 +2,13 @@ import json
 import os
 import pickle
 import random
-import argparse
+
 import torch
 from tqdm import tqdm
 
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
-from Preprocessing.multilinguality.SimilaritySolver import load_json_from_path
-from Preprocessing.multilinguality.create_distance_lookups import CacheCreator
 from Utility.storage_config import MODELS_DIR
+from Utility.utils import load_json_from_path
 
 
 class MetricsCombiner(torch.nn.Module):
@@ -37,24 +36,16 @@ class EnsembleModel(torch.nn.Module):
         return sum(distances) / len(distances)
 
 
-if __name__ == '__main__':
-    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location    
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", "-m", type=str, default=default_model_path, help="model path from which to obtain pretrained language embeddings")
-    args = parser.parse_args()
-    checkpoint = torch.load(args.model_path, map_location='cpu')
+def create_learned_cache(model_path, cache_root="."):
+    checkpoint = torch.load(model_path, map_location='cpu')
     embedding_provider = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"]).encoder.language_embedding
     embedding_provider.requires_grad_(False)
-    language_list = load_json_from_path("supervised_languages.json")
-    tree_lookup_path = "lang_1_to_lang_2_to_tree_dist.json"
-    map_lookup_path = "lang_1_to_lang_2_to_map_dist.json"
-    asp_dict_path = "asp_dict.pkl"
+    language_list = load_json_from_path(os.path.join(cache_root, "supervised_languages.json"))
+    tree_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_tree_dist.json")
+    map_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_map_dist.json")
+    asp_dict_path = os.path.join(cache_root, "asp_dict.pkl")
     if not os.path.exists(tree_lookup_path) or not os.path.exists(map_lookup_path):
-        cc = CacheCreator()
-        if not os.path.exists(tree_lookup_path):
-            cc.create_tree_cache()
-        if not os.path.exists(map_lookup_path):
-            cc.create_map_cache()
+        raise FileNotFoundError("Please ensure the caches exist!")
     if not os.path.exists(asp_dict_path):
         raise FileNotFoundError(f"{asp_dict_path} must be downloaded separately.")
     tree_dist = load_json_from_path(tree_lookup_path)
@@ -66,8 +57,7 @@ if __name__ == '__main__':
     for _, values in map_dist.items():
         for _, value in values.items():
             largest_value_map_dist = max(largest_value_map_dist, value)
-    iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
-    ids_to_iso_codes = {v: k for k, v in iso_codes_to_ids.items()}
+    iso_codes_to_ids = load_json_from_path(os.path.join(cache_root, "iso_lookup.json"))[-1]
     train_set = language_list
     batch_size = 128
     model_list = list()
@@ -180,5 +170,9 @@ if __name__ == '__main__':
             except KeyError:
                 continue
 
-    with open('lang_1_to_lang_2_to_learned_dist.json', 'w', encoding='utf-8') as f:
+    with open(os.path.join(cache_root, 'lang_1_to_lang_2_to_learned_dist.json'), 'w', encoding='utf-8') as f:
         json.dump(language_to_language_to_learned_distance, f, ensure_ascii=False, indent=4)
+
+
+if __name__ == '__main__':
+    create_learned_cache(os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt"))  # MODELS_DIR must be absolute path, the relative path will fail at this location

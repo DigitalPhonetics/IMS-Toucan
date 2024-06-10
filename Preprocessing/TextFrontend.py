@@ -14,6 +14,13 @@ from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Preprocessing.articulatory_features import get_phone_to_id
 
 
+def load_json_from_path(path):  # redundant to the one in utils, but necessary to avoid circular imports
+    with open(path, "r", encoding="utf8") as f:
+        obj = json.loads(f.read())
+
+    return obj
+
+
 class ArticulatoryCombinedTextFrontend:
 
     def __init__(self,
@@ -951,12 +958,6 @@ def get_language_id(language):
         print("Please specify the language as ISO 639-2 code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)")
         return None
     return torch.LongTensor([iso_codes_to_ids[language]])
-
-
-def load_json_from_path(path):
-    with open(path, "r", encoding="utf8") as f:
-        obj = json.loads(f.read())
-    return obj
 
 
 if __name__ == '__main__':
