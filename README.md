@@ -6,7 +6,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ---
 
-## Demos 🦚
+## Links 🦚
 
 ### Pre-Generated Audios
 
@@ -27,6 +27,10 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 [Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
 [You can also design the voice of a speaker who doesn't exist on Huggingface🤗](https://huggingface.co/spaces/Flux9665/ThisSpeakerDoesNotExist)
+
+### Dataset
+
+[We have also published a massively multilingual TTS dataset on Huggingface🤗](https://huggingface.co/datasets/Flux9665/BibleMMS)
 
 ---
 
