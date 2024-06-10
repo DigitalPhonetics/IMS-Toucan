@@ -4,6 +4,7 @@ Corpora/
 Models/
 audios/
 Preprocessing/glottolog/
+Preprocessing/multilinguality/datasets/
 apex/
 pretrained_models/
 .tmp/
@@ -14,6 +15,7 @@ toucan_conda_venv/
 venv/
 vis/
 Utility/storage_config.py
+Preprocessing/multilinguality/distance_datasets
 
 
 *_graph

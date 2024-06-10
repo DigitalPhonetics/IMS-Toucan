@@ -2,8 +2,8 @@ import gradio as gr
 import torch.cuda
 
 from InferenceInterfaces.ControllableInterface import ControllableInterface
-from Preprocessing.multilinguality.SimilaritySolver import load_json_from_path
 from Utility.utils import float2pcm
+from Utility.utils import load_json_from_path
 
 
 class TTSWebUI:

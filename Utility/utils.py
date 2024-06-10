@@ -2,6 +2,7 @@
 Taken from ESPNet, modified by Florian Lux
 """
 
+import json
 import os
 
 import matplotlib.pyplot as plt
@@ -404,6 +405,12 @@ def remove_elements(tensor, indexes):
     print(result.shape)
     return result
 
+
+def load_json_from_path(path):
+    with open(path, "r", encoding="utf8") as f:
+        obj = json.loads(f.read())
+
+    return obj
 
 if __name__ == '__main__':
     data = np.random.randn(50)

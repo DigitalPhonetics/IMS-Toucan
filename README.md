@@ -6,7 +6,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ---
 
-## Demos 🦚
+## Links 🦚
 
 ### Pre-Generated Audios
 
@@ -16,15 +16,21 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 [Multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/)
 
+[Massively-Multi-Lingual audios and study setup](https://anondemos.github.io/MMDemo)
+
 ### Interactive Demos
 
-[Check out our multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
+[Check out our massively-multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
 
 [Check out our demo on exact style cloning on Huggingface🤗](https://huggingface.co/spaces/Flux9665/SpeechCloning)
 
 [Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
 [You can also design the voice of a speaker who doesn't exist on Huggingface🤗](https://huggingface.co/spaces/Flux9665/ThisSpeakerDoesNotExist)
+
+### Dataset
+
+[We have also published a massively multilingual TTS dataset on Huggingface🤗](https://huggingface.co/datasets/Flux9665/BibleMMS)
 
 ---
 
@@ -253,8 +259,7 @@ The basic PyTorch modules of FastSpeech 2 and GST are taken from
 HiFi-GAN are taken from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN).
 Some modules related to the Glow based PostNet as outlined in PortaSpeech are taken
 from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech).
-We use audio watermarking from [audioseal](https://github.com/facebookresearch/audioseal) and speech restoration
-from [resemble enhance](https://github.com/resemble-ai/resemble-enhance) as postprocessing. For
+We use audio watermarking from [audioseal](https://github.com/facebookresearch/audioseal). For
 grapheme-to-phoneme conversion, we rely on the aforementioned eSpeak-NG as
 well as [transphone](https://github.com/xinjli/transphone). We
 use [encodec, a neural audio codec](https://github.com/yangdongchao/AcademiCodec) as intermediate representation
@@ -270,7 +275,7 @@ for caching the train data to save space.
   title        = {{The IMS Toucan system for the Blizzard Challenge 2021}},
   author       = {Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
   booktitle    = {Blizzard Challenge Workshop},
-  publisher    = {ISCA Speech Synthesis SIG},
+  publisher    = {ISCA Speech Synthesis SIG}
 }
 ```
 
@@ -281,7 +286,7 @@ for caching the train data to save space.
   year         = 2022,
   title        = {{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
   author       = {Florian Lux and Ngoc Thang Vu},
-  booktitle    = {ACL},
+  booktitle    = {ACL}
 }
 ```
 
@@ -304,7 +309,7 @@ for caching the train data to save space.
   year         = 2022,
   title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
   author       = {Florian Lux and Julia Koch and Ngoc Thang Vu},
-  booktitle    = {AACL},
+  booktitle    = {AACL}
 }
 ```
 
@@ -315,7 +320,8 @@ for caching the train data to save space.
   year         = 2023,
   title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
   author       = {Florian Lux and Pascal Tilli and Sarina Meyer and Ngoc Thang Vu},
-  booktitle    = {Interspeech},
+  booktitle    = {Interspeech}
+  publisher    = {ISCA}
 }
 ```
 
@@ -327,6 +333,18 @@ for caching the train data to save space.
   title        = {{The IMS Toucan System for the Blizzard Challenge 2023}},
   author       = {Florian Lux and Julia Koch and Sarina Meyer and Thomas Bott and Nadja Schauffler and Pavel Denisov and Antje Schweitzer and Ngoc Thang Vu},
   booktitle    = {Blizzard Challenge Workshop},
-  publisher    = {ISCA Speech Synthesis SIG},
+  publisher    = {ISCA Speech Synthesis SIG}
+}
+```
+
+### Introducing the first TTS System in over 7000 languages [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v3.0)
+
+```
+@inproceedings{lux2024massive,
+  year         = 2024,
+  title        = {{Meta Learning Text-to-Speech Synthesis in over 7000 Languages}},
+  author       = {Florian Lux and Sarina Meyer and Lyonel Behringer and Frank Zalkow and Phat Do and Matt Coler and  Emanuël A. P. Habets and Ngoc Thang Vu},
+  booktitle    = {Interspeech}
+  publisher    = {ISCA}
 }
 ```

@@ -14,6 +14,13 @@ from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Preprocessing.articulatory_features import get_phone_to_id
 
 
+def load_json_from_path(path):  # redundant to the one in utils, but necessary to avoid circular imports
+    with open(path, "r", encoding="utf8") as f:
+        obj = json.loads(f.read())
+
+    return obj
+
+
 class ArticulatoryCombinedTextFrontend:
 
     def __init__(self,
@@ -167,7 +174,7 @@ class ArticulatoryCombinedTextFrontend:
             self.phonemizer = "espeak"
 
         elif language == "pes":
-            self.g2p_lang = "fa"  # Farsi
+            self.g2p_lang = "fa"  # Western Farsi
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
@@ -1037,17 +1044,14 @@ def get_language_id(language):
     try:
         iso_codes_to_ids = load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[-1]
     except FileNotFoundError:
-        iso_codes_to_ids = load_json_from_path("multilinguality/iso_lookup.json")[-1]
+        try:
+            iso_codes_to_ids = load_json_from_path("multilinguality/iso_lookup.json")[-1]
+        except FileNotFoundError:
+            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
     if language not in iso_codes_to_ids:
         print("Please specify the language as ISO 639-2 code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)")
         return None
     return torch.LongTensor([iso_codes_to_ids[language]])
-
-
-def load_json_from_path(path):
-    with open(path, "r", encoding="utf8") as f:
-        obj = json.loads(f.read())
-    return obj
 
 
 if __name__ == '__main__':
