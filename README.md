@@ -271,7 +271,7 @@ for caching the train data to save space.
   title        = {{The IMS Toucan system for the Blizzard Challenge 2021}},
   author       = {Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
   booktitle    = {Blizzard Challenge Workshop},
-  publisher    = {ISCA Speech Synthesis SIG},
+  publisher    = {ISCA Speech Synthesis SIG}
 }
 ```
 
@@ -282,7 +282,7 @@ for caching the train data to save space.
   year         = 2022,
   title        = {{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
   author       = {Florian Lux and Ngoc Thang Vu},
-  booktitle    = {ACL},
+  booktitle    = {ACL}
 }
 ```
 
@@ -305,7 +305,7 @@ for caching the train data to save space.
   year         = 2022,
   title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
   author       = {Florian Lux and Julia Koch and Ngoc Thang Vu},
-  booktitle    = {AACL},
+  booktitle    = {AACL}
 }
 ```
 
@@ -316,7 +316,8 @@ for caching the train data to save space.
   year         = 2023,
   title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
   author       = {Florian Lux and Pascal Tilli and Sarina Meyer and Ngoc Thang Vu},
-  booktitle    = {Interspeech},
+  booktitle    = {Interspeech}
+  publisher    = {ISCA}
 }
 ```
 
@@ -328,6 +329,18 @@ for caching the train data to save space.
   title        = {{The IMS Toucan System for the Blizzard Challenge 2023}},
   author       = {Florian Lux and Julia Koch and Sarina Meyer and Thomas Bott and Nadja Schauffler and Pavel Denisov and Antje Schweitzer and Ngoc Thang Vu},
   booktitle    = {Blizzard Challenge Workshop},
-  publisher    = {ISCA Speech Synthesis SIG},
+  publisher    = {ISCA Speech Synthesis SIG}
+}
+```
+
+### Introducing the first TTS System in over 7000 languages [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v3.0)
+
+```
+@inproceedings{lux2024massive,
+  year         = 2024,
+  title        = {{Meta Learning Text-to-Speech Synthesis in over 7000 Languages}},
+  author       = {Florian Lux and Sarina Meyer and Lyonel Behringer and Frank Zalkow and Phat Do and Matt Coler and  Emanuël A. P. Habets and Ngoc Thang Vu},
+  booktitle    = {Interspeech}
+  publisher    = {ISCA}
 }
 ```
