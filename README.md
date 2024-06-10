@@ -16,9 +16,11 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 [Multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/)
 
+[Massively-Multi-Lingual audios and study setup](https://anondemos.github.io/MMDemo)
+
 ### Interactive Demos
 
-[Check out our multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
+[Check out our massively-multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
 
 [Check out our demo on exact style cloning on Huggingface🤗](https://huggingface.co/spaces/Flux9665/SpeechCloning)
 
