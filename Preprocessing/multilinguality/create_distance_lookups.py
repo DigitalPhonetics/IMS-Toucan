@@ -101,10 +101,10 @@ class CacheCreator:
             self.create_tree_cache(cache_root="Preprocessing/multilinguality")
         if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_map_dist.json")):
             self.create_map_cache(cache_root="Preprocessing/multilinguality")
-        if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_learned_dist.json")):
-            self.create_learned_cache(model_path=model_path, cache_root="Preprocessing/multilinguality")
         if not os.path.exists(os.path.join(self.cache_root, "asp_dict.pkl")):
             raise FileNotFoundError("asp_dict.pkl must be downloaded separately.")
+        if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_learned_dist.json")):
+            self.create_learned_cache(model_path=model_path, cache_root="Preprocessing/multilinguality")
         if create_oracle:
             if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_oracle_dist.json")):
                 if not model_path:
