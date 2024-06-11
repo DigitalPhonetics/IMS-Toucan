@@ -64,12 +64,14 @@ def create_learned_cache(model_path, cache_root="."):
     print_intermediate_results = False
 
     # ensemble preparation
-    for _ in range(10):
+    n_models = 10
+    print(f"Training ensemble of {n_models} models for learned distance metric.")
+    for m in range(n_models):
         model_list.append(MetricsCombiner())
         model_list[-1].train()
         optim = torch.optim.Adam(model_list[-1].parameters(), lr=0.00005)
         running_loss = list()
-        for epoch in tqdm(range(35)):
+        for epoch in tqdm(range(35), desc=f"MetricsCombiner {m+1}/{n_models} - Epoch"):
             for i in range(1000):
                 # we have no dataloader, so first we build a batch
                 embedding_distance_batch = list()
