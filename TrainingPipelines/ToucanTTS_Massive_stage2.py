@@ -127,6 +127,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ears,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "ears"),
+                                                      lang="eng",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
     # GERMAN
     lang_to_datasets["deu"] = list()
 
