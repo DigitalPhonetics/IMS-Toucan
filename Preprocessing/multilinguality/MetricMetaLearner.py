@@ -7,8 +7,8 @@ import torch
 from tqdm import tqdm
 
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
-from Preprocessing.multilinguality.SimilaritySolver import load_json_from_path
 from Utility.storage_config import MODELS_DIR
+from Utility.utils import load_json_from_path
 
 
 class MetricsCombiner(torch.nn.Module):
@@ -36,54 +36,42 @@ class EnsembleModel(torch.nn.Module):
         return sum(distances) / len(distances)
 
 
-if __name__ == '__main__':
-    checkpoint = torch.load(os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"), map_location='cpu')  # this assumes that MODELS_DIR is an absolute path, the relative path will fail at this location
+def create_learned_cache(model_path, cache_root="."):
+    checkpoint = torch.load(model_path, map_location='cpu')
     embedding_provider = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"]).encoder.language_embedding
     embedding_provider.requires_grad_(False)
-    language_list = ['eng', 'deu', 'fra', 'spa', 'cmn', 'por', 'pol', 'ita', 'nld', 'ell', 'fin', 'vie', 'rus', 'hun', 'bem', 'swh', 'amh', 'wol', 'mal', 'chv', 'iba', 'jav', 'fon', 'hau', 'lbb', 'kik', 'lin', 'lug', 'luo', 'sxb', 'yor', 'nya', 'loz', 'toi', 'afr', 'arb', 'asm', 'ast', 'azj', 'bel', 'bul', 'ben', 'bos', 'cat', 'ceb',
-                     'sdh',
-                     'ces', 'cym', 'dan', 'ekk', 'pes', 'fil', 'gle', 'glg', 'guj', 'heb', 'hin', 'hrv', 'hye', 'ind', 'ibo', 'isl', 'kat', 'kam', 'kea', 'kaz', 'khm', 'kan', 'kor', 'ltz', 'lao', 'lit', 'lvs', 'mri', 'mkd', 'xng', 'mar', 'zsm', 'mlt', 'oci', 'ory', 'pan', 'pst', 'ron', 'snd', 'slk', 'slv', 'sna', 'som', 'srp', 'swe',
-                     'tam',
-                     'tel', 'tgk', 'tur', 'ukr', 'umb', 'urd', 'uzn', 'bhd', 'kfs', 'dgo', 'gbk', 'bgc', 'xnr', 'kfx', 'mjl', 'bfz', 'acf', 'bss', 'inb', 'nca', 'quh', 'wap', 'acr', 'bus', 'dgr', 'maz', 'nch', 'qul', 'tav', 'wmw', 'acu', 'byr', 'dik', 'iou', 'mbb', 'ncj', 'qvc', 'tbc', 'xed', 'agd', 'bzh', 'djk', 'ipi', 'mbc', 'ncl',
-                     'qve',
-                     'tbg', 'xon', 'agg', 'bzj', 'dop', 'jac', 'mbh', 'ncu', 'qvh', 'tbl', 'xtd', 'agn', 'caa', 'jic', 'mbj', 'ndj', 'qvm', 'tbz', 'xtm', 'agr', 'cab', 'emp', 'jiv', 'mbt', 'nfa', 'qvn', 'tca', 'yaa', 'agu', 'cap', 'jvn', 'mca', 'ngp', 'qvs', 'tcs', 'yad', 'aia', 'car', 'ese', 'mcb', 'ngu', 'qvw', 'yal', 'cax', 'kaq',
-                     'mcd',
-                     'nhe', 'qvz', 'tee', 'ycn', 'ake', 'cbc', 'far', 'mco', 'qwh', 'yka', 'alp', 'cbi', 'kdc', 'mcp', 'nhu', 'qxh', 'ame', 'cbr', 'gai', 'kde', 'mcq', 'nhw', 'qxn', 'tew', 'yre', 'amf', 'cbs', 'gam', 'kdl', 'mdy', 'nhy', 'qxo', 'tfr', 'yva', 'amk', 'cbt', 'geb', 'kek', 'med', 'nin', 'rai', 'zaa', 'apb', 'cbu', 'glk',
-                     'ken',
-                     'mee', 'nko', 'rgu', 'zab', 'apr', 'cbv', 'meq', 'tgo', 'zac', 'arl', 'cco', 'gng', 'kje', 'met', 'nlg', 'rop', 'tgp', 'zad', 'grc', 'klv', 'mgh', 'nnq', 'rro', 'zai', 'ata', 'cek', 'gub', 'kmu', 'mib', 'noa', 'ruf', 'tna', 'zam', 'atb', 'cgc', 'guh', 'kne', 'mie', 'not', 'rug', 'tnk', 'zao', 'atg', 'chf', 'knf',
-                     'mih',
-                     'npl', 'tnn', 'zar', 'awb', 'chz', 'gum', 'knj', 'mil', 'sab', 'tnp', 'zas', 'cjo', 'guo', 'ksr', 'mio', 'obo', 'seh', 'toc', 'zav', 'azg', 'cle', 'gux', 'kue', 'mit', 'omw', 'sey', 'tos', 'zaw', 'azz', 'cme', 'gvc', 'kvn', 'miz', 'ood', 'sgb', 'tpi', 'zca', 'bao', 'cni', 'gwi', 'kwd', 'mkl', 'shp', 'tpt', 'zga',
-                     'bba',
-                     'cnl', 'gym', 'kwf', 'mkn', 'ote', 'sja', 'trc', 'ziw', 'bbb', 'cnt', 'gyr', 'kwi', 'mop', 'otq', 'snn', 'ttc', 'zlm', 'cof', 'hat', 'kyc', 'mox', 'pab', 'snp', 'tte', 'zos', 'bgt', 'con', 'kyf', 'mpm', 'pad', 'tue', 'zpc', 'bjr', 'cot', 'kyg', 'mpp', 'soy', 'tuf', 'zpl', 'bjv', 'cpa', 'kyq', 'mpx', 'pao', 'tuo',
-                     'zpm',
-                     'bjz', 'cpb', 'hlt', 'kyz', 'mqb', 'pib', 'spp', 'zpo', 'bkd', 'cpu', 'hns', 'lac', 'mqj', 'pir', 'spy', 'txq', 'zpu', 'blz', 'crn', 'hto', 'lat', 'msy', 'pjt', 'sri', 'txu', 'zpz', 'bmr', 'cso', 'hub', 'lex', 'mto', 'pls', 'srm', 'udu', 'ztq', 'bmu', 'ctu', 'lgl', 'muy', 'poi', 'srn', 'zty', 'bnp', 'cuc', 'lid',
-                     'mxb',
-                     'stp', 'upv', 'zyp', 'boa', 'cui', 'huu', 'mxq', 'sus', 'ura', 'boj', 'cuk', 'huv', 'llg', 'mxt', 'poy', 'suz', 'urb', 'box', 'cwe', 'hvn', 'prf', 'urt', 'bpr', 'cya', 'ign', 'lww', 'myk', 'ptu', 'usp', 'bps', 'daa', 'ikk', 'maj', 'myy', 'vid', 'bqc', 'dah', 'nab', 'qub', 'tac', 'bqp', 'ded', 'imo', 'maq', 'nas',
-                     'quf',
-                     'taj', 'vmy']
-    tree_dist = load_json_from_path('lang_1_to_lang_2_to_tree_dist.json')
-    map_dist = load_json_from_path('lang_1_to_lang_2_to_map_dist.json')
-    with open("asp_dict.pkl", 'rb') as dictfile:
+    language_list = load_json_from_path(os.path.join(cache_root, "supervised_languages.json"))
+    tree_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_tree_dist.json")
+    map_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_map_dist.json")
+    asp_dict_path = os.path.join(cache_root, "asp_dict.pkl")
+    if not os.path.exists(tree_lookup_path) or not os.path.exists(map_lookup_path):
+        raise FileNotFoundError("Please ensure the caches exist!")
+    if not os.path.exists(asp_dict_path):
+        raise FileNotFoundError(f"{asp_dict_path} must be downloaded separately.")
+    tree_dist = load_json_from_path(tree_lookup_path)
+    map_dist = load_json_from_path(map_lookup_path)
+    with open(asp_dict_path, 'rb') as dictfile:
         asp_sim = pickle.load(dictfile)
     lang_list = list(asp_sim.keys())
     largest_value_map_dist = 0.0
     for _, values in map_dist.items():
         for _, value in values.items():
             largest_value_map_dist = max(largest_value_map_dist, value)
-    iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
-    ids_to_iso_codes = {v: k for k, v in iso_codes_to_ids.items()}
+    iso_codes_to_ids = load_json_from_path(os.path.join(cache_root, "iso_lookup.json"))[-1]
     train_set = language_list
     batch_size = 128
     model_list = list()
     print_intermediate_results = False
 
     # ensemble preparation
-    for _ in range(10):
+    n_models = 10
+    print(f"Training ensemble of {n_models} models for learned distance metric.")
+    for m in range(n_models):
         model_list.append(MetricsCombiner())
         model_list[-1].train()
         optim = torch.optim.Adam(model_list[-1].parameters(), lr=0.00005)
         running_loss = list()
-        for epoch in tqdm(range(35)):
+        for epoch in tqdm(range(35), desc=f"MetricsCombiner {m+1}/{n_models} - Epoch"):
             for i in range(1000):
                 # we have no dataloader, so first we build a batch
                 embedding_distance_batch = list()
@@ -184,5 +172,9 @@ if __name__ == '__main__':
             except KeyError:
                 continue
 
-    with open('lang_1_to_lang_2_to_learned_dist_information_leak_fixed_3.json', 'w', encoding='utf-8') as f:
+    with open(os.path.join(cache_root, 'lang_1_to_lang_2_to_learned_dist.json'), 'w', encoding='utf-8') as f:
         json.dump(language_to_language_to_learned_distance, f, ensure_ascii=False, indent=4)
+
+
+if __name__ == '__main__':
+    create_learned_cache(os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt"))  # MODELS_DIR must be absolute path, the relative path will fail at this location

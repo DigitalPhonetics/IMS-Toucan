@@ -3,8 +3,8 @@ import pickle
 
 import torch
 
-from Preprocessing.multilinguality.SimilaritySolver import load_json_from_path
-from Preprocessing.multilinguality.create_map_and_tree_dist_lookups import CacheCreator
+from Preprocessing.multilinguality.create_distance_lookups import CacheCreator
+from Utility.utils import load_json_from_path
 
 
 class LanguageEmbeddingSpaceStructureLoss(torch.nn.Module):
