@@ -29,7 +29,7 @@ class HiFiGANDataset(Dataset):
     def __init__(self,
                  list_of_paths,
                  desired_samplingrate=24000,
-                 samples_per_segment=12288 * 2,  # = (8192 * 3) 2 , as I used 8192 for 16kHz previously
+                 samples_per_segment=12288,  # = (8192 * 3) 2 , as I used 8192 for 16kHz previously
                  loading_processes=max(os.cpu_count() - 2, 1),
                  use_random_corruption=False):
         self.use_random_corruption = use_random_corruption
