@@ -200,7 +200,7 @@ class CodecAlignerDataset(Dataset):
             if sr != assumed_sr:
                 assumed_sr = sr
                 ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
-                resample = Resample(orig_freq=assumed_sr, new_freq=16000)
+                resample = Resample(orig_freq=assumed_sr, new_freq=16000).to(device)
                 print(f"{path} has a different sampling rate --> adapting the codec processor")
 
             try:
