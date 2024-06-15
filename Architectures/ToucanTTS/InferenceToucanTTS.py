@@ -320,19 +320,19 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.to(text.device)
 
         outs, \
-        predicted_durations, \
-        pitch_predictions, \
-        energy_predictions = self._forward(text.unsqueeze(0),
-                                           text_length,
-                                           gold_durations=durations,
-                                           gold_pitch=pitch,
-                                           gold_energy=energy,
-                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                           duration_scaling_factor=duration_scaling_factor,
-                                           pitch_variance_scale=pitch_variance_scale,
-                                           energy_variance_scale=energy_variance_scale,
-                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                           prosody_creativity=prosody_creativity)
+            predicted_durations, \
+            pitch_predictions, \
+            energy_predictions = self._forward(text.unsqueeze(0),
+                                               text_length,
+                                               gold_durations=durations,
+                                               gold_pitch=pitch,
+                                               gold_energy=energy,
+                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                               duration_scaling_factor=duration_scaling_factor,
+                                               pitch_variance_scale=pitch_variance_scale,
+                                               energy_variance_scale=energy_variance_scale,
+                                               pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                               prosody_creativity=prosody_creativity)
 
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions

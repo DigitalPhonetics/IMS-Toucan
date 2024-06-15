@@ -87,6 +87,7 @@ class CodecAlignerDataset(Dataset):
         if type(path_to_transcript_dict) != dict:
             path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
         torch.multiprocessing.set_start_method('spawn', force=True)
+        torch.multiprocessing.set_sharing_strategy('file_system')
         resource_manager = Manager()
         self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
         key_list = list(self.path_to_transcript_dict.keys())

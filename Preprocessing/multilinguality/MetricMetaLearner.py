@@ -3,25 +3,22 @@ import os
 import pickle
 import random
 
+import kan
+import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
-from Utility.storage_config import MODELS_DIR
 from Utility.utils import load_json_from_path
 
 
 class MetricsCombiner(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, m):
         super().__init__()
-        self.scoring_function = torch.nn.Sequential(torch.nn.Linear(3, 8),
-                                                    torch.nn.Tanh(),
-                                                    torch.nn.Linear(8, 8),
-                                                    torch.nn.Tanh(),
-                                                    torch.nn.Linear(8, 1))
+        self.scoring_function = kan.KAN(width=[3, 5, 1], grid=5, k=5, seed=m)
 
     def forward(self, x):
-        return self.scoring_function(x)
+        return self.scoring_function(x.squeeze())
 
 
 class EnsembleModel(torch.nn.Module):
@@ -64,14 +61,13 @@ def create_learned_cache(model_path, cache_root="."):
     print_intermediate_results = False
 
     # ensemble preparation
-    n_models = 10
+    n_models = 5
     print(f"Training ensemble of {n_models} models for learned distance metric.")
     for m in range(n_models):
-        model_list.append(MetricsCombiner())
-        model_list[-1].train()
-        optim = torch.optim.Adam(model_list[-1].parameters(), lr=0.00005)
+        model_list.append(MetricsCombiner(m))
+        optim = torch.optim.Adam(model_list[-1].parameters(), lr=0.0005)
         running_loss = list()
-        for epoch in tqdm(range(35), desc=f"MetricsCombiner {m+1}/{n_models} - Epoch"):
+        for epoch in tqdm(range(15), desc=f"MetricsCombiner {m + 1}/{n_models} - Epoch"):
             for i in range(1000):
                 # we have no dataloader, so first we build a batch
                 embedding_distance_batch = list()
@@ -110,6 +106,9 @@ def create_learned_cache(model_path, cache_root="."):
             print(sum(running_loss) / len(running_loss))
             print("\n\n")
             running_loss = list()
+
+        model_list[-1].scoring_function.plot(folder=f"kan_vis_{m}", beta=500)
+        plt.show()
 
     # Time to see if the final ensemble is any good
     ensemble = EnsembleModel(model_list)
@@ -177,4 +176,4 @@ def create_learned_cache(model_path, cache_root="."):
 
 
 if __name__ == '__main__':
-    create_learned_cache(os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt"))  # MODELS_DIR must be absolute path, the relative path will fail at this location
+    create_learned_cache("../../Models/ToucanTTS_Meta/best.pt")

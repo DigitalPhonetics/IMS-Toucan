@@ -85,7 +85,7 @@ class ToucanTTS(torch.nn.Module):
                  # cfm decoder
                  cfm_filter_channels=512,
                  cfm_heads=4,
-                 cfm_layers=4,
+                 cfm_layers=5,
                  cfm_kernel_size=5,
                  cfm_p_dropout=0.1,
 
