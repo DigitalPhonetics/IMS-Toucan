@@ -204,7 +204,7 @@ class CodecAlignerDataset(Dataset):
                 print(f"{path} has a different sampling rate --> adapting the codec processor")
 
             try:
-                norm_wave = resample(torch.tensor(wave, device=device).float()).cpu()
+                norm_wave = resample(torch.tensor(wave).float().to(device))
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
