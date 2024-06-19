@@ -17,15 +17,46 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.utils import make_non_pad_mask
 
 
+class BatchNormConv(torch.nn.Module):
+
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int):
+        super().__init__()
+        self.conv = torch.nn.Conv1d(
+            in_channels, out_channels, kernel_size,
+            stride=1, padding=kernel_size // 2, bias=False)
+        self.bnorm = torch.nn.SyncBatchNorm.convert_sync_batchnorm(torch.nn.BatchNorm1d(out_channels))
+        self.relu = torch.nn.ReLU()
+
+    def forward(self, x):
+        x = x.transpose(1, 2)
+        x = self.conv(x)
+        x = self.relu(x)
+        x = self.bnorm(x)
+        x = x.transpose(1, 2)
+        return x
+
+
 class Aligner(torch.nn.Module):
 
     def __init__(self,
                  n_features=128,
                  num_symbols=145,
-                 lstm_dim=256):
+                 conv_dim=512,
+                 lstm_dim=512):
         super().__init__()
-
-        self.rnn1 = torch.nn.LSTM(n_features, lstm_dim, batch_first=True, bidirectional=True)
+        self.convs = torch.nn.ModuleList([
+            BatchNormConv(n_features, conv_dim, 3),
+            torch.nn.Dropout(p=0.5),
+            BatchNormConv(conv_dim, conv_dim, 3),
+            torch.nn.Dropout(p=0.5),
+            BatchNormConv(conv_dim, conv_dim, 3),
+            torch.nn.Dropout(p=0.5),
+            BatchNormConv(conv_dim, conv_dim, 3),
+            torch.nn.Dropout(p=0.5),
+            BatchNormConv(conv_dim, conv_dim, 3),
+            torch.nn.Dropout(p=0.5),
+        ])
+        self.rnn1 = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.rnn2 = torch.nn.LSTM(2 * lstm_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="eng")
@@ -33,6 +64,8 @@ class Aligner(torch.nn.Module):
         self.vector_to_id = dict()
 
     def forward(self, x, lens=None):
+        for conv in self.convs:
+            x = conv(x)
         if lens is not None:
             x = pack_padded_sequence(x, lens.cpu(), batch_first=True, enforce_sorted=False)
         x, _ = self.rnn1(x)

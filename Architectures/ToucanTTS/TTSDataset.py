@@ -106,6 +106,7 @@ class TTSDataset(Dataset):
         self.acoustic_model = Aligner()
         self.acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location="cpu")["asr_model"])
         self.acoustic_model = self.acoustic_model.to(device)
+        self.acoustic_model.eval()
 
         # ==========================================
         # actual creation of datapoints starts here

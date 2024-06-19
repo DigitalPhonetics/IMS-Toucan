@@ -67,7 +67,7 @@ def create_learned_cache(model_path, cache_root="."):
         model_list.append(MetricsCombiner(m))
         optim = torch.optim.Adam(model_list[-1].parameters(), lr=0.0005)
         running_loss = list()
-        for epoch in tqdm(range(15), desc=f"MetricsCombiner {m + 1}/{n_models} - Epoch"):
+        for epoch in tqdm(range(35), desc=f"MetricsCombiner {m + 1}/{n_models} - Epoch"):
             for i in range(1000):
                 # we have no dataloader, so first we build a batch
                 embedding_distance_batch = list()
@@ -107,7 +107,7 @@ def create_learned_cache(model_path, cache_root="."):
             print("\n\n")
             running_loss = list()
 
-        model_list[-1].scoring_function.plot(folder=f"kan_vis_{m}", beta=500)
+        model_list[-1].scoring_function.plot(folder=f"kan_vis_{m}", beta=5000)
         plt.show()
 
     # Time to see if the final ensemble is any good

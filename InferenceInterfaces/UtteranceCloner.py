@@ -43,6 +43,7 @@ class UtteranceCloner:
         self.acoustic_model = Aligner()
         self.acoustic_model = self.acoustic_model.to(self.device)
         self.acoustic_model.load_state_dict(self.aligner_weights)
+        self.acoustic_model.eval()
         self.parsel = Parselmouth(reduction_factor=1, fs=16000)
         self.energy_calc = EnergyCalculator(reduction_factor=1, fs=16000)
         self.dc = DurationCalculator(reduction_factor=1)
@@ -50,6 +51,7 @@ class UtteranceCloner:
     def extract_prosody(self, transcript, ref_audio_path, lang="eng", on_line_fine_tune=True):
         if on_line_fine_tune:
             self.acoustic_model.load_state_dict(self.aligner_weights)
+            self.acoustic_model.eval()
 
         wave, sr = sf.read(ref_audio_path)
         if self.tf.language != lang:
