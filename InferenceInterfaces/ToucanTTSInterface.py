@@ -186,7 +186,12 @@ class ToucanTTSInterface(torch.nn.Module):
                 phones = text.replace(" ", "|")
             else:
                 phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
-            ax.set_xticklabels(phones)
+            try:
+                ax.set_xticklabels(phones)
+            except IndexError:
+                pass
+            except ValueError:
+                pass
             word_boundaries = list()
             for label_index, phone in enumerate(phones):
                 if phone == "|":
@@ -218,6 +223,7 @@ class ToucanTTSInterface(torch.nn.Module):
 
             if return_plot_as_filepath:
                 plt.savefig("tmp.png")
+                plt.close()
                 return wave, sr, "tmp.png"
         return wave, sr
 
