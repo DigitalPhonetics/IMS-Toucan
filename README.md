@@ -45,6 +45,19 @@ process, with which I am unfortunately not familiar.
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one cuda enabled GPU if you intend to train models on that machine. For inference, you don't need
 a GPU).
+
+If you're using Linux, you should have the following packages installed, or install them with apt-get if you haven't (on
+most distributions they come pre-installed):
+
+```
+libsndfile1
+espeak-ng
+ffmpeg
+libasound-dev
+libportaudio2
+libsqlite3-dev
+```
+
 Navigate to the directory you have cloned. We recommend creating and activating a
 [virtual environment](https://docs.python.org/3/library/venv.html)
 to install the basic requirements into. The commands below summarize everything you need to do under Linux. If you are
