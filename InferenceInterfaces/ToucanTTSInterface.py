@@ -263,7 +263,7 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_list = []
         if not energy_list:
             energy_list = []
-        silence = torch.zeros([14300])
+        silence = torch.zeros([400])
         wav = silence.clone()
         for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
             if text.strip() != "":

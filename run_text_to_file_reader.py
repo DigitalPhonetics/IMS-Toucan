@@ -97,17 +97,7 @@ if __name__ == '__main__':
 
     merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
 
-    sound_of_silence_single_utt(version="new_voc",
-                                model_id="Meta",
-                                exec_device=exec_device,
-                                speaker_reference=merged_speaker_references)
-
-    die_glocke(version="new_voc",
-               model_id="Meta",
-               exec_device=exec_device,
-               speaker_reference=merged_speaker_references)
-
-    viet_poem(version="new_voc",
+    the_raven(version="single_speaker",
               model_id="Meta",
               exec_device=exec_device,
-              speaker_reference=merged_speaker_references)
+              speaker_reference=None)
