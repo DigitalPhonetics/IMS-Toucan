@@ -777,7 +777,6 @@ class ArticulatoryCombinedTextFrontend:
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
         if text == "":
             return ""
-        text = ". " + text  # the addition of ". " is a dirty hack, but it makes it sound better.
         # expand abbreviations
         utt = self.expand_abbreviations(text)
 

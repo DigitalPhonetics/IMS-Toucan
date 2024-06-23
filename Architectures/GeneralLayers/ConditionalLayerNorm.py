@@ -110,9 +110,11 @@ class AdaIN1d(nn.Module):
         super().__init__()
         self.norm = nn.InstanceNorm1d(num_features, affine=False)
         self.fc = nn.Linear(style_dim, num_features * 2)
+        self.condition_dropout = nn.Dropout(0.3)
 
     def forward(self, x, s):
-        h = self.fc(s)
+        s_d = self.condition_dropout(s)
+        h = self.fc(s_d)
         h = h.view(h.size(0), h.size(1), 1)
         gamma, beta = torch.chunk(h, chunks=2, dim=1)
         return (1 + gamma.transpose(1, 2)) * self.norm(x.transpose(1, 2)).transpose(1, 2) + beta.transpose(1, 2)

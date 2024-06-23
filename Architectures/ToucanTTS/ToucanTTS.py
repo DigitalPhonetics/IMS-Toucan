@@ -220,7 +220,6 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  embedding_integration=embedding_integration)
 
-        # due to the nature of the residual vector quantization, we have to predict the codebooks in a hierarchical way.
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
         self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
         self.pitch_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
