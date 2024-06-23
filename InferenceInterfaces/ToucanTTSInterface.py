@@ -91,7 +91,7 @@ class ToucanTTSInterface(torch.nn.Module):
                 wave, sr = soundfile.read(path)
                 wave = librosa.to_mono(wave)
                 wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
-                speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).unsqueeze(0)).squeeze()
+                speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).squeeze().unsqueeze(0)).squeeze()
                 speaker_embs.append(speaker_embedding)
             self.default_utterance_embedding = sum(speaker_embs) / len(speaker_embs)
 
@@ -250,12 +250,19 @@ class ToucanTTSInterface(torch.nn.Module):
             duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
                                      utterance, lower values decrease durations for the whole utterance.
+            pause_duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
+                                     1.0 means no scaling happens, higher values increase durations for the pauses,
+                                     lower values decrease durations for the whole utterance.
             pitch_variance_scale: reasonable values are 0.6 < scale < 1.4.
                                   1.0 means no scaling happens, higher values increase variance of the pitch curve,
                                   lower values decrease variance of the pitch curve.
             energy_variance_scale: reasonable values are 0.6 < scale < 1.4.
                                    1.0 means no scaling happens, higher values increase variance of the energy curve,
                                    lower values decrease variance of the energy curve.
+            prosody_creativity: sampling temperature of the generative model that comes up with the pitch, energy and
+                                durations. Higher values mena more variance, lower temperature means less variance across
+                                generations. reasonable values are between 0.0 and 1.2, anything higher makes the voice
+                                sound very weird.
         """
         if not dur_list:
             dur_list = []
