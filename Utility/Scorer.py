@@ -79,8 +79,8 @@ class TTSScorer:
                                                                                       utterance_embedding=utterance_embedding,
                                                                                       lang_ids=lang_ids,
                                                                                       return_feats=False,
-                                                                                      run_glow=False)
-                loss = regression_loss  # + duration_loss + pitch_loss + energy_loss  # we omit the glow loss
+                                                                                      run_stochastic=False)
+                loss = regression_loss  # + duration_loss + pitch_loss + energy_loss  # we omit the stochastic loss
             except TypeError:
                 loss = torch.tensor(torch.nan)
             if torch.isnan(loss):

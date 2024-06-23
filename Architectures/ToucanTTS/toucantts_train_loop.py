@@ -99,7 +99,7 @@ def train_loop(net,
             step_counter = check_dict["step_counter"]
     start_time = time.time()
     regression_losses_total = list()
-    glow_losses_total = list()
+    stochastic_losses_total = list()
     duration_losses_total = list()
     pitch_losses_total = list()
     energy_losses_total = list()
@@ -126,11 +126,11 @@ def train_loop(net,
                 speech_batch.append(gold_speech_sample)
             gold_speech = pad_sequence(speech_batch, batch_first=True).to(device)
 
-            run_glow = (step_counter > warmup_steps) or fine_tune
+            run_stochastic = (step_counter > warmup_steps) or fine_tune
 
             train_loss = 0.0
             utterance_embedding = batch[9].to(device)
-            regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss = net(
+            regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss = net(
                 text_tensors=text_tensors,
                 text_lengths=text_lengths,
                 gold_speech=gold_speech,
@@ -141,7 +141,7 @@ def train_loop(net,
                 utterance_embedding=utterance_embedding,
                 lang_ids=lang_ids,
                 return_feats=False,
-                run_glow=run_glow
+                run_stochastic=run_stochastic
             )
 
             if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss):
@@ -158,16 +158,16 @@ def train_loop(net,
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
 
-            if glow_loss is not None:
+            if stochastic_loss is not None:
 
-                if torch.isnan(glow_loss):
+                if torch.isnan(stochastic_loss):
                     print("Flow loss turned to NaN! Skipping this batch ...")
                     continue
 
-                glow_losses_total.append(glow_loss.item())
-                train_loss = train_loss + glow_loss
+                stochastic_losses_total.append(stochastic_loss.item())
+                train_loss = train_loss + stochastic_loss
             else:
-                glow_losses_total.append(0)
+                stochastic_losses_total.append(0)
 
             optimizer.zero_grad()
             if type(train_loss) is float:
@@ -204,14 +204,14 @@ def train_loop(net,
                     if use_wandb:
                         wandb.log({
                             "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
-                            "glow_loss"      : round(sum(glow_losses_total) / len(glow_losses_total), 5),
+                            "stochastic_loss": round(sum(stochastic_losses_total) / len(stochastic_losses_total), 5),
                             "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
                             "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                             "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                             "learning_rate"  : optimizer.param_groups[0]['lr']
                         }, step=step_counter)
                     regression_losses_total = list()
-                    glow_losses_total = list()
+                    stochastic_losses_total = list()
                     duration_losses_total = list()
                     pitch_losses_total = list()
                     energy_losses_total = list()
@@ -222,7 +222,7 @@ def train_loop(net,
                                                                             step=step_counter,
                                                                             lang=lang,
                                                                             default_emb=default_embedding,
-                                                                            run_glow=run_glow)
+                                                                            run_stochastic=run_stochastic)
                     if use_wandb:
                         wandb.log({
                             "progress_plot": wandb.Image(path_to_most_recent_plot)

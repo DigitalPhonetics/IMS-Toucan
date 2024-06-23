@@ -67,7 +67,7 @@ def plot_progress_spec_toucantts(net,
                                  step,
                                  lang,
                                  default_emb,
-                                 run_glow):
+                                 run_stochastic):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = tf.get_example_sentence(lang=lang)
     if sentence is None:
@@ -77,7 +77,7 @@ def plot_progress_spec_toucantts(net,
                                                   return_duration_pitch_energy=True,
                                                   utterance_embedding=default_emb,
                                                   lang_id=get_language_id(lang).to(device),
-                                                  run_glow=run_glow)
+                                                  run_stochastic=run_stochastic)
 
     plot_code_spec(pitch, energy, sentence, durations, mel, os.path.join(save_dir, "visualization"), tf, step)
     return os.path.join(os.path.join(save_dir, "visualization"), f"{step}.png")

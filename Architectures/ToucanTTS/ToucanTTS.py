@@ -282,7 +282,7 @@ class ToucanTTS(torch.nn.Module):
                 utterance_embedding,
                 return_feats=False,
                 lang_ids=None,
-                run_glow=True
+                run_stochastic=True
                 ):
         """
         Args:
@@ -296,10 +296,10 @@ class ToucanTTS(torch.nn.Module):
             gold_energy (Tensor): Batch of padded token-averaged energy (B, Tmax + 1, 1).
             lang_ids (LongTensor): The language IDs used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
-            run_glow (Bool): Whether to detach the inputs to the normalizing flow for stability.
+            run_stochastic (Bool): Whether to detach the inputs to the normalizing flow for stability.
         """
         outs, \
-            glow_loss, \
+            stochastic_loss, \
             duration_loss, \
             pitch_loss, \
             energy_loss = self._forward(text_tensors=text_tensors,
@@ -312,7 +312,7 @@ class ToucanTTS(torch.nn.Module):
                                         utterance_embedding=utterance_embedding,
                                         is_inference=False,
                                         lang_ids=lang_ids,
-                                        run_glow=run_glow)
+                                        run_stochastic=run_stochastic)
 
         # calculate loss
         regression_loss = self.criterion(predicted_features=outs,
@@ -320,8 +320,8 @@ class ToucanTTS(torch.nn.Module):
                                          features_lengths=speech_lengths)
 
         if return_feats:
-            return regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss, outs
-        return regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss
+            return regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss, outs
+        return regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss
 
     def _forward(self,
                  text_tensors,
@@ -334,7 +334,7 @@ class ToucanTTS(torch.nn.Module):
                  is_inference=False,
                  utterance_embedding=None,
                  lang_ids=None,
-                 run_glow=False):
+                 run_stochastic=False):
 
         text_tensors = torch.clamp(text_tensors, max=1.0)
         # this is necessary, because of the way we represent modifiers to keep them identifiable.
@@ -413,7 +413,7 @@ class ToucanTTS(torch.nn.Module):
         preliminary_spectrogram = self.output_projection(decoded_speech)
 
         if is_inference:
-            if run_glow:
+            if run_stochastic:
                 refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
                                                                   mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2).float(),
                                                                   n_timesteps=15,
@@ -426,15 +426,15 @@ class ToucanTTS(torch.nn.Module):
                 pitch_predictions.squeeze(), \
                 energy_predictions.squeeze()
         else:
-            if run_glow:
-                glow_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2),
-                                                                       mask=decoder_masks.float(),
-                                                                       mu=self.cfm_projection(decoded_speech).transpose(1, 2),
-                                                                       c=utterance_embedding)
+            if run_stochastic:
+                stochastic_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2),
+                                                                             mask=decoder_masks.float(),
+                                                                             mu=self.cfm_projection(decoded_speech).transpose(1, 2),
+                                                                             c=utterance_embedding)
             else:
-                glow_loss = None
+                stochastic_loss = None
             return preliminary_spectrogram, \
-                glow_loss, \
+                stochastic_loss, \
                 duration_loss, \
                 pitch_loss, \
                 energy_loss
@@ -446,7 +446,7 @@ class ToucanTTS(torch.nn.Module):
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
                   lang_id=None,
-                  run_glow=True):
+                  run_stochastic=True):
         """
         Args:
             text (LongTensor): Input sequence of characters (T,).
@@ -454,7 +454,7 @@ class ToucanTTS(torch.nn.Module):
             return_duration_pitch_energy (Boolean): whether to return the list of predicted durations for nicer plotting
             lang_id (LongTensor): The language ID used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Embedding to condition the TTS on, if the model is multispeaker
-            run_glow (bool): whether to use the output of the glow or of the out_projection to generate codec frames
+            run_stochastic (bool): whether to use the output of the stochastic or of the out_projection to generate codec frames
         """
         self.eval()
 
@@ -474,7 +474,7 @@ class ToucanTTS(torch.nn.Module):
                                                is_inference=True,
                                                utterance_embedding=utterance_embeddings,
                                                lang_ids=lang_id,
-                                               run_glow=run_glow)  # (1, L, odim)
+                                               run_stochastic=run_stochastic)  # (1, L, odim)
         self.train()
 
         if return_duration_pitch_energy:
