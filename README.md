@@ -103,7 +103,7 @@ For M1 Macs, the most convenient method to install espeak-ng onto your system is
 espeak-ng via
 
 ```
-sudo port install espeak-n
+sudo port install espeak-ng
 ```
 
 As stated in the Windows install instructions, the espeak-ng installation will need to be set as a variable for the
