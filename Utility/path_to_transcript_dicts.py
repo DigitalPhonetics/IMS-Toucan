@@ -70,6 +70,23 @@ def build_path_to_transcript_dict_hui_template(root):
     return path_to_transcript
 
 
+def indic_voices_template(root, lang):
+    path_to_transcript = dict()
+    transcripts = list()
+    import json
+    for jpath in [f"{root}/{lang}/metadata_test.json",
+                  f"{root}/{lang}/metadata_train.json"]:
+        with open(jpath, encoding='utf-8', mode='r') as jfile:
+            for line in jfile.read().split("\n"):
+                if line.strip() != "":
+                    transcripts.append(json.loads(line))
+    for transcript in transcripts:
+        path = f"{root}/{lang}/{lang}/{transcript['filepath']}"
+        norm_text = transcript["normalized"]
+        path_to_transcript[f"{root}/{path}"] = norm_text
+    return path_to_transcript
+
+
 # ENGLISH
 
 def build_path_to_transcript_dict_ears(re_cache=False):
@@ -1079,6 +1096,227 @@ def build_path_to_transcript_dict_jvs(re_cache=False):
 
 
 # OTHER
+
+
+def build_path_to_transcript_dict_indicvoices_Assamese(re_cache=False):
+    language = "Assamese"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Bengali(re_cache=False):
+    language = "Bengali"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Bodo(re_cache=False):
+    language = "Bodo"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Dogri(re_cache=False):
+    language = "Dogri"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Gujarati(re_cache=False):
+    language = "Gujarati"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Hindi(re_cache=False):
+    language = "Hindi"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Kannada(re_cache=False):
+    language = "Kannada"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Kashmiri(re_cache=False):
+    language = "Kashmiri"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Konkani(re_cache=False):
+    language = "Konkani"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Maithili(re_cache=False):
+    language = "Maithili"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Malayalam(re_cache=False):
+    language = "Malayalam"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Manipuri(re_cache=False):
+    language = "Manipuri"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Marathi(re_cache=False):
+    language = "Marathi"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Nepali(re_cache=False):
+    language = "Nepali"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Odia(re_cache=False):
+    language = "Odia"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Punjabi(re_cache=False):
+    language = "Punjabi"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Sanskrit(re_cache=False):
+    language = "Sanskrit"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Santali(re_cache=False):
+    language = "Santali"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Sindhi(re_cache=False):
+    language = "Sindhi"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Tamil(re_cache=False):
+    language = "Tamil"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Telugu(re_cache=False):
+    language = "Telugu"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Urdu(re_cache=False):
+    language = "Urdu"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
 
 def build_file_list_singing_voice_audio_database(re_cache=False):
     root = "/mount/resources/speech/corpora/singing_voice_audio_dataset/monophonic"

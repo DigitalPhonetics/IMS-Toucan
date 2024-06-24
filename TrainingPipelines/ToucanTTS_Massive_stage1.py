@@ -188,6 +188,184 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
+    # DIVERSE INDIC LANGUAGES
+
+    lang_to_datasets["asm"] = list()
+
+    lang_to_datasets["asm"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Assamese,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_assamese"),
+                                                      lang="asm",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["ben"] = list()
+
+    lang_to_datasets["ben"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Bengali,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_bengali"),
+                                                      lang="ben",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["brx"] = list()
+
+    lang_to_datasets["brx"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Bodo,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_bodo"),
+                                                      lang="brx",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["dgo"] = list()
+
+    lang_to_datasets["dgo"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Dogri,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_dogri"),
+                                                      lang="dgo",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["guj"] = list()
+
+    lang_to_datasets["guj"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Gujarati,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_gujarati"),
+                                                      lang="guj",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["hin"] = list()
+
+    lang_to_datasets["hin"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Hindi,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_hindi"),
+                                                      lang="hin",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["kan"] = list()
+
+    lang_to_datasets["kan"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Kannada,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_kannada"),
+                                                      lang="kan",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["kas"] = list()
+
+    lang_to_datasets["kas"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Kashmiri,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_kashmiri"),
+                                                      lang="kas",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["knn"] = list()
+
+    lang_to_datasets["knn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Konkani,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_konkani"),
+                                                      lang="knn",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["mai"] = list()
+
+    lang_to_datasets["mai"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Maithili,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_maithili"),
+                                                      lang="mai",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["mal"] = list()
+
+    lang_to_datasets["mal"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Malayalam,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_malayalam"),
+                                                      lang="mal",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["mni"] = list()
+
+    lang_to_datasets["mni"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Manipuri,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_manipuri"),
+                                                      lang="mni",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["mar"] = list()
+
+    lang_to_datasets["mar"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Marathi,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_marathi"),
+                                                      lang="mar",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["nep"] = list()
+
+    lang_to_datasets["nep"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Nepali,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_nepali"),
+                                                      lang="nep",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["ory"] = list()
+
+    lang_to_datasets["ory"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Odia,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_odia"),
+                                                      lang="ory",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["pan"] = list()
+
+    lang_to_datasets["pan"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Punjabi,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_punjabi"),
+                                                      lang="pan",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["san"] = list()
+
+    lang_to_datasets["san"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Sanskrit,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_sanskrit"),
+                                                      lang="san",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["sat"] = list()
+
+    lang_to_datasets["sat"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Santali,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_santali"),
+                                                      lang="sat",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["snd"] = list()
+
+    lang_to_datasets["snd"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Sindhi,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_sindhi"),
+                                                      lang="snd",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["tam"] = list()
+
+    lang_to_datasets["tam"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Tamil,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_tamil"),
+                                                      lang="tam",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["tel"] = list()
+
+    lang_to_datasets["tel"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Telugu,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_telugu"),
+                                                      lang="tel",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["urd"] = list()
+
+    lang_to_datasets["urd"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_indicvoices_Urdu,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "indic_urdu"),
+                                                      lang="urd",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
     for lang in lang_to_datasets:
         datasets.append(ConcatDataset(lang_to_datasets[lang]))
     re_ordered_datasets = list()
