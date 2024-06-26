@@ -92,7 +92,7 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
-                 lang_emb_size=16,
+                 lang_emb_size=192,
                  integrate_language_embedding_into_encoder_out=True,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
@@ -344,8 +344,6 @@ class ToucanTTS(torch.nn.Module):
 
         if not self.multispeaker_model:
             utterance_embedding = None
-        else:
-            utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
 
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)

@@ -212,8 +212,6 @@ class ToucanTTS(torch.nn.Module):
 
         if not self.multispeaker_model:
             utterance_embedding = None
-        else:
-            utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
 
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)

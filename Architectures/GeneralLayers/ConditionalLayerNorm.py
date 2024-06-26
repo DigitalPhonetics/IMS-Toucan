@@ -113,6 +113,7 @@ class AdaIN1d(nn.Module):
         self.condition_dropout = nn.Dropout(0.3)
 
     def forward(self, x, s):
+        s = torch.nn.functional.normalize(s)
         s_d = self.condition_dropout(s)
         h = self.fc(s_d)
         h = h.view(h.size(0), h.size(1), 1)

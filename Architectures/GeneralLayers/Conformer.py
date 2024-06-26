@@ -127,6 +127,7 @@ class Conformer(torch.nn.Module):
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
+            lang_embs = torch.nn.functional.normalize(lang_embs)
             projected_lang_embs = self.language_embedding_projection(lang_embs).unsqueeze(-1).transpose(1, 2)
             projected_lang_embs = self.language_emb_norm(projected_lang_embs)
             xs = xs + projected_lang_embs  # offset phoneme representation by language specific offset
