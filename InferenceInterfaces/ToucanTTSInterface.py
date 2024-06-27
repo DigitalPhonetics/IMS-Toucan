@@ -105,6 +105,9 @@ class ToucanTTSInterface(torch.nn.Module):
             speaker_embs = list()
             for path in path_to_reference_audio:
                 wave, sr = soundfile.read(path)
+                if len(wave.shape) > 1:  # oh no, we found a stereo audio!
+                    if len(wave[0]) == 2:  # let's figure out whether we need to switch the axes
+                        wave = wave.transpose()  # if yes, we switch the axes.
                 wave = librosa.to_mono(wave)
                 wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
                 speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).squeeze().unsqueeze(0)).squeeze()
