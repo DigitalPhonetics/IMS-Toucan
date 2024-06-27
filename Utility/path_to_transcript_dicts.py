@@ -81,7 +81,7 @@ def indic_voices_template(root, lang):
                 if line.strip() != "":
                     transcripts.append(json.loads(line))
     for transcript in transcripts:
-        path = f"{root}/{lang}/{lang}/{transcript['filepath']}"
+        path = f"{root}/{lang}/{lang}/wav/{transcript['filepath']}"
         norm_text = transcript["normalized"]
         path_to_transcript[path] = norm_text
     return path_to_transcript
