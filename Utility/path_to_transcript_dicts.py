@@ -83,7 +83,7 @@ def indic_voices_template(root, lang):
     for transcript in transcripts:
         path = f"{root}/{lang}/{lang}/{transcript['filepath']}"
         norm_text = transcript["normalized"]
-        path_to_transcript[f"{root}/{path}"] = norm_text
+        path_to_transcript[path] = norm_text
     return path_to_transcript
 
 
