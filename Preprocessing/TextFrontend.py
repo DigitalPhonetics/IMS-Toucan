@@ -855,6 +855,13 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('5', "˧˩˧")
             phones = phones.replace('6', "˧˩˨ʔ")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
+        elif self.g2p_lang == "yue":
+            phones = phones.replace('1', "˥")
+            phones = phones.replace('2', "˧˥")
+            phones = phones.replace('3', "˧")
+            phones = phones.replace('4', "˧˩")
+            phones = phones.replace('5', "˩˧")
+            phones = phones.replace('6', "˨")
         # more of this handling for more tonal languages can be added here, simply make an elif statement and check for the language.
         return self.postprocess_phoneme_string(phones, for_feature_extraction, include_eos_symbol, for_plot_labels)
 
