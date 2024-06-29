@@ -96,6 +96,13 @@ class CodecAlignerDataset(Dataset):
         fisher_yates_shuffle(key_list)
         # build cache
         print("... building dataset cache ...")
+        torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
+        # careful: assumes 16kHz or 8kHz audio
+        _, _ = torch.hub.load(repo_or_dir='snakers4/silero-vad',  # make sure it gets downloaded during single-processing first, if it's not already downloaded
+                              model='silero_vad',
+                              force_reload=False,
+                              onnx=False,
+                              verbose=False)
         self.result_pool = resource_manager.list()
         # make processes
         key_splits = list()
@@ -195,6 +202,9 @@ class CodecAlignerDataset(Dataset):
                 print(f"Problem with an audio file: {path}")
                 continue
 
+            if len(wave.shape) > 1:  # oh no, we found a stereo audio!
+                if len(wave[0]) == 2:  # let's figure out whether we need to switch the axes
+                    wave = wave.transpose()  # if yes, we switch the axes.
             wave = librosa.to_mono(wave)
 
             if sr != assumed_sr:
