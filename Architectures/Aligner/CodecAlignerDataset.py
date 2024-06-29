@@ -193,6 +193,9 @@ class CodecAlignerDataset(Dataset):
                 print(f"Problem with an audio file: {path}")
                 continue
 
+            if len(wave.shape) > 1:  # the audio is in stereo, so we need to merge the channels.
+                if len(wave[0]) == 2:  # let's figure out whether the axes are switched, which seems to be the case sometimes
+                    wave = wave.transpose()  # if yes, we switch the axes into the order librosa's to_mono function expects.
             wave = librosa.to_mono(wave)
 
             if sr != assumed_sr:
