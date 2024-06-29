@@ -8,7 +8,8 @@ import torch
 from TrainingPipelines.AlignerPipeline import run as aligner
 from TrainingPipelines.HiFiGAN_combined import run as HiFiGAN
 from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
-from TrainingPipelines.ToucanTTS_MLS_English import run as mls
+from TrainingPipelines.ToucanTTS_Massive_English_stage1 import run as eng1
+from TrainingPipelines.ToucanTTS_Massive_English_stage2 import run as eng2
 from TrainingPipelines.ToucanTTS_Massive_stage1 import run as stage1
 from TrainingPipelines.ToucanTTS_Massive_stage2 import run as stage2
 from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
@@ -24,7 +25,8 @@ pipeline_dict = {
     "tt_it"                          : tt_integration_test,
     # regular ToucanTTS pipelines
     "nancy"                          : nancy,
-    "mls"                            : mls,
+    "eng1"                           : eng1,
+    "eng2"                           : eng2,
     "meta"                           : meta,
     "stage1"                         : stage1,
     "stage2"                         : stage2,
