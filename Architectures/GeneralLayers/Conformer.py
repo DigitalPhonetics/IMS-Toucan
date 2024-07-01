@@ -88,7 +88,6 @@ class Conformer(torch.nn.Module):
                 self.language_embedding_projection = lambda x: x
             else:
                 self.language_embedding_projection = torch.nn.Linear(lang_emb_size, attention_dim)
-            self.language_emb_norm = LayerNorm(attention_dim)  # DEPRECATED
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
         encoder_selfattn_layer_args = (attention_heads, attention_dim, attention_dropout_rate, zero_triu)

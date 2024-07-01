@@ -110,7 +110,6 @@ class AdaIN1d(nn.Module):
         super().__init__()
         self.norm = nn.InstanceNorm1d(num_features, affine=False)
         self.fc = nn.Linear(style_dim, num_features * 2)
-        self.condition_dropout = nn.Dropout(0.3)
 
     def forward(self, x, s):
         s = torch.nn.functional.normalize(s)
