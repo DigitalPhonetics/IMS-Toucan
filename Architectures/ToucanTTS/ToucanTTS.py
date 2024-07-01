@@ -93,7 +93,7 @@ class ToucanTTS(torch.nn.Module):
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
                  lang_emb_size=192,
-                 integrate_language_embedding_into_encoder_out=True,
+                 integrate_language_embedding_into_encoder_out=False,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
         super().__init__()
@@ -355,15 +355,15 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             # predicting pitch, energy and durations
-            reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.2).transpose(1, 2)
+            reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
             pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
-            reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.2).transpose(1, 2)
+            reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.1).transpose(1, 2)
             energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
-            reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.2).transpose(1, 2)
+            reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.1).transpose(1, 2)
             predicted_durations = self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
             predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
 
@@ -380,21 +380,21 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.2).transpose(1, 2)
+            reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
             pitch_loss, _ = self.pitch_predictor.compute_loss(mu=reduced_pitch_space,
                                                               x1=gold_pitch.transpose(1, 2),
                                                               mask=text_masks.float(),
                                                               c=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
 
-            reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.2).transpose(1, 2)
+            reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.1).transpose(1, 2)
             energy_loss, _ = self.energy_predictor.compute_loss(mu=reduced_energy_space,
                                                                 x1=gold_energy.transpose(1, 2),
                                                                 mask=text_masks.float(),
                                                                 c=utterance_embedding)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
 
-            reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.2).transpose(1, 2)
+            reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.1).transpose(1, 2)
             duration_loss, _ = self.duration_predictor.compute_loss(mu=reduced_duration_space,
                                                                     x1=gold_durations.unsqueeze(-1).transpose(1, 2).float(),
                                                                     mask=text_masks.float(),

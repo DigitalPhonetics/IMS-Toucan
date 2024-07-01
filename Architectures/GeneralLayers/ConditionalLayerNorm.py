@@ -114,8 +114,7 @@ class AdaIN1d(nn.Module):
 
     def forward(self, x, s):
         s = torch.nn.functional.normalize(s)
-        s_d = self.condition_dropout(s)
-        h = self.fc(s_d)
+        h = self.fc(s)
         h = h.view(h.size(0), h.size(1), 1)
         gamma, beta = torch.chunk(h, chunks=2, dim=1)
         return (1 + gamma.transpose(1, 2)) * self.norm(x.transpose(1, 2)).transpose(1, 2) + beta.transpose(1, 2)
