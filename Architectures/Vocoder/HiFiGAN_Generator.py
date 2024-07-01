@@ -2,10 +2,9 @@
 # MIT License (https://opensource.org/licenses/MIT)
 # Adapted by Florian Lux 2021
 
-# This code is based on https://github.com/jik876/hifi-gan.
-
-
 import torch
+# This code is based on https://github.com/jik876/hifi-gan.
+from librosa.filters import mel as librosa_mel_fn
 
 from Architectures.GeneralLayers.ResidualBlock import HiFiGANResidualBlock as ResidualBlock
 
@@ -111,6 +110,22 @@ class HiFiGAN(torch.nn.Module):
             Tensor: intermediate result
             Tensor: another intermediate result
         """
+        inv_amp = (
+            self.inverse_mel(
+                c,
+                n_fft=1024,
+                num_mels=128,
+                sampling_rate=16000,
+                hop_size=256,
+                win_size=1024,
+                fmin=40,
+                fmax=8000,
+            )
+            .abs()
+            .clamp_min(1e-5)
+        )
+        c = inv_amp.log()
+        # https://github.com/BakerBunker/FreeV https://arxiv.org/pdf/2406.08196
         c = self.input_conv(c)
         for i in range(self.num_upsamples):
             c = self.upsamples[i](c)
@@ -125,6 +140,33 @@ class HiFiGAN(torch.nn.Module):
         c = self.output_conv(c)
 
         return c, x2, x1
+
+    def inverse_mel(self,
+                    mel,
+                    n_fft,
+                    num_mels,
+                    sampling_rate,
+                    hop_size,
+                    win_size,
+                    fmin,
+                    fmax,
+                    ):
+        global inv_mel_window, mel_window
+        device = mel.device
+        ps = param_string(sampling_rate, n_fft, num_mels, fmin, fmax, win_size, device)
+        if ps in inv_mel_window:
+            inv_basis = inv_mel_window[ps]
+        else:
+            if ps in mel_window:
+                mel_basis, _ = mel_window[ps]
+            else:
+                mel_np = librosa_mel_fn(sampling_rate, n_fft, num_mels, fmin, fmax)
+                mel_basis = torch.from_numpy(mel_np).float().to(device)
+                hann_window = torch.hann_window(win_size).to(device)
+                mel_window[ps] = (mel_basis.clone(), hann_window.clone())
+            inv_basis = mel_basis.pinverse()
+            inv_mel_window[ps] = inv_basis.clone()
+        return inv_basis.to(device) @ (10 ** mel.to(device))
 
     def reset_parameters(self):
         """
@@ -182,6 +224,9 @@ class HiFiGAN(torch.nn.Module):
         c = self.forward(c.transpose(1, 0).unsqueeze(0))
         return c.squeeze(0).transpose(1, 0)
 
+
+def param_string(sampling_rate, n_fft, num_mels, fmin, fmax, win_size, device):
+    return f"{sampling_rate}-{n_fft}-{num_mels}-{fmin}-{fmax}-{win_size}-{device}"
 
 if __name__ == "__main__":
     hifi = HiFiGAN()

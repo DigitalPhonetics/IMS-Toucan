@@ -45,9 +45,9 @@ def train_loop(generator,
     g.train()
     d.train()
     optimizer_g = torch.optim.RAdam(g.parameters(), betas=(0.5, 0.9), lr=0.0005, weight_decay=0.0)
-    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5, milestones=[500000, 1000000, 1200000, 1400000])
+    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5, milestones=[400000, 8000000, 000000, 1000000])
     optimizer_d = torch.optim.RAdam(d.parameters(), betas=(0.5, 0.9), lr=0.00025, weight_decay=0.0)
-    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[500000, 1000000, 1200000, 1400000])
+    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[400000, 8000000, 000000, 1000000])
 
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batch_size,
