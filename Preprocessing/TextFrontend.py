@@ -965,6 +965,22 @@ class ArticulatoryCombinedTextFrontend:
                 ('⮃', ""),  # dipping
                 ('⮁', ""),  # peaking
                 ('̃', ""),  # nasalizing
+                ("̧", ""),  # palatalized
+                ("ʷ", ""),  # labialized
+                ("ʰ", ""),  # aspirated
+                ("ˠ", ""),  # velarized
+                ("ˁ", ""),  # pharyngealized
+                ("ˀ", ""),  # glottalized
+                ("ʼ", ""),  # ejective
+                ("̹", ""),  # rounding
+                ("̞", ""),  # open
+                ("̪", ""),  # dental
+                ("̬", ""),  # voiced
+                ("̝", ""),  # closed
+                ("̰", ""),  # laryngalization
+                ("̈", ""),  # centralization
+                ("̜", ""),  # unrounded
+                ("̥", ""),  # voiceless
             ]
         for replacement in replacements:
             phoneme_string = phoneme_string.replace(replacement[0], replacement[1])
