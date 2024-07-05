@@ -173,8 +173,6 @@ def train_loop(net,
             if type(train_loss) is float:
                 print("There is no loss for this step! Skipping ...")
                 continue
-            if gpu_count > 1:
-                torch.distributed.barrier()
             train_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=False)
             optimizer.step()
@@ -236,5 +234,11 @@ def train_loop(net,
                         return  # DONE
 
                     net.train()
-
+                if gpu_count > 1:
+                    # just to be extra sure tht all models are synchronous
+                    torch.distributed.barrier()
+                    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=1)
+                    check_dict = torch.load(checkpoint_paths[0], map_location=device)
+                    model.load_state_dict(check_dict["model"])
+                    torch.distributed.barrier()
         print("\n\n\nEPOCH COMPLETE\n\n\n")
