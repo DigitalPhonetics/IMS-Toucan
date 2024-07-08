@@ -12,22 +12,20 @@ from TrainingPipelines.ToucanTTS_Massive_English_stage1 import run as eng1
 from TrainingPipelines.ToucanTTS_Massive_English_stage2 import run as eng2
 from TrainingPipelines.ToucanTTS_Massive_stage1 import run as stage1
 from TrainingPipelines.ToucanTTS_Massive_stage2 import run as stage2
-from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingPipelines.finetuning_example_multilingual import run as fine_tuning_example_multilingual
 from TrainingPipelines.finetuning_example_simple import run as fine_tuning_example_simple
 
 pipeline_dict = {
-    # the finetuning example
+    # the finetuning examples
     "finetuning_example_simple"      : fine_tuning_example_simple,
     "finetuning_example_multilingual": fine_tuning_example_multilingual,
-    # integration tests
+    # integration test
     "tt_it"                          : tt_integration_test,
     # regular ToucanTTS pipelines
     "nancy"                          : nancy,
     "eng1"                           : eng1,
     "eng2"                           : eng2,
-    "meta"                           : meta,
     "stage1"                         : stage1,
     "stage2"                         : stage2,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
