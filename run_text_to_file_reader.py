@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
     merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
 
-    the_raven(version="single_speaker",
+    the_raven(version="new_voc",
               model_id="Meta",
               exec_device=exec_device,
-              speaker_reference=None)
+              speaker_reference=merged_speaker_references)

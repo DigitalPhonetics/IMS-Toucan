@@ -207,6 +207,8 @@ class ToucanTTS(torch.nn.Module):
         text_tensors = torch.clamp(text_tensors, max=1.0)
         # this is necessary, because of the way we represent modifiers to keep them identifiable.
 
+        utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
+        
         if not self.multilingual_model:
             lang_ids = None
 

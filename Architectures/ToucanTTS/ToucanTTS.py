@@ -43,7 +43,7 @@ class ToucanTTS(torch.nn.Module):
                  use_cnn_in_conformer=True,
 
                  # encoder
-                 encoder_layers=6,
+                 encoder_layers=8,
                  encoder_units=1536,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
@@ -53,7 +53,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=1,
+                 decoder_layers=2,
                  decoder_units=1536,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 works for spectrograms
@@ -64,21 +64,21 @@ class ToucanTTS(torch.nn.Module):
 
                  # duration predictor
                  prosody_channels=8,
-                 duration_predictor_layers=2,
-                 duration_predictor_kernel_size=3,
+                 duration_predictor_layers=3,
+                 duration_predictor_kernel_size=5,
                  duration_predictor_dropout_rate=0.2,
 
                  # pitch predictor
-                 pitch_predictor_layers=2,
+                 pitch_predictor_layers=3,
                  pitch_predictor_kernel_size=5,
-                 pitch_predictor_dropout=0.3,
+                 pitch_predictor_dropout=0.2,
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
 
                  # energy predictor
                  energy_predictor_layers=2,
                  energy_predictor_kernel_size=3,
-                 energy_predictor_dropout=0.5,
+                 energy_predictor_dropout=0.2,
                  energy_embed_kernel_size=1,
                  energy_embed_dropout=0.0,
 
@@ -338,6 +338,8 @@ class ToucanTTS(torch.nn.Module):
 
         text_tensors = torch.clamp(text_tensors, max=1.0)
         # this is necessary, because of the way we represent modifiers to keep them identifiable.
+
+        utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
 
         if not self.multilingual_model:
             lang_ids = None
