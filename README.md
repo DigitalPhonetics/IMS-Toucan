@@ -267,6 +267,16 @@ for caching the train data to save space.
 
 ## Citation 🐧
 
+If you find this repo useful, consider giving it a star. Large numbers make me happy and they are quite motivating :)
+
+<a href="https://star-history.com/#DigitalPhonetics/IMS-Toucan&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=DigitalPhonetics/IMS-Toucan&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=DigitalPhonetics/IMS-Toucan&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=DigitalPhonetics/IMS-Toucan&type=Date" />
+ </picture>
+</a>
+
 ### Introduction of the Toolkit [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v1.0)
 
 ```
