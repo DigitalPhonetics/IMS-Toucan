@@ -40,14 +40,6 @@ def download_models():
         reporthook=report)
 
     #############
-    print("Downloading Embedding Model")
-    os.makedirs(os.path.join(MODELS_DIR, "Embedding"), exist_ok=True)
-    filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v3.0/embedding_function.pt",
-        filename=os.path.abspath(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")),
-        reporthook=report)
-
-    #############
     print("Downloading Embedding GAN")
     os.makedirs(os.path.join(MODELS_DIR, "Embedding"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
