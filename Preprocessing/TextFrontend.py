@@ -2,6 +2,7 @@
 
 
 import json
+import logging
 import re
 
 import torch
@@ -593,7 +594,8 @@ class ArticulatoryCombinedTextFrontend:
                                                         punctuation_marks=';:,.!?¡¿—…()"«»“”~/。【】、‥،؟“”؛',
                                                         preserve_punctuation=True,
                                                         language_switch='remove-flags',
-                                                        with_stress=self.use_stress)
+                                                        with_stress=self.use_stress,
+                                                        logger=logging.getLogger(__file__))
             except RuntimeError:
                 print("Error in loading espeak! \n"
                       "Maybe espeak is not installed on your system? \n"
