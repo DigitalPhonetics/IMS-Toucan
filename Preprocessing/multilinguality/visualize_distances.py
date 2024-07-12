@@ -12,8 +12,8 @@ from Utility.utils import load_json_from_path
 distance_types = ["tree", "asp", "map", "learned", "l1"]
 modes = ["plot_all", "plot_neighbors"]
 neighbor = "Latin"
-num_neighbors = 8
-distance_type = distance_types[0]  # switch here
+num_neighbors = 12
+distance_type = distance_types[1]  # switch here
 mode = modes[1]
 edge_threshold = 0.01
 # TODO histograms to figure out a good threshold
@@ -94,10 +94,15 @@ iso_codes_to_names = load_json_from_path(os.path.join(cache_root, "iso_to_fullna
 distances = list()
 
 for lang_1 in distance_measure:
+    if lang_1 not in iso_codes_to_names:
+        continue
     if lang_1 not in supervised_iso_codes and iso_codes_to_names[lang_1] != neighbor:
         continue
     for lang_2 in distance_measure[lang_1]:
-        if lang_2 not in supervised_iso_codes and iso_codes_to_names[lang_2] != neighbor:
+        try:
+            if lang_2 not in supervised_iso_codes and iso_codes_to_names[lang_2] != neighbor:
+                continue
+        except KeyError:
             continue
         distances.append((iso_codes_to_names[lang_1], iso_codes_to_names[lang_2], distance_measure[lang_1][lang_2]))
 

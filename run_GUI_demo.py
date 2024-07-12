@@ -10,7 +10,7 @@ class TTSWebUI:
 
     def __init__(self, gpu_id="cpu", title="Controllable Text-to-Speech for over 7000 Languages", article="", available_artificial_voices=1000, path_to_iso_list="Preprocessing/multilinguality/iso_to_fullname.json"):
         iso_to_name = load_json_from_path(path_to_iso_list)
-        text_selection = [f"{iso_to_name[iso_code]} Text ({iso_code})" for iso_code in iso_to_name]
+        text_selection = [f"{iso_to_name[iso_code]} ({iso_code})" for iso_code in iso_to_name]
         # accent_selection = [f"{iso_to_name[iso_code]} Accent ({iso_code})" for iso_code in iso_to_name]
 
         self.controllable_ui = ControllableInterface(gpu_id=gpu_id,
@@ -18,7 +18,7 @@ class TTSWebUI:
         self.iface = gr.Interface(fn=self.read,
                                   inputs=[gr.Textbox(lines=2,
                                                      placeholder="write what you want the synthesis to read here...",
-                                                     value="The woods are lovely, dark and deep, but I have promises to keep, and miles to go, before I sleep.",
+                                                     value="What I cannot create, I do not understand.",
                                                      label="Text input"),
                                           gr.Dropdown(text_selection,
                                                       type="value",
