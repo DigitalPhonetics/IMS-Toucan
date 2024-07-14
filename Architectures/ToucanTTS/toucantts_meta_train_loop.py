@@ -155,7 +155,7 @@ def train_loop(net,
         print("Priming the language embedding space...")
         less_values = list()
         for i in tqdm(range(warmup_steps * 4)):
-            language_ids = random.sample(valid_language_ids, batch_size * 2)
+            language_ids = random.sample(valid_language_ids, batch_size)
             language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
             less_value_unsupervised = less_loss(language_ids, language_embeddings)
             less_values.append(less_value_unsupervised.item())
