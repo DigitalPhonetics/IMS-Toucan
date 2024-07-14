@@ -22,7 +22,7 @@ class TTSWebUI:
                                                      label="Text input"),
                                           gr.Dropdown(text_selection,
                                                       type="value",
-                                                      value='English Text (eng)',
+                                                      value='English (eng)',
                                                       label="Select the Language of the Text (type on your keyboard to find it quickly)"),
                                           gr.Slider(minimum=0, maximum=available_artificial_voices, step=1,
                                                     value=279,

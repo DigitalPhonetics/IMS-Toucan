@@ -87,7 +87,7 @@ if __name__ == '__main__':
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
         print(f"No GPU specified, using CPU. Training will likely not work without GPU.")
-        gpu_count = 1  # for technical reasons this is set to one, indicating it's not gpu_count training, even though there is no GPU in this case
+        gpu_count = 1  # for technical reasons this is set to one, indicating it's not mutli-GPU training, even though there is no GPU in this case
     else:
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"

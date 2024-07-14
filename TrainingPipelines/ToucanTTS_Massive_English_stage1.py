@@ -144,7 +144,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     print("Training model")
     train_loop(net=model,
                datasets=[train_set],
-               batch_size=8,
+               batch_size=16,
+               steps_per_checkpoint=1000,
                device=device,
                save_directory=save_dir,
                eval_lang="eng",

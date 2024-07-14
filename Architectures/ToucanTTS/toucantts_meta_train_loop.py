@@ -67,45 +67,9 @@ def train_loop(net,
 
     if use_less_loss:
         less_loss = LanguageEmbeddingSpaceStructureLoss()
-        pretrained_language_codes = ['eng', 'deu', 'fra', 'spa', 'cmn', 'por', 'pol', 'ita', 'nld', 'ell', 'fin', 'vie',
-                                     'rus', 'hun', 'bem', 'swh', 'amh', 'wol', 'mal', 'chv', 'iba', 'jav', 'fon', 'hau',
-                                     'lbb', 'kik', 'lin', 'lug', 'luo', 'sxb', 'yor', 'nya', 'loz', 'toi', 'afr', 'arb',
-                                     'asm', 'ast', 'azj', 'bel', 'bul', 'ben', 'bos', 'cat', 'ceb', 'sdh', 'ces', 'cym',
-                                     'dan', 'ekk', 'pes', 'fil', 'gle', 'glg', 'guj', 'heb', 'hin', 'hrv', 'hye', 'ind',
-                                     'ibo', 'isl', 'kat', 'kam', 'kea', 'kaz', 'khm', 'kan', 'kor', 'ltz', 'lao', 'lit',
-                                     'lvs', 'mri', 'mkd', 'xng', 'mar', 'zsm', 'mlt', 'oci', 'ory', 'pan', 'pst', 'ron',
-                                     'snd', 'slk', 'slv', 'sna', 'som', 'srp', 'swe', 'tam', 'tel', 'tgk', 'tur', 'ukr',
-                                     'umb', 'urd', 'uzn', 'bhd', 'kfs', 'dgo', 'gbk', 'bgc', 'xnr', 'kfx', 'mjl', 'bfz',
-                                     'acf', 'bss', 'inb', 'nca', 'quh', 'wap', 'acr', 'bus', 'dgr', 'maz', 'nch', 'qul',
-                                     'tav', 'wmw', 'acu', 'byr', 'dik', 'iou', 'mbb', 'ncj', 'qvc', 'tbc', 'xed', 'agd',
-                                     'bzh', 'djk', 'ipi', 'mbc', 'ncl', 'qve', 'tbg', 'xon', 'agg', 'bzj', 'dop', 'jac',
-                                     'mbh', 'ncu', 'qvh', 'tbl', 'xtd', 'agn', 'caa', 'jic', 'mbj', 'ndj', 'qvm', 'tbz',
-                                     'xtm', 'agr', 'cab', 'emp', 'jiv', 'mbt', 'nfa', 'qvn', 'tca', 'yaa', 'agu', 'cap',
-                                     'jvn', 'mca', 'ngp', 'qvs', 'tcs', 'yad', 'aia', 'car', 'ese', 'mcb', 'ngu', 'qvw',
-                                     'yal', 'cax', 'kaq', 'mcd', 'nhe', 'qvz', 'tee', 'ycn', 'ake', 'cbc', 'far', 'mco',
-                                     'qwh', 'yka', 'alp', 'cbi', 'kdc', 'mcp', 'nhu', 'qxh', 'ame', 'cbr', 'gai', 'kde',
-                                     'mcq', 'nhw', 'qxn', 'tew', 'yre', 'amf', 'cbs', 'gam', 'kdl', 'mdy', 'nhy', 'qxo',
-                                     'tfr', 'yva', 'amk', 'cbt', 'geb', 'kek', 'med', 'nin', 'rai', 'zaa', 'apb', 'cbu',
-                                     'glk', 'ken', 'mee', 'nko', 'rgu', 'zab', 'apr', 'cbv', 'meq', 'tgo', 'zac', 'arl',
-                                     'cco', 'gng', 'kje', 'met', 'nlg', 'rop', 'tgp', 'zad', 'grc', 'klv', 'mgh', 'nnq',
-                                     'rro', 'zai', 'ata', 'cek', 'gub', 'kmu', 'mib', 'noa', 'ruf', 'tna', 'zam', 'atb',
-                                     'cgc', 'guh', 'kne', 'mie', 'not', 'rug', 'tnk', 'zao', 'atg', 'chf', 'knf', 'mih',
-                                     'npl', 'tnn', 'zar', 'awb', 'chz', 'gum', 'knj', 'mil', 'sab', 'tnp', 'zas', 'cjo',
-                                     'guo', 'ksr', 'mio', 'obo', 'seh', 'toc', 'zav', 'azg', 'cle', 'gux', 'kue', 'mit',
-                                     'omw', 'sey', 'tos', 'zaw', 'azz', 'cme', 'gvc', 'kvn', 'miz', 'ood', 'sgb', 'tpi',
-                                     'zca', 'bao', 'cni', 'gwi', 'kwd', 'mkl', 'shp', 'tpt', 'zga', 'bba', 'cnl', 'gym',
-                                     'kwf', 'mkn', 'ote', 'sja', 'trc', 'ziw', 'bbb', 'cnt', 'gyr', 'kwi', 'mop', 'otq',
-                                     'snn', 'ttc', 'zlm', 'cof', 'hat', 'kyc', 'mox', 'pab', 'snp', 'tte', 'zos', 'bgt',
-                                     'con', 'kyf', 'mpm', 'pad', 'tue', 'zpc', 'bjr', 'cot', 'kyg', 'mpp', 'soy', 'tuf',
-                                     'zpl', 'bjv', 'cpa', 'kyq', 'mpx', 'pao', 'tuo', 'zpm', 'bjz', 'cpb', 'hlt', 'kyz',
-                                     'mqb', 'pib', 'spp', 'zpo', 'bkd', 'cpu', 'hns', 'lac', 'mqj', 'pir', 'spy', 'txq',
-                                     'zpu', 'blz', 'crn', 'hto', 'lat', 'msy', 'pjt', 'sri', 'txu', 'zpz', 'bmr', 'cso',
-                                     'hub', 'lex', 'mto', 'pls', 'srm', 'udu', 'ztq', 'bmu', 'ctu', 'lgl', 'muy', 'poi',
-                                     'srn', 'zty', 'bnp', 'cuc', 'lid', 'mxb', 'stp', 'upv', 'zyp', 'boa', 'cui', 'huu',
-                                     'mxq', 'sus', 'ura', 'boj', 'cuk', 'huv', 'llg', 'mxt', 'poy', 'suz', 'urb', 'box',
-                                     'cwe', 'hvn', 'prf', 'urt', 'bpr', 'cya', 'ign', 'lww', 'myk', 'ptu', 'usp', 'bps',
-                                     'daa', 'ikk', 'maj', 'myy', 'vid', 'bqc', 'dah', 'nab', 'qub', 'tac', 'bqp', 'ded',
-                                     'imo', 'maq', 'nas', 'quf', 'taj', 'vmy']
+        pretrained_language_codes = [
+            "eng"  "deu"  "fra"  "spa"  "cmn"  "por"  "pol"  "ita"  "nld"  "ell"  "fin"  "vie"  "jpn"  "rus"  "hun"  "asm"  "ben"  "brx"  "dgo"  "guj"  "hin"  "kan"  "kas"  "knn"  "mai"  "mal"  "mni"  "mar"  "nep"  "ory"  "pan"  "san"  "sat"  "snd"  "tam"  "tel"  "urd"  "bem"  "swh"  "amh"  "wol"  "chv"  "iba"  "jav"  "fon"  "hau"  "lbb"  "kik"  "lin"  "lug"  "luo"  "sxb"  "yor"  "nya"  "loz"  "toi"  "afr"  "arb"  "ast"  "azj"  "bel"  "bul"  "bos"  "cat"  "ceb"  "sdh"  "ces"  "cym"  "dan"  "ekk"  "pes"  "fil"  "gle"  "glg"  "heb"  "hrv"  "hye"  "ind"  "ibo"  "isl"  "kat"  "kam"  "kea"  "kaz"  "khm"  "kor"  "ltz"  "lao"  "lit"  "lvs"  "mri"  "mkd"  "xng"  "zsm"  "mlt"  "oci"  "pst"  "ron"  "slk"  "slv"  "sna"  "som"  "srp"  "swe"  "tgk"  "tur"  "ukr"  "umb"  "uzn"  "bhd"  "kfs"  "gbk"  "bgc"  "xnr"  "kfx"  "mjl"  "bfz"  "acf"  "bss"  "inb"  "nca"  "quh"  "wap"  "acr"  "bus"  "dgr"  "maz"  "nch"  "qul"  "tav"  "wmw"  "acu"  "byr"  "dik"  "iou"  "mbb"  "ncj"  "qvc"  "tbc"  "xed"  "agd"  "bzh"  "djk"  "ipi"  "mbc"  "ncl"  "qve"  "tbg"  "xon"  "agg"  "bzj"  "dop"  "jac"  "mbh"  "ncu"  "qvh"  "tbl"  "xtd"  "agn"  "caa"  "jic"  "mbj"  "ndj"  "qvm"  "tbz"  "xtm"  "agr"  "cab"  "emp"  "jiv"  "mbt"  "nfa"  "qvn"  "tca"  "yaa"  "agu"  "cap"  "jvn"  "mca"  "ngp"  "qvs"  "tcs"  "yad"  "aia"  "car"  "ese"  "mcb"  "ngu"  "qvw"  "yal"  "cax"  "kaq"  "mcd"  "nhe"  "qvz"  "tee"  "ycn"  "ake"  "cbc"  "far"  "mco"  "qwh"  "yka"  "alp"  "cbi"  "kdc"  "mcp"  "nhu"  "qxh"  "ame"  "cbr"  "gai"  "kde"  "mcq"  "nhw"  "qxn"  "tew"  "yre"  "amf"  "cbs"  "gam"  "kdl"  "mdy"  "nhy"  "qxo"  "tfr"  "yva"  "amk"  "cbt"  "geb"  "kek"  "med"  "nin"  "rai"  "zaa"  "apb"  "cbu"  "glk"  "ken"  "mee"  "nko"  "rgu"  "zab"  "apr"  "cbv"  "meq"  "tgo"  "zac"  "arl"  "cco"  "gng"  "kje"  "met"  "nlg"  "rop"  "tgp"  "zad"  "grc"  "klv"  "mgh"  "nnq"  "rro"  "zai"  "ata"  "cek"  "gub"  "kmu"  "mib"  "noa"  "ruf"  "tna"  "zam"  "atb"  "cgc"  "guh"  "kne"  "mie"  "not"  "rug"  "tnk"  "zao"  "atg"  "chf"  "knf"  "mih"  "npl"  "tnn"  "zar"  "awb"  "chz"  "gum"  "knj"  "mil"  "sab"  "tnp"  "zas"  "cjo"  "guo"  "ksr"  "mio"  "obo"  "seh"  "toc"  "zav"  "azg"  "cle"  "gux"  "kue"  "mit"  "omw"  "sey"  "tos"  "zaw"  "azz"  "cme"  "gvc"  "kvn"  "miz"  "ood"  "sgb"  "tpi"  "zca"  "bao"  "cni"  "gwi"  "kwd"  "mkl"  "shp"  "tpt"  "zga"  "bba"  "cnl"  "gym"  "kwf"  "mkn"  "ote"  "sja"  "trc"  "ziw"  "bbb"  "cnt"  "gyr"  "kwi"  "mop"  "otq"  "snn"  "ttc"  "zlm"  "cof"  "hat"  "kyc"  "mox"  "pab"  "snp"  "tte"  "zos"  "bgt"  "con"  "kyf"  "mpm"  "pad"  "tue"  "zpc"  "bjr"  "cot"  "kyg"  "mpp"  "soy"  "tuf"  "zpl"  "bjv"  "cpa"  "kyq"  "mpx"  "pao"  "tuo"  "zpm"  "bjz"  "cpb"  "hlt"  "kyz"  "mqb"  "pib"  "spp"  "zpo"  "bkd"  "cpu"  "hns"  "lac"  "mqj"  "pir"  "spy"  "txq"  "zpu"  "blz"  "crn"  "hto"  "lat"  "msy"  "pjt"  "sri"  "txu"  "zpz"  "bmr"  "cso"  "hub"  "lex"  "mto"  "pls"  "srm"  "udu"  "ztq"  "bmu"  "ctu"  "lgl"  "muy"  "poi"  "srn"  "zty"  "bnp"  "cuc"  "lid"  "mxb"  "stp"  "upv"  "zyp"  "boa"  "cui"  "huu"  "mxq"  "sus"  "ura"  "boj"  "cuk"  "huv"  "llg"  "mxt"  "poy"  "suz"  "urb"  "box"  "cwe"  "hvn"  "prf"  "urt"  "bpr"  "cya"  "ign"  "lww"  "myk"  "ptu"  "usp"  "bps"  "daa"  "ikk"  "maj"  "myy"  "vid"  "bqc"  "dah"  "nab"  "qub"  "tac"  "bqp"  "ded"  "imo"  "maq"  "nas"  "quf"  "taj"  "vmy"
+            ]
         pretrained_language_ids = list()  # an alternative to the valid_language_ids
         for language_code in pretrained_language_codes:
             pretrained_language_ids.append(less_loss.iso_codes_to_ids[language_code])
@@ -148,7 +112,6 @@ def train_loop(net,
     duration_losses_total = list()
     pitch_losses_total = list()
     energy_losses_total = list()
-    less_losses_total = list()
 
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -181,12 +144,12 @@ def train_loop(net,
     if not fine_tune and not resume and use_less_loss and not freeze_lang_embs:
         print("Priming the language embedding space...")
         less_values = list()
-        for i in tqdm(range(warmup_steps * 2)):
-            language_ids = random.sample(valid_language_ids, batch_size)
+        for i in tqdm(range(warmup_steps * 4)):
+            language_ids = random.sample(valid_language_ids, batch_size * 2)
             language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
             less_value_unsupervised = less_loss(language_ids, language_embeddings)
-            optimizer.zero_grad()
             less_values.append(less_value_unsupervised.item())
+            optimizer.zero_grad()
             less_value_unsupervised.backward()
             optimizer.step()
             if i % warmup_steps // 2 == 0:
@@ -248,11 +211,6 @@ def train_loop(net,
             run_stochastic=run_stochastic
         )
 
-        if use_less_loss:
-            language_embeddings_seen = model.encoder.language_embedding(lang_ids)
-            language_ids = random.sample(valid_language_ids, batch_size)
-            language_embeddings_random = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
-            less_value = less_loss(lang_ids.cpu().squeeze().tolist() + language_ids, torch.cat([language_embeddings_seen, language_embeddings_random], dim=0))
 
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
@@ -265,8 +223,6 @@ def train_loop(net,
         train_loss = train_loss + duration_loss
         train_loss = train_loss + pitch_loss
         train_loss = train_loss + energy_loss
-        if use_less_loss:
-            train_loss = train_loss + less_value * 2
 
         if stochastic_loss is not None:
             if torch.isnan(stochastic_loss) or torch.isinf(stochastic_loss):
@@ -281,8 +237,6 @@ def train_loop(net,
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
-        if use_less_loss:
-            less_losses_total.append(less_value.item())
 
         optimizer.zero_grad()
         if type(train_loss) is float:
@@ -325,7 +279,6 @@ def train_loop(net,
                         "duration_loss"           : round(sum(duration_losses_total) / len(duration_losses_total), 5),
                         "pitch_loss"              : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                         "energy_loss"             : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                        "embedding_structure_loss": 0.0 if len(less_losses_total) == 0 else round(sum(less_losses_total) / len(less_losses_total), 5),
                         "learning_rate"           : optimizer.param_groups[0]['lr']
                     }, step=step_counter)
 
@@ -356,7 +309,6 @@ def train_loop(net,
             duration_losses_total = list()
             pitch_losses_total = list()
             energy_losses_total = list()
-            less_losses_total = list()
             if gpu_count > 1:
                 # just to be extra sure tht all models are synchronous
                 torch.distributed.barrier()

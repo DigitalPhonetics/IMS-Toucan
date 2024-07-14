@@ -25,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_reworked_v2")
+    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_reworked_v2_8dim")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
@@ -50,6 +50,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     chunk_count = 100
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
     for index in range(chunk_count):
+        if index > 2:
+            break
         lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=chunks[index],
                                                           corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_english_chunk_{index}"),
                                                           lang="eng",
@@ -86,6 +88,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     chunk_count = 20
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_german(), split_n=chunk_count)
     for index in range(chunk_count):
+        if index > 3:
+            break
         lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=chunks[index],
                                                           corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_german_chunk_{index}"),
                                                           lang="deu",
@@ -182,7 +186,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-
     for lang in lang_to_datasets:
         datasets.append(ConcatDataset(lang_to_datasets[lang]))
     re_ordered_datasets = list()
@@ -234,6 +237,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                use_wandb=use_wandb,
                train_samplers=train_samplers,
                gpu_count=gpu_count,
-               use_less_loss=False)
+               use_less_loss=True)
     if use_wandb:
         wandb.finish()

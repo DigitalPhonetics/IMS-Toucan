@@ -25,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage2_reworked_v2")
+    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage2_reworked_v2_8dim")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
@@ -37,7 +37,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if gpu_count > 1:
         rank = int(os.environ["LOCAL_RANK"])
         torch.cuda.set_device(rank)
-        torch.distributed.init_process_group(backend="nccl")
+        torch.distributed.init_process_group(backend="nccl", world_size=gpu_count, rank=rank)
     else:
         rank = 0
 

@@ -92,7 +92,7 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
-                 lang_emb_size=32,  # lower dimensions seem to work better
+                 lang_emb_size=8,  # lower dimensions seem to work better
                  integrate_language_embedding_into_encoder_out=True,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
