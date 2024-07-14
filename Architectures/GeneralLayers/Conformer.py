@@ -88,6 +88,8 @@ class Conformer(torch.nn.Module):
                 self.language_embedding_projection = lambda x: x
             else:
                 self.language_embedding_projection = torch.nn.Linear(lang_emb_size, attention_dim)
+            self.language_emb_norm = LayerNorm(attention_dim)
+
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
         encoder_selfattn_layer_args = (attention_heads, attention_dim, attention_dropout_rate, zero_triu)
@@ -130,6 +132,7 @@ class Conformer(torch.nn.Module):
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
             projected_lang_embs = self.language_embedding_projection(lang_embs).unsqueeze(-1).transpose(1, 2)
+            projected_lang_embs = self.language_emb_norm(projected_lang_embs)
             xs = xs + projected_lang_embs  # offset phoneme representation by language specific offset
 
         xs = self.pos_enc(xs)
@@ -139,21 +142,28 @@ class Conformer(torch.nn.Module):
                 if isinstance(xs, tuple):
                     x, pos_emb = xs[0], xs[1]
                     if self.conformer_type != "encoder":
-                        x = integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
+                        x = integrate_with_utt_embed(hs=x,
+                                                     utt_embeddings=utterance_embedding,
+                                                     projection=self.decoder_embedding_projections[encoder_index],
+                                                     embedding_training=self.use_conditional_layernorm_embedding_integration)
                     xs = (x, pos_emb)
                 else:
                     if self.conformer_type != "encoder":
-                        xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
+                        xs = integrate_with_utt_embed(hs=xs,
+                                                      utt_embeddings=utterance_embedding,
+                                                      projection=self.decoder_embedding_projections[encoder_index],
+                                                      embedding_training=self.use_conditional_layernorm_embedding_integration)
             xs, masks = encoder(xs, masks)
 
         if isinstance(xs, tuple):
             xs = xs[0]
 
-        if self.use_output_norm and not (self.utt_embed and self.conformer_type == "encoder"):
-            xs = self.output_norm(xs)
-
         if self.utt_embed and self.conformer_type == "encoder":
-            xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding,
-                                          projection=self.encoder_embedding_projection, embedding_training=self.use_conditional_layernorm_embedding_integration)
+            xs = integrate_with_utt_embed(hs=xs,
+                                          utt_embeddings=utterance_embedding,
+                                          projection=self.encoder_embedding_projection,
+                                          embedding_training=self.use_conditional_layernorm_embedding_integration)
+        elif self.use_output_norm:
+            xs = self.output_norm(xs)
 
         return xs, masks

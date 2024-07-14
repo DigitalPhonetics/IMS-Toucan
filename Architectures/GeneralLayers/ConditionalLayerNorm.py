@@ -112,7 +112,6 @@ class AdaIN1d(nn.Module):
         self.fc = nn.Linear(style_dim, num_features * 2)
 
     def forward(self, x, s):
-        s = torch.nn.functional.normalize(s)
         h = self.fc(s)
         h = h.view(h.size(0), h.size(1), 1)
         gamma, beta = torch.chunk(h, chunks=2, dim=1)

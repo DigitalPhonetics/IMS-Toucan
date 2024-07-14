@@ -107,11 +107,11 @@ class ToucanTTS(torch.nn.Module):
 
         if self.integrate_language_embedding_into_encoder_out:
             if embedding_integration == "AdaIN":
-                self.language_embedding_infusion = AdaIN1d(style_dim=lang_emb_size, num_features=attention_dimension)
+                self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
             elif embedding_integration == "ConditionalLayerNorm":
-                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=lang_emb_size, hidden_dim=attention_dimension)
+                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
             else:
-                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + lang_emb_size, attention_dimension)
+                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
 
         self.duration_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                              out_channels=1,
@@ -220,23 +220,37 @@ class ToucanTTS(torch.nn.Module):
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         if self.integrate_language_embedding_into_encoder_out:
-            lang_embs = self.encoder.language_embedding(lang_ids).squeeze(-1).detach()
-            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
+            with torch.no_grad():
+                lang_embs = self.encoder.language_embedding(lang_ids)
+                lang_embs = self.encoder.language_embedding_projection(lang_embs)
+                lang_embs = self.encoder.language_emb_norm(lang_embs)
+            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs.detach(), projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         # predicting pitch, energy and durations
         reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
-        pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=30, temperature=prosody_creativity, c=utterance_embedding) if gold_pitch is None else gold_pitch
+        pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space,
+                                                 mask=text_masks.float(),
+                                                 n_timesteps=20,
+                                                 temperature=prosody_creativity,
+                                                 c=utterance_embedding) if gold_pitch is None else gold_pitch
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
         reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.1).transpose(1, 2)
-        energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=30, temperature=prosody_creativity, c=utterance_embedding) if gold_energy is None else gold_energy
+        energy_predictions = self.energy_predictor(mu=reduced_energy_space,
+                                                   mask=text_masks.float(),
+                                                   n_timesteps=20,
+                                                   temperature=prosody_creativity,
+                                                   c=utterance_embedding) if gold_energy is None else gold_energy
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
         embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
         reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.1).transpose(1, 2)
-        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=30, temperature=prosody_creativity, c=utterance_embedding)), min=0.0).long().squeeze(
-            1) if gold_durations is None else gold_durations
+        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=reduced_duration_space,
+                                                                             mask=text_masks.float(),
+                                                                             n_timesteps=20,
+                                                                             temperature=prosody_creativity,
+                                                                             c=utterance_embedding)), min=0.0).long().squeeze(1) if gold_durations is None else gold_durations
 
         # modifying the predictions with control parameters
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
@@ -261,7 +275,7 @@ class ToucanTTS(torch.nn.Module):
 
         refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
                                                           mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2),
-                                                          n_timesteps=30,
+                                                          n_timesteps=25,
                                                           temperature=0.05,  # low temperature, so the model follows the specified prosody curves better.
                                                           c=utterance_embedding).transpose(1, 2)
 

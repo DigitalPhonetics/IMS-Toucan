@@ -43,7 +43,7 @@ class ToucanTTS(torch.nn.Module):
                  use_cnn_in_conformer=True,
 
                  # encoder
-                 encoder_layers=8,
+                 encoder_layers=6,
                  encoder_units=1536,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
@@ -53,7 +53,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=2,
+                 decoder_layers=4,
                  decoder_units=1536,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 works for spectrograms
@@ -83,17 +83,17 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # cfm decoder
-                 cfm_filter_channels=512,
-                 cfm_heads=4,
-                 cfm_layers=5,
+                 cfm_filter_channels=256,
+                 cfm_heads=8,
+                 cfm_layers=4,
                  cfm_kernel_size=5,
                  cfm_p_dropout=0.1,
 
                  # additional features
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
-                 lang_emb_size=192,
-                 integrate_language_embedding_into_encoder_out=False,
+                 lang_emb_size=32,  # lower dimensions seem to work better
+                 integrate_language_embedding_into_encoder_out=True,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
         super().__init__()
@@ -183,11 +183,11 @@ class ToucanTTS(torch.nn.Module):
 
         if self.integrate_language_embedding_into_encoder_out:
             if embedding_integration == "AdaIN":
-                self.language_embedding_infusion = AdaIN1d(style_dim=lang_emb_size, num_features=attention_dimension)
+                self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
             elif embedding_integration == "ConditionalLayerNorm":
-                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=lang_emb_size, hidden_dim=attention_dimension)
+                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
             else:
-                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + lang_emb_size, attention_dimension)
+                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                       out_channels=attention_dimension,
@@ -352,8 +352,11 @@ class ToucanTTS(torch.nn.Module):
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         if self.integrate_language_embedding_into_encoder_out:
-            lang_embs = self.encoder.language_embedding(lang_ids).squeeze(-1)
-            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
+            with torch.no_grad():
+                lang_embs = self.encoder.language_embedding(lang_ids)
+                lang_embs = self.encoder.language_embedding_projection(lang_embs)
+                lang_embs = self.encoder.language_emb_norm(lang_embs)
+            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs.detach(), projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         if is_inference:
             # predicting pitch, energy and durations
