@@ -22,6 +22,7 @@ class LanguageEmbeddingSpaceStructureLoss(torch.nn.Module):
         #    self.asp_sim = pickle.load(dictfile)
         # self.lang_list = list(self.asp_sim.keys())  # list of all languages, to get lang_b's index
 
+        self.largest_value_map_dist = 0.0
         for _, values in self.map_dist.items():
             for _, value in values.items():
                 self.largest_value_map_dist = max(self.largest_value_map_dist, value)
