@@ -61,7 +61,7 @@ class LanguageEmbeddingSpaceStructureLoss(torch.nn.Module):
                         map_dist = self.map_dist[lang_2][lang_1] / self.largest_value_map_dist
 
                     # Value Range Normalized ASP Dist
-                    lang_2_idx = self.lang_list.index(lang_2)
+                    # lang_2_idx = self.lang_list.index(lang_2)
                     # asp_dist = 1.0 - self.asp_sim[lang_1][lang_2_idx]  # it's a similarity measure that goes from 0 to 1, so we subtract it from 1 to turn it into a distance
 
                     # Average distance should be similar to embedding distance to bring some structure into the embedding-space
