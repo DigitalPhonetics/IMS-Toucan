@@ -169,7 +169,6 @@ def train_loop(net,
             if i % warmup_steps // 2 == 0:
                 print(sum(less_values) / len(less_values))
                 less_values = list()
-        print("\n\n" + sum(less_values) / len(less_values))
         for param_group in optimizer.param_groups:
             param_group['lr'] = original_lr
 
