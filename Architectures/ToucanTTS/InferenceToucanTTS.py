@@ -8,6 +8,7 @@ from torch.nn import Tanh
 from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
 from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.Conformer import Conformer
+from Architectures.GeneralLayers.LayerNorm import LayerNorm
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
 from Architectures.ToucanTTS.flow_matching import CFMDecoder
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -106,6 +107,8 @@ class ToucanTTS(torch.nn.Module):
                                  embedding_integration=embedding_integration)
 
         if self.integrate_language_embedding_into_encoder_out:
+            self.language_embedding_projection = torch.nn.Linear(lang_emb_size, attention_dimension)
+            self.language_emb_norm = LayerNorm(attention_dimension)
             if embedding_integration == "AdaIN":
                 self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
             elif embedding_integration == "ConditionalLayerNorm":
@@ -208,7 +211,7 @@ class ToucanTTS(torch.nn.Module):
         # this is necessary, because of the way we represent modifiers to keep them identifiable.
 
         utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
-        
+
         if not self.multilingual_model:
             lang_ids = None
 
@@ -220,11 +223,10 @@ class ToucanTTS(torch.nn.Module):
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         if self.integrate_language_embedding_into_encoder_out:
-            with torch.no_grad():
-                lang_embs = self.encoder.language_embedding(lang_ids)
-                lang_embs = self.encoder.language_embedding_projection(lang_embs)
-                lang_embs = self.encoder.language_emb_norm(lang_embs)
-            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs.detach(), projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
+            lang_embs = self.encoder.language_embedding(lang_ids)
+            lang_embs = self.language_embedding_projection(lang_embs)
+            lang_embs = self.language_emb_norm(lang_embs)
+            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         # predicting pitch, energy and durations
         reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
@@ -334,19 +336,19 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.to(text.device)
 
         outs, \
-            predicted_durations, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text.unsqueeze(0),
-                                               text_length,
-                                               gold_durations=durations,
-                                               gold_pitch=pitch,
-                                               gold_energy=energy,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                               duration_scaling_factor=duration_scaling_factor,
-                                               pitch_variance_scale=pitch_variance_scale,
-                                               energy_variance_scale=energy_variance_scale,
-                                               pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                               prosody_creativity=prosody_creativity)
+        predicted_durations, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text.unsqueeze(0),
+                                           text_length,
+                                           gold_durations=durations,
+                                           gold_pitch=pitch,
+                                           gold_energy=energy,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                           duration_scaling_factor=duration_scaling_factor,
+                                           pitch_variance_scale=pitch_variance_scale,
+                                           energy_variance_scale=energy_variance_scale,
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                           prosody_creativity=prosody_creativity)
 
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions

@@ -158,7 +158,7 @@ def train_loop(net,
         for param_group in optimizer.param_groups:
             param_group['lr'] = pretraining_lr
         less_values = list()
-        for i in tqdm(range(warmup_steps * 4)):
+        for i in tqdm(range(warmup_steps * 8)):
             language_ids = random.sample(valid_language_ids, batch_size)
             language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
             less_value_unsupervised = less_loss(language_ids, language_embeddings)
@@ -169,6 +169,7 @@ def train_loop(net,
             if i % warmup_steps // 2 == 0:
                 print(sum(less_values) / len(less_values))
                 less_values = list()
+        print("\n\n" + sum(less_values) / len(less_values))
         for param_group in optimizer.param_groups:
             param_group['lr'] = original_lr
 
