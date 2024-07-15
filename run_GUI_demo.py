@@ -24,6 +24,7 @@ class TTSWebUI:
                                                       type="value",
                                                       value='English (eng)',
                                                       label="Select the Language of the Text (type on your keyboard to find it quickly)"),
+                                          gr.Audio(type="filepath", show_label=True, container=True, label="Voice to Clone (if left empty, will use an artificial voice instead)"),
                                           gr.Slider(minimum=0, maximum=available_artificial_voices, step=1,
                                                     value=279,
                                                     label="Random Seed for the artificial Voice"),
@@ -42,9 +43,11 @@ class TTSWebUI:
                                   article=article)
         self.iface.launch()
 
+
     def read(self,
              prompt,
              language,
+             reference_audio,
              voice_seed,
              prosody_creativity,
              duration_scaling_factor,
@@ -54,6 +57,7 @@ class TTSWebUI:
              emb2
              ):
         sr, wav, fig = self.controllable_ui.read(prompt,
+                                                 reference_audio,
                                                  language.split(" ")[-1].split("(")[1].split(")")[0],
                                                  language.split(" ")[-1].split("(")[1].split(")")[0],
                                                  voice_seed,

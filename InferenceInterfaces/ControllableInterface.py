@@ -25,6 +25,7 @@ class ControllableInterface:
 
     def read(self,
              prompt,
+             reference_audio,
              language,
              accent,
              voice_seed,
@@ -43,20 +44,24 @@ class ControllableInterface:
              ):
         if self.current_language != language:
             self.model.set_phonemizer_language(language)
+            print(f"switched phonemizer language to {language}")
             self.current_language = language
         if self.current_accent != accent:
             self.model.set_accent_language(accent)
+            print(f"switched accent language to {accent}")
             self.current_accent = accent
-
-        self.wgan.set_latent(voice_seed)
-        controllability_vector = torch.tensor([emb_slider_1,
-                                               emb_slider_2,
-                                               emb_slider_3,
-                                               emb_slider_4,
-                                               emb_slider_5,
-                                               emb_slider_6], dtype=torch.float32)
-        embedding = self.wgan.modify_embed(controllability_vector)
-        self.model.set_utterance_embedding(embedding=embedding)
+        if reference_audio is None:
+            self.wgan.set_latent(voice_seed)
+            controllability_vector = torch.tensor([emb_slider_1,
+                                                   emb_slider_2,
+                                                   emb_slider_3,
+                                                   emb_slider_4,
+                                                   emb_slider_5,
+                                                   emb_slider_6], dtype=torch.float32)
+            embedding = self.wgan.modify_embed(controllability_vector)
+            self.model.set_utterance_embedding(embedding=embedding)
+        else:
+            self.model.set_utterance_embedding(reference_audio)
 
         phones = self.model.text2phone.get_phone_string(prompt)
         if len(phones) > 1800:
@@ -95,7 +100,7 @@ class ControllableInterface:
                     self.model.set_accent_language("eng")
                     self.current_accent = "eng"
 
-        print(prompt)
+        print(prompt + "\n\n")
         wav, sr, fig = self.model(prompt,
                                   input_is_phones=False,
                                   duration_scaling_factor=duration_scaling_factor,

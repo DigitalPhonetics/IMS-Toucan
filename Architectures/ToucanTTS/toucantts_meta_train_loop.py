@@ -153,6 +153,10 @@ def train_loop(net,
 
     if not fine_tune and not resume and use_less_loss and not freeze_lang_embs:
         print("Priming the language embedding space...")
+        original_lr = optimizer.param_groups[0]['lr']
+        pretraining_lr = 0.001
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = pretraining_lr
         less_values = list()
         for i in tqdm(range(warmup_steps * 4)):
             language_ids = random.sample(valid_language_ids, batch_size)
@@ -165,6 +169,8 @@ def train_loop(net,
             if i % warmup_steps // 2 == 0:
                 print(sum(less_values) / len(less_values))
                 less_values = list()
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = original_lr
 
     for step_counter in tqdm(range(steps_run_previously, steps)):
         run_stochastic = step_counter > warmup_steps
@@ -220,7 +226,6 @@ def train_loop(net,
             return_feats=False,
             run_stochastic=run_stochastic
         )
-
 
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
@@ -284,12 +289,12 @@ def train_loop(net,
 
                 if use_wandb:
                     wandb.log({
-                        "regression_loss"         : round(sum(regression_losses_total) / len(regression_losses_total), 5),
-                        "stochastic_loss"         : round(sum(stochastic_losses_total) / len(stochastic_losses_total), 5),
-                        "duration_loss"           : round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                        "pitch_loss"              : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                        "energy_loss"             : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                        "learning_rate"           : optimizer.param_groups[0]['lr']
+                        "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
+                        "stochastic_loss": round(sum(stochastic_losses_total) / len(stochastic_losses_total), 5),
+                        "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                        "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                        "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
+                        "learning_rate"  : optimizer.param_groups[0]['lr']
                     }, step=step_counter)
 
                 try:

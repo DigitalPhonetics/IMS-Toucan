@@ -40,13 +40,7 @@ def sound_of_silence_single_utt(version, model_id="Meta", exec_device="cpu", spe
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
-               sentence=["""In restless dreams I walked alone,
-Narrow streets of cobblestone.
-Beneath the halo of a streetlamp,
-I turned my collar to the cold and damp,
-When my eyes were stabbed, by the flash of a neon light,
-That split the night.
-And touched the sound, of silence."""],
+               sentence=["In restless dreams I walked alone, Narrow streets of cobblestone. Beneath the halo of a streetlamp, I turned my collar to the cold and damp,  When my eyes were stabbed, by the flash of a neon light, That split the night. And touched the sound, of silence."],
                filename=f"audios/{version}_sound_of_silence_as_single_utterance.wav",
                device=exec_device,
                language="eng",
@@ -97,7 +91,17 @@ if __name__ == '__main__':
 
     merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
 
-    the_raven(version="new_voc",
+    the_raven(version="128dim_lang_emb",
+              model_id="Meta",
+              exec_device=exec_device,
+              speaker_reference=merged_speaker_references)
+
+    die_glocke(version="128dim_lang_emb",
+               model_id="Meta",
+               exec_device=exec_device,
+               speaker_reference=merged_speaker_references)
+
+    viet_poem(version="128dim_lang_emb",
               model_id="Meta",
               exec_device=exec_device,
               speaker_reference=merged_speaker_references)

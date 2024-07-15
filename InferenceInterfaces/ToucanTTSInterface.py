@@ -109,7 +109,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True, device=self.device)
 
     def set_accent_language(self, lang_id):
-        if lang_id in ['ajp', 'ajt', 'lak', 'lno', 'nul', 'pii', 'plj', 'slq', 'smd', 'snb', 'tpw', 'wya', 'zua', 'en-us', 'en-sc', 'fr-be', 'fr-sw', 'pt-br', 'spa-lat', 'vi-ctr', 'vi-so']:
+        if lang_id in {'ajp', 'ajt', 'lak', 'lno', 'nul', 'pii', 'plj', 'slq', 'smd', 'snb', 'tpw', 'wya', 'zua', 'en-us', 'en-sc', 'fr-be', 'fr-sw', 'pt-br', 'spa-lat', 'vi-ctr', 'vi-so'}:
             if lang_id == 'vi-so' or lang_id == 'vi-ctr':
                 lang_id = 'vie'
             elif lang_id == 'spa-lat':
@@ -121,7 +121,7 @@ class ToucanTTSInterface(torch.nn.Module):
             elif lang_id == 'en-sc' or lang_id == 'en-us':
                 lang_id = 'eng'
             else:
-                # no clue where these others are even coming from, they are not in ISO 639-2
+                # no clue where these others are even coming from, they are not in ISO 639-3
                 lang_id = 'eng'
 
         self.lang_id = get_language_id(lang_id).to(self.device)

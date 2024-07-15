@@ -7,6 +7,7 @@ from torch.nn import Tanh
 from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
 from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.Conformer import Conformer
+from Architectures.GeneralLayers.LayerNorm import LayerNorm
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
 from Architectures.ToucanTTS.StochasticToucanTTSLoss import StochasticToucanTTSLoss
 from Architectures.ToucanTTS.flow_matching import CFMDecoder
@@ -92,7 +93,7 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
-                 lang_emb_size=8,  # lower dimensions seem to work better
+                 lang_emb_size=16,  # lower dimensions seem to work better
                  integrate_language_embedding_into_encoder_out=True,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
@@ -182,6 +183,8 @@ class ToucanTTS(torch.nn.Module):
                                  embedding_integration=embedding_integration)
 
         if self.integrate_language_embedding_into_encoder_out:
+            self.language_embedding_projection = torch.nn.Linear(lang_emb_size, attention_dimension)
+            self.language_emb_norm = LayerNorm(attention_dimension)
             if embedding_integration == "AdaIN":
                 self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
             elif embedding_integration == "ConditionalLayerNorm":
@@ -352,11 +355,10 @@ class ToucanTTS(torch.nn.Module):
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         if self.integrate_language_embedding_into_encoder_out:
-            with torch.no_grad():
-                lang_embs = self.encoder.language_embedding(lang_ids)
-                lang_embs = self.encoder.language_embedding_projection(lang_embs)
-                lang_embs = self.encoder.language_emb_norm(lang_embs)
-            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs.detach(), projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
+            lang_embs = self.encoder.language_embedding(lang_ids)
+            lang_embs = self.language_embedding_projection(lang_embs)
+            lang_embs = self.language_emb_norm(lang_embs)
+            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         if is_inference:
             # predicting pitch, energy and durations
