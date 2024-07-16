@@ -91,17 +91,17 @@ if __name__ == '__main__':
 
     merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
 
-    the_raven(version="128dim_lang_emb",
+    the_raven(version="16dim_lang_emb",
               model_id="Meta",
               exec_device=exec_device,
               speaker_reference=merged_speaker_references)
 
-    die_glocke(version="128dim_lang_emb",
+    die_glocke(version="16dim_lang_emb",
                model_id="Meta",
                exec_device=exec_device,
                speaker_reference=merged_speaker_references)
 
-    viet_poem(version="128dim_lang_emb",
+    viet_poem(version="16dim_lang_emb",
               model_id="Meta",
               exec_device=exec_device,
               speaker_reference=merged_speaker_references)

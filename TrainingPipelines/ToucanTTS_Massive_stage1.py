@@ -25,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_reworked_v3")
+    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_reworked_v4")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
@@ -184,6 +184,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                use_wandb=use_wandb,
                train_samplers=train_samplers,
                gpu_count=gpu_count,
-               use_less_loss=True)
+               use_less_loss=False)
     if use_wandb:
         wandb.finish()
