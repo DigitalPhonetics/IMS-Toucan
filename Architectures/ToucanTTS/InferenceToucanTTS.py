@@ -273,9 +273,9 @@ class ToucanTTS(torch.nn.Module):
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
 
-        # frames = self.output_projection(decoded_speech) # this is only needed for training
+        preliminary_spectrogram = self.output_projection(decoded_speech)
 
-        refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
+        refined_codec_frames = self.flow_matching_decoder(mu=preliminary_spectrogram.transpose(1, 2),
                                                           mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2),
                                                           n_timesteps=25,
                                                           temperature=0.05,  # low temperature, so the model follows the specified prosody curves better.
