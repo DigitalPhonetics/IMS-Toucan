@@ -5,14 +5,10 @@ from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
 
-from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
-from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.Conformer import Conformer
-from Architectures.GeneralLayers.LayerNorm import LayerNorm
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
 from Architectures.ToucanTTS.flow_matching import CFMDecoder
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from Utility.utils import integrate_with_utt_embed
 from Utility.utils import make_non_pad_mask
 
 
@@ -107,14 +103,7 @@ class ToucanTTS(torch.nn.Module):
                                  embedding_integration=embedding_integration)
 
         if self.integrate_language_embedding_into_encoder_out:
-            self.language_embedding_projection = torch.nn.Linear(lang_emb_size, attention_dimension)
-            self.language_emb_norm = LayerNorm(attention_dimension)
-            if embedding_integration == "AdaIN":
-                self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
-            elif embedding_integration == "ConditionalLayerNorm":
-                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
-            else:
-                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
+            self.language_embedding_projection = torch.nn.Linear(lang_emb_size + utt_embed_dim, utt_embed_dim)
 
         self.duration_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                              out_channels=1,
@@ -218,15 +207,16 @@ class ToucanTTS(torch.nn.Module):
         if not self.multispeaker_model:
             utterance_embedding = None
 
+        if utterance_embedding is not None:
+            utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
+            if self.integrate_language_embedding_into_encoder_out and lang_ids is not None:
+                lang_embs = self.encoder.language_embedding(lang_ids)
+                lang_embs = torch.nn.functional.normalize(lang_embs)
+                utterance_embedding = self.language_embedding_projection(torch.cat([lang_embs, utterance_embedding], dim=1))
+
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
-
-        if self.integrate_language_embedding_into_encoder_out:
-            lang_embs = self.encoder.language_embedding(lang_ids)
-            lang_embs = self.language_embedding_projection(lang_embs)
-            lang_embs = self.language_emb_norm(lang_embs)
-            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         # predicting pitch, energy and durations
         reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
