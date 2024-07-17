@@ -340,7 +340,7 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
             if self.integrate_language_embedding_into_encoder_out and lang_ids is not None:
                 lang_embs = self.encoder.language_embedding(lang_ids)
-                lang_embs = torch.nn.functional.normalize(lang_embs)
+                lang_embs = torch.nn.functional.normalize(lang_embs).detach()
                 utterance_embedding = self.language_embedding_projection(torch.cat([lang_embs, utterance_embedding], dim=1))
 
         # encoding the texts
