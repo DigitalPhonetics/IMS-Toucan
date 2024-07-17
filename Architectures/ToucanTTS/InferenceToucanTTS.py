@@ -166,7 +166,6 @@ class ToucanTTS(torch.nn.Module):
                                  embedding_integration=embedding_integration)
 
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
-        self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
         self.pitch_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
         self.energy_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
         self.duration_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
