@@ -31,7 +31,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=64,
                  spec_channels=128,
-                 attention_dimension=384,
+                 attention_dimension=192,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -40,7 +40,7 @@ class ToucanTTS(torch.nn.Module):
                  use_cnn_in_conformer=True,
 
                  # encoder
-                 encoder_layers=6,
+                 encoder_layers=8,
                  encoder_units=1536,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
@@ -80,9 +80,9 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # cfm decoder
-                 cfm_filter_channels=256,
+                 cfm_filter_channels=512,
                  cfm_heads=4,
-                 cfm_layers=3,
+                 cfm_layers=5,
                  cfm_kernel_size=5,
                  cfm_p_dropout=0.1,
 
@@ -90,7 +90,7 @@ class ToucanTTS(torch.nn.Module):
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
                  lang_emb_size=16,  # lower dimensions seem to work better
-                 integrate_language_embedding_into_encoder_out=True,
+                 integrate_language_embedding_into_encoder_out=False,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
         super().__init__()
