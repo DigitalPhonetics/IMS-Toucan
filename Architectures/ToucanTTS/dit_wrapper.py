@@ -62,7 +62,10 @@ class ConvNeXtBlock(nn.Module):
     def forward(self, x, c, x_mask) -> torch.Tensor:
         residual = x
         x = self.dwconv(x) * x_mask
-        x = self.norm(x.transpose(1, 2), c)
+        if c is not None:
+            x = self.norm(x.transpose(1, 2), c)
+        else:
+            x = x.transpose(1, 2)
         x = self.pwconv(x).transpose(1, 2)
         x = residual + x
         return x * x_mask

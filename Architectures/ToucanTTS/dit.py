@@ -118,15 +118,15 @@ class DiTConVBlock(nn.Module):
         x = x * x_mask
         attn_mask = x_mask.unsqueeze(1) * x_mask.unsqueeze(-1)  # shape: [batch_size, 1, time, time]
         # attn_mask = attn_mask.to(torch.bool)
-
-        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).unsqueeze(2).chunk(6, dim=1)  # shape: [batch_size, channel, 1]
-        x = x + gate_msa * self.attn(self.modulate(self.norm1(x.transpose(1, 2)).transpose(1, 2), shift_msa, scale_msa), attn_mask) * x_mask
-        # x = x.masked_fill(~x_mask, 0.0)
-        x = x + gate_mlp * self.mlp(self.modulate(self.norm2(x.transpose(1, 2)).transpose(1, 2), shift_mlp, scale_mlp), x_mask) * x_mask
-
-        # no condition version
-        # x = x + self.attn(self.norm1(x.transpose(1,2)).transpose(1,2),  attn_mask)
-        # x = x + self.mlp(self.norm1(x.transpose(1,2)).transpose(1,2), x_mask)
+        if c is not None:
+            shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).unsqueeze(2).chunk(6, dim=1)  # shape: [batch_size, channel, 1]
+            x = x + gate_msa * self.attn(self.modulate(self.norm1(x.transpose(1, 2)).transpose(1, 2), shift_msa, scale_msa), attn_mask) * x_mask
+            # x = x.masked_fill(~x_mask, 0.0)
+            x = x + gate_mlp * self.mlp(self.modulate(self.norm2(x.transpose(1, 2)).transpose(1, 2), shift_mlp, scale_mlp), x_mask) * x_mask
+        else:
+            # no condition version
+            x = x + self.attn(self.norm1(x.transpose(1, 2)).transpose(1, 2), attn_mask)
+            x = x + self.mlp(self.norm1(x.transpose(1, 2)).transpose(1, 2), x_mask)
         return x
 
     @staticmethod

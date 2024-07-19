@@ -126,7 +126,7 @@ def train_loop(net,
                 speech_batch.append(gold_speech_sample)
             gold_speech = pad_sequence(speech_batch, batch_first=True).to(device)
 
-            run_stochastic = (step_counter > warmup_steps) or fine_tune
+            run_stochastic = (step_counter > warmup_steps * 2) or fine_tune
 
             train_loss = 0.0
             utterance_embedding = batch[9].to(device)
