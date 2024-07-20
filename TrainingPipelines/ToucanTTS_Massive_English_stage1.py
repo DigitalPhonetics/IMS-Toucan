@@ -22,7 +22,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_English_v3")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_English_v4")
     os.makedirs(save_dir, exist_ok=True)
 
     if gpu_count > 1:
@@ -122,7 +122,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_set = ConcatDataset(datasets)
 
-    model = ToucanTTS()
+    model = ToucanTTS(lang_embs=None)
 
     if gpu_count > 1:
         model.to(rank)
@@ -144,7 +144,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     print("Training model")
     train_loop(net=model,
                datasets=[train_set],
-               batch_size=12,
+               batch_size=32,
                steps_per_checkpoint=1000,
                device=device,
                save_directory=save_dir,

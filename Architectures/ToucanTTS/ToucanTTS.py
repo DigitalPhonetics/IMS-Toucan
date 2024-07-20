@@ -4,15 +4,12 @@ from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
 
-from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
-from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.Conformer import Conformer
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
 from Architectures.ToucanTTS.StochasticToucanTTSLoss import StochasticToucanTTSLoss
 from Architectures.ToucanTTS.flow_matching import CFMDecoder
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import initialize
-from Utility.utils import integrate_with_utt_embed
 from Utility.utils import make_non_pad_mask
 
 
@@ -98,6 +95,12 @@ class ToucanTTS(torch.nn.Module):
                  ):
         super().__init__()
 
+        if lang_embs is None or lang_embs == 0:
+            lang_embs = None
+            integrate_language_embedding_into_encoder_out = False
+        if integrate_language_embedding_into_encoder_out:
+            utt_embed_dim = utt_embed_dim + lang_emb_size
+
         self.config = {
             "input_feature_dimensions"                     : input_feature_dimensions,
             "attention_dimension"                          : attention_dimension,
@@ -180,14 +183,6 @@ class ToucanTTS(torch.nn.Module):
                                  lang_emb_size=lang_emb_size,
                                  use_output_norm=True,
                                  embedding_integration=embedding_integration)
-
-        if self.integrate_language_embedding_into_encoder_out:
-            if embedding_integration == "AdaIN":
-                self.language_embedding_infusion = AdaIN1d(style_dim=lang_emb_size, num_features=attention_dimension)
-            elif embedding_integration == "ConditionalLayerNorm":
-                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=lang_emb_size, hidden_dim=attention_dimension)
-            else:
-                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + lang_emb_size, attention_dimension)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                       out_channels=attention_dimension,
@@ -298,20 +293,20 @@ class ToucanTTS(torch.nn.Module):
             run_stochastic (Bool): Whether to detach the inputs to the normalizing flow for stability.
         """
         outs, \
-            stochastic_loss, \
-            duration_loss, \
-            pitch_loss, \
-            energy_loss = self._forward(text_tensors=text_tensors,
-                                        text_lengths=text_lengths,
-                                        gold_speech=gold_speech,
-                                        speech_lengths=speech_lengths,
-                                        gold_durations=gold_durations,
-                                        gold_pitch=gold_pitch,
-                                        gold_energy=gold_energy,
-                                        utterance_embedding=utterance_embedding,
-                                        is_inference=False,
-                                        lang_ids=lang_ids,
-                                        run_stochastic=run_stochastic)
+        stochastic_loss, \
+        duration_loss, \
+        pitch_loss, \
+        energy_loss = self._forward(text_tensors=text_tensors,
+                                    text_lengths=text_lengths,
+                                    gold_speech=gold_speech,
+                                    speech_lengths=speech_lengths,
+                                    gold_durations=gold_durations,
+                                    gold_pitch=gold_pitch,
+                                    gold_energy=gold_energy,
+                                    utterance_embedding=utterance_embedding,
+                                    is_inference=False,
+                                    lang_ids=lang_ids,
+                                    run_stochastic=run_stochastic)
 
         # calculate loss
         regression_loss = self.criterion(predicted_features=outs,
@@ -346,14 +341,14 @@ class ToucanTTS(torch.nn.Module):
 
         if utterance_embedding is not None:
             utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
+            if self.integrate_language_embedding_into_encoder_out and lang_ids is not None:
+                lang_embs = self.encoder.language_embedding(lang_ids)
+                lang_embs = torch.nn.functional.normalize(lang_embs)
+                utterance_embedding = torch.cat([lang_embs, utterance_embedding], dim=1).detach()
 
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
-
-        if self.integrate_language_embedding_into_encoder_out:
-            lang_embs = self.encoder.language_embedding(lang_ids).squeeze(-1)
-            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         if is_inference:
             # predicting pitch, energy and durations
@@ -422,9 +417,9 @@ class ToucanTTS(torch.nn.Module):
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
-                predicted_durations.squeeze(), \
-                pitch_predictions.squeeze(), \
-                energy_predictions.squeeze()
+                   predicted_durations.squeeze(), \
+                   pitch_predictions.squeeze(), \
+                   energy_predictions.squeeze()
         else:
             if run_stochastic:
                 stochastic_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2),
@@ -434,10 +429,10 @@ class ToucanTTS(torch.nn.Module):
             else:
                 stochastic_loss = None
             return preliminary_spectrogram, \
-                stochastic_loss, \
-                duration_loss, \
-                pitch_loss, \
-                energy_loss
+                   stochastic_loss, \
+                   duration_loss, \
+                   pitch_loss, \
+                   energy_loss
 
     @torch.inference_mode()
     def inference(self,
@@ -466,15 +461,15 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         outs, \
-            duration_predictions, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text_pseudobatched,
-                                               ilens,
-                                               speech_pseudobatched,
-                                               is_inference=True,
-                                               utterance_embedding=utterance_embeddings,
-                                               lang_ids=lang_id,
-                                               run_stochastic=run_stochastic)  # (1, L, odim)
+        duration_predictions, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text_pseudobatched,
+                                           ilens,
+                                           speech_pseudobatched,
+                                           is_inference=True,
+                                           utterance_embedding=utterance_embeddings,
+                                           lang_ids=lang_id,
+                                           run_stochastic=run_stochastic)  # (1, L, odim)
         self.train()
 
         if return_duration_pitch_energy:
