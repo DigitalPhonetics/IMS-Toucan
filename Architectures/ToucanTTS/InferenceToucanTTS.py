@@ -71,6 +71,9 @@ class ToucanTTS(torch.nn.Module):
         integrate_language_embedding_into_encoder_out = config.integrate_language_embedding_into_encoder_out
         prosody_channels = config.prosody_channels
 
+        if lang_embs is None or lang_embs == 0:
+            lang_embs = None
+            integrate_language_embedding_into_encoder_out = False
         if integrate_language_embedding_into_encoder_out:
             utt_embed_dim = utt_embed_dim + lang_emb_size
 

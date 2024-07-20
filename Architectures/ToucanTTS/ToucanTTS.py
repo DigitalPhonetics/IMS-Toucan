@@ -95,12 +95,6 @@ class ToucanTTS(torch.nn.Module):
                  ):
         super().__init__()
 
-        if lang_embs is None or lang_embs == 0:
-            lang_embs = None
-            integrate_language_embedding_into_encoder_out = False
-        if integrate_language_embedding_into_encoder_out:
-            utt_embed_dim = utt_embed_dim + lang_emb_size
-
         self.config = {
             "input_feature_dimensions"                     : input_feature_dimensions,
             "attention_dimension"                          : attention_dimension,
@@ -152,6 +146,12 @@ class ToucanTTS(torch.nn.Module):
             "embedding_integration"                        : embedding_integration,
             "integrate_language_embedding_into_encoder_out": integrate_language_embedding_into_encoder_out
         }
+
+        if lang_embs is None or lang_embs == 0:
+            lang_embs = None
+            integrate_language_embedding_into_encoder_out = False
+        if integrate_language_embedding_into_encoder_out:
+            utt_embed_dim = utt_embed_dim + lang_emb_size
 
         self.input_feature_dimensions = input_feature_dimensions
         self.attention_dimension = attention_dimension
