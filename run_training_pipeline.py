@@ -5,16 +5,16 @@ import sys
 
 import torch
 
-from TrainingPipelines.AlignerPipeline import run as aligner
-from TrainingPipelines.HiFiGAN_combined import run as HiFiGAN
-from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
-from TrainingPipelines.ToucanTTS_Massive_English_stage1 import run as eng1
-from TrainingPipelines.ToucanTTS_Massive_English_stage2 import run as eng2
-from TrainingPipelines.ToucanTTS_Massive_stage1 import run as stage1
-from TrainingPipelines.ToucanTTS_Massive_stage2 import run as stage2
-from TrainingPipelines.ToucanTTS_Nancy import run as nancy
-from TrainingPipelines.finetuning_example_multilingual import run as fine_tuning_example_multilingual
-from TrainingPipelines.finetuning_example_simple import run as fine_tuning_example_simple
+from Recipes.AlignerPipeline import run as aligner
+from Recipes.HiFiGAN_combined import run as HiFiGAN
+from Recipes.ToucanTTS_IntegrationTest import run as tt_integration_test
+from Recipes.ToucanTTS_Massive_English_stage1 import run as eng1
+from Recipes.ToucanTTS_Massive_English_stage2 import run as eng2
+from Recipes.ToucanTTS_Massive_stage1 import run as stage1
+from Recipes.ToucanTTS_Massive_stage2 import run as stage2
+from Recipes.ToucanTTS_Nancy import run as nancy
+from Recipes.finetuning_example_multilingual import run as fine_tuning_example_multilingual
+from Recipes.finetuning_example_simple import run as fine_tuning_example_simple
 
 pipeline_dict = {
     # the finetuning examples

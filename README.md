@@ -158,7 +158,7 @@ pass them to the interface when you use it in your own code.
 
 ---
 
-## Creating a new Training Pipeline 🐣
+## Creating a new Recipe (Training Pipeline) 🐣
 
 In the directory called
 *Utility* there is a file called
@@ -167,7 +167,7 @@ absolute paths to each of the audio files in your dataset as strings as the keys
 corresponding audios as the values.
 
 Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of the `finetuning_example_simple.py` file if you just want to finetune on a single dataset or `finetuning_example_multilingual.py` if you want to finetune on multiple datasets, potentially even multiple languages. We will use this copy
+*TrainingInterfaces/Recipes*. In there, make a copy of the `finetuning_example_simple.py` file if you just want to finetune on a single dataset or `finetuning_example_multilingual.py` if you want to finetune on multiple datasets, potentially even multiple languages. We will use this copy
 as reference and only make the necessary changes to use the new dataset. Find the call(s) to the *prepare_tts_corpus* function. Replace the path_to_transcript_dict used there with the one(s) you just created. Then change the name of the corresponding cache directory to something that makes sense for the dataset.
 Also look out for the variable *save_dir*, which is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling
 the pipeline later using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a
@@ -188,7 +188,7 @@ Once this is complete, we are almost done, now we just need to make it available
 
 ## Training a Model 🦜
 
-Once you have a training pipeline built, training is super easy:
+Once you have a recipe built, training is super easy:
 
 ```
 python run_training_pipeline.py <shorthand of the pipeline>

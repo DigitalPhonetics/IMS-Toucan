@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
     merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
 
-    all_test(version="version_9",
+    all_test(version="version_10",
              model_id="Meta",
              exec_device=exec_device,
              speaker_reference=merged_speaker_references)
