@@ -28,7 +28,7 @@ class TTSWebUI:
                                           gr.Slider(minimum=0, maximum=available_artificial_voices, step=1,
                                                     value=279,
                                                     label="Random Seed for the artificial Voice"),
-                                          gr.Slider(minimum=0.0, maximum=0.8, step=0.1, value=0.4, label="Prosody Creativity"),
+                                          gr.Slider(minimum=0.0, maximum=0.8, step=0.1, value=0.1, label="Prosody Creativity"),
                                           gr.Slider(minimum=0.7, maximum=1.3, step=0.1, value=1.0, label="Duration Scale"),
                                           gr.Slider(minimum=0.5, maximum=1.5, step=0.1, value=1.0, label="Pitch Variance Scale"),
                                           gr.Slider(minimum=0.5, maximum=1.5, step=0.1, value=1.0, label="Energy Variance Scale"),

@@ -12,7 +12,7 @@ def read_texts(model_id, sentence, filename, device="cpu", language="eng", speak
         tts.set_utterance_embedding(speaker_reference)
     if type(sentence) == str:
         sentence = [sentence]
-    tts.read_to_file(text_list=sentence, file_location=filename, duration_scaling_factor=duration_scaling_factor)
+    tts.read_to_file(text_list=sentence, file_location=filename, duration_scaling_factor=duration_scaling_factor, prosody_creativity=0.0)
     del tts
 
 

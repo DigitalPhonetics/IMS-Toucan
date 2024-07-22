@@ -196,7 +196,7 @@ class ToucanTTS(torch.nn.Module):
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
                  pause_duration_scaling_factor=1.0,
-                 prosody_creativity=0.5):
+                 prosody_creativity=0.1):
 
         text_tensors = torch.clamp(text_tensors, max=1.0)
         # this is necessary, because of the way we represent modifiers to keep them identifiable.
@@ -286,7 +286,7 @@ class ToucanTTS(torch.nn.Module):
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0,
                 pause_duration_scaling_factor=1.0,
-                prosody_creativity=0.5):
+                prosody_creativity=0.1):
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
 
