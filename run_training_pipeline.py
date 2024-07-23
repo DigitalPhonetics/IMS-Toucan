@@ -12,6 +12,7 @@ from Recipes.ToucanTTS_Massive_English_stage1 import run as eng1
 from Recipes.ToucanTTS_Massive_English_stage2 import run as eng2
 from Recipes.ToucanTTS_Massive_stage1 import run as stage1
 from Recipes.ToucanTTS_Massive_stage2 import run as stage2
+from Recipes.ToucanTTS_Massive_stage3 import run as stage3
 from Recipes.ToucanTTS_Nancy import run as nancy
 from Recipes.finetuning_example_multilingual import run as fine_tuning_example_multilingual
 from Recipes.finetuning_example_simple import run as fine_tuning_example_simple
@@ -28,6 +29,7 @@ pipeline_dict = {
     "eng2"                           : eng2,
     "stage1"                         : stage1,
     "stage2"                         : stage2,
+    "stage3"                         : stage3,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"                        : aligner,
     # vocoder training (not recommended, best to use provided checkpoint)

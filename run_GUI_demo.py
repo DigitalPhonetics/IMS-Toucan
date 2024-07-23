@@ -30,8 +30,8 @@ class TTSWebUI:
                                                     label="Random Seed for the artificial Voice"),
                                           gr.Slider(minimum=0.0, maximum=0.8, step=0.1, value=0.1, label="Prosody Creativity"),
                                           gr.Slider(minimum=0.7, maximum=1.3, step=0.1, value=1.0, label="Duration Scale"),
-                                          gr.Slider(minimum=0.5, maximum=1.5, step=0.1, value=1.0, label="Pitch Variance Scale"),
-                                          gr.Slider(minimum=0.5, maximum=1.5, step=0.1, value=1.0, label="Energy Variance Scale"),
+                                          # gr.Slider(minimum=0.5, maximum=1.5, step=0.1, value=1.0, label="Pitch Variance Scale"),
+                                          # gr.Slider(minimum=0.5, maximum=1.5, step=0.1, value=1.0, label="Energy Variance Scale"),
                                           gr.Slider(minimum=-10.0, maximum=10.0, step=0.1, value=0.0, label="Femininity / Masculinity"),
                                           gr.Slider(minimum=-10.0, maximum=10.0, step=0.1, value=0.0, label="Voice Depth")
                                           ],
@@ -43,7 +43,6 @@ class TTSWebUI:
                                   article=article)
         self.iface.launch()
 
-
     def read(self,
              prompt,
              language,
@@ -51,8 +50,8 @@ class TTSWebUI:
              voice_seed,
              prosody_creativity,
              duration_scaling_factor,
-             pitch_variance_scale,
-             energy_variance_scale,
+             # pitch_variance_scale,
+             # energy_variance_scale,
              emb1,
              emb2
              ):
@@ -64,8 +63,8 @@ class TTSWebUI:
                                                  prosody_creativity,
                                                  duration_scaling_factor,
                                                  1.,
-                                                 pitch_variance_scale,
-                                                 energy_variance_scale,
+                                                 1.0,
+                                                 1.0,
                                                  emb1,
                                                  emb2,
                                                  0.,
