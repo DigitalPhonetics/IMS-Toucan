@@ -122,7 +122,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_set = ConcatDataset(datasets)
 
-    model = ToucanTTS(lang_embs=None)
+    model = ToucanTTS()
 
     if gpu_count > 1:
         model.to(rank)
@@ -144,7 +144,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     print("Training model")
     train_loop(net=model,
                datasets=[train_set],
-               batch_size=32,
+               batch_size=12,
                steps_per_checkpoint=1000,
                device=device,
                save_directory=save_dir,
