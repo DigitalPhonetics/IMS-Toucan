@@ -85,7 +85,7 @@ def compute_loss_for_approximated_embeddings(csv_path, iso_lookup, language_embe
 
 
 if __name__ == "__main__":
-    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location
+    default_model_path = os.path.join("../..", MODELS_DIR, "ToucanTTS_Meta", "best.pt")  # MODELS_DIR must be absolute path, the relative path will fail at this location
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default=default_model_path, help="model path that should be used for creating oracle lang emb distance cache")
     parser.add_argument("--min_n_langs", type=int, default=5, help="minimum amount of languages used for averaging")

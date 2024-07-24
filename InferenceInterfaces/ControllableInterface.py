@@ -2,8 +2,8 @@ import os
 
 import torch
 
-from Architectures.ControllabilityGAN.GAN import GanWrapper
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
+from Modules.ControllabilityGAN.GAN import GanWrapper
 from Utility.storage_config import MODELS_DIR
 
 

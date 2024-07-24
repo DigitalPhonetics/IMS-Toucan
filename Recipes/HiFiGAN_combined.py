@@ -3,10 +3,10 @@ import time
 import soundfile as sf
 import wandb
 
-from Architectures.Vocoder.HiFiGAN_Dataset import HiFiGANDataset
-from Architectures.Vocoder.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
-from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
-from Architectures.Vocoder.HiFiGAN_train_loop import train_loop
+from Modules.Vocoder.HiFiGAN_Dataset import HiFiGANDataset
+from Modules.Vocoder.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
+from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
+from Modules.Vocoder.HiFiGAN_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 

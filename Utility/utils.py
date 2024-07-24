@@ -11,7 +11,7 @@ import torch
 import torch.multiprocessing
 from matplotlib.lines import Line2D
 
-import Architectures.GeneralLayers.ConditionalLayerNorm
+import Modules.GeneralLayers.ConditionalLayerNorm
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
@@ -338,8 +338,8 @@ def initialize(model, init):
     for m in model.modules():
         if isinstance(m, (torch.nn.Embedding,
                           torch.nn.LayerNorm,
-                          Architectures.GeneralLayers.ConditionalLayerNorm.ConditionalLayerNorm,
-                          Architectures.GeneralLayers.ConditionalLayerNorm.SequentialWrappableConditionalLayerNorm
+                          Modules.GeneralLayers.ConditionalLayerNorm.ConditionalLayerNorm,
+                          Modules.GeneralLayers.ConditionalLayerNorm.SequentialWrappableConditionalLayerNorm
                           )):
             m.reset_parameters()
 

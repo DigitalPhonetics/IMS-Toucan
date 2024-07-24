@@ -10,8 +10,8 @@ import torch
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
-from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
-from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
+from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id

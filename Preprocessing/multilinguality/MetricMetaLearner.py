@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 
-from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Utility.utils import load_json_from_path
 
 
@@ -164,7 +164,7 @@ def create_learned_cache(model_path, cache_root="."):
                 _asp_dist = 1.0 - asp_sim[lang_1][lang_list.index(lang_2)]
                 metric_distance = torch.tensor([_tree_dist, _map_dist, _asp_dist], dtype=torch.float32)
                 with torch.inference_mode():
-                    predicted_distance = ensemble(metric_distance)
+                    predicted_distance = ensemble(metric_distance.unsqueeze(0)).squeeze()
                 language_to_language_to_learned_distance[lang_1][lang_2] = predicted_distance.item()
             except ValueError:
                 continue

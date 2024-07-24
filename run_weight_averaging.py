@@ -6,8 +6,8 @@ import os
 
 import torch
 
-from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
-from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
+from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Utility.storage_config import MODELS_DIR
 
 

@@ -3,8 +3,8 @@ import time
 import wandb
 from torch.utils.data import ConcatDataset
 
-from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
-from Architectures.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+from Modules.ToucanTTS.ToucanTTS import ToucanTTS
+from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
