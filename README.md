@@ -42,6 +42,8 @@ process, with which I am unfortunately not familiar.
 
 #### Basic Requirements
 
+Python 3.10 is the recommended version.
+
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one cuda enabled GPU if you intend to train models on that machine. For inference, you don't need
 a GPU).
