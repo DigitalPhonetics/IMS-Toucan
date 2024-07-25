@@ -5,30 +5,28 @@ import sys
 
 import torch
 
-from TrainingPipelines.AlignerPipeline import run as aligner
-from TrainingPipelines.HiFiGAN_combined import run as HiFiGAN
-from TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
-from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
-from TrainingPipelines.ToucanTTS_MLS_English import run as mls
-from TrainingPipelines.ToucanTTS_Massive_stage1 import run as stage1
-from TrainingPipelines.ToucanTTS_Massive_stage2 import run as stage2
-from TrainingPipelines.ToucanTTS_Massive_stage3 import run as stage3
-from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
-from TrainingPipelines.ToucanTTS_Nancy import run as nancy
-from TrainingPipelines.finetuning_example_multilingual import run as fine_tuning_example_multilingual
-from TrainingPipelines.finetuning_example_simple import run as fine_tuning_example_simple
+from Recipes.AlignerPipeline import run as aligner
+from Recipes.HiFiGAN_combined import run as HiFiGAN
+from Recipes.ToucanTTS_IntegrationTest import run as tt_integration_test
+from Recipes.ToucanTTS_Massive_English_stage1 import run as eng1
+from Recipes.ToucanTTS_Massive_English_stage2 import run as eng2
+from Recipes.ToucanTTS_Massive_stage1 import run as stage1
+from Recipes.ToucanTTS_Massive_stage2 import run as stage2
+from Recipes.ToucanTTS_Massive_stage3 import run as stage3
+from Recipes.ToucanTTS_Nancy import run as nancy
+from Recipes.finetuning_example_multilingual import run as fine_tuning_example_multilingual
+from Recipes.finetuning_example_simple import run as fine_tuning_example_simple
 
 pipeline_dict = {
-    # the finetuning example
+    # the finetuning examples
     "finetuning_example_simple"      : fine_tuning_example_simple,
     "finetuning_example_multilingual": fine_tuning_example_multilingual,
-    # integration tests
+    # integration test
     "tt_it"                          : tt_integration_test,
     # regular ToucanTTS pipelines
     "nancy"                          : nancy,
-    "mls"                            : mls,
-    "nancystoch"                     : nancystoch,
-    "meta"                           : meta,
+    "eng1"                           : eng1,
+    "eng2"                           : eng2,
     "stage1"                         : stage1,
     "stage2"                         : stage2,
     "stage3"                         : stage3,
@@ -91,7 +89,7 @@ if __name__ == '__main__':
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
         print(f"No GPU specified, using CPU. Training will likely not work without GPU.")
-        gpu_count = 1  # for technical reasons this is set to one, indicating it's not gpu_count training, even though there is no GPU in this case
+        gpu_count = 1  # for technical reasons this is set to one, indicating it's not mutli-GPU training, even though there is no GPU in this case
     else:
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"

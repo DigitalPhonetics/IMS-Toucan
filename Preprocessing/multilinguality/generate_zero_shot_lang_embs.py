@@ -1,11 +1,14 @@
-import torch
+import argparse
+import json
+import os
+
 import numpy as np
 import pandas as pd
-import json
-import argparse
+import torch
 from tqdm import tqdm
-import os
+
 from Utility.storage_config import MODELS_DIR
+
 
 def approximate_and_inject_language_embeddings(model_path, df, iso_lookup, min_n_langs=5, max_n_langs=25, threshold_percentile=50):
     # load pretrained language_embeddings
@@ -48,7 +51,7 @@ def approximate_and_inject_language_embeddings(model_path, df, iso_lookup, min_n
     threshold = np.percentile(df[closest_dist_columns[-1]], threshold_percentile)
     print(f"threshold: {threshold:.4f}")
     for row in tqdm(df.itertuples(), total=df.shape[0], desc="Approximating language embeddings"):
-        avg_emb = torch.zeros([16])
+        avg_emb = torch.zeros([32])  # If you change the size of the language embedding in the model, you need to change the size here as well. TODO automate this
         dists = [getattr(row, d) for i, d in enumerate(closest_dist_columns) if i < min_n_langs or getattr(row, d) < threshold]
         langs = [getattr(row, l) for l in closest_lang_columns[:len(dists)]]
 

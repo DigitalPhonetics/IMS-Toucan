@@ -19,7 +19,7 @@ def download_models():
     print("Downloading Aligner Model")
     os.makedirs(os.path.join(MODELS_DIR, "Aligner"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v3.0/aligner.pt",
+        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v3.1/aligner.pt",
         filename=os.path.abspath(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")),
         reporthook=report)
 
@@ -27,7 +27,7 @@ def download_models():
     print("Downloading Multilingual ToucanTTS Model")
     os.makedirs(os.path.join(MODELS_DIR, "ToucanTTS_Meta"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v3.0/ToucanTTS_Meta.pt",
+        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v3.1/ToucanTTS_Meta.pt",
         filename=os.path.abspath(os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt")),
         reporthook=report)
 
@@ -61,14 +61,6 @@ def download_models():
     filename, headers = urllib.request.urlretrieve(
         url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v3.0/asp_dict.pkl",
         filename=os.path.abspath(os.path.join("Preprocessing/multilinguality", "asp_dict.pkl")),
-        reporthook=report)
-
-    #############
-    print("Downloading Audioseal Model")
-    os.makedirs("Models/audioseal", exist_ok=True)
-    filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v3.0/audioseal.pth",
-        filename=os.path.abspath(os.path.join("Models/audioseal", "generator.pth")),
         reporthook=report)
 
 if __name__ == '__main__':

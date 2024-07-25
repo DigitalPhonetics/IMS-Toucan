@@ -811,6 +811,14 @@ def get_phone_to_id():
     phone_to_id = dict()
     for index, phone in enumerate("~#?!ǃ.ɜəaðɛɪŋɔɒɾʃθʊʌʒæbʔdefghijklmnɳopɡɹrstuvwxzʀøçɐœyʏɑcɲɣʎβʝɟqɕɭɵʑʋʁɨʂɓʙɗɖχʛʟɽɢɠǂɦǁĩʍʕɻʄũɤɶõʡʈʜɱɯǀɸʘʐɰɘħɞʉɴʢѵ"):
         phone_to_id[phone] = index
+    # the following lines fix an issue with the aligner: While the different punctuation marks have
+    # different effects on their context, their realization in the signal is typically just silence.
+    # Since this is common for all of them, the CTC objective malfunctions for our purposes of
+    # alignment search. So it turned out that it's better to map all punctuation marks to silence.
+    phone_to_id["#"] = phone_to_id["~"]
+    phone_to_id["?"] = phone_to_id["~"]
+    phone_to_id["!"] = phone_to_id["~"]
+    phone_to_id["."] = phone_to_id["~"]
     return phone_to_id
 
 
@@ -894,10 +902,12 @@ def get_feature_to_index_lookup():
         "implosive"          : 57,
         "vibrant"            : 58,
         "click"              : 59,
+        "ejective"           : 60,
 
         # TYPE
-        "unvoiced"           : 60,
-        "voiced"             : 61,
+        "aspirated"          : 61,
+        "unvoiced"           : 62,
+        "voiced"             : 63,
     }
 
 
@@ -933,8 +943,8 @@ def generate_feature_table():
     phone_to_vector = dict()
     for ipa in ipa_to_phonemefeats:
         if len(ipa) == 1:
-            phone_to_vector[ipa] = [0] * (13 + sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]))
-            # there are 13 features which do not occur in the vectors, because they are context dependent and not lexical
+            phone_to_vector[ipa] = [0] * (15 + sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]))
+            # 15 features come from modifiers, not from lexical sounds, so we have to add them to the ones we encounter naturally in the lexical sounds
             for feat in ipa_to_phonemefeats[ipa]:
                 if ipa_to_phonemefeats[ipa][feat] in value_to_index:
                     phone_to_vector[ipa][value_to_index[ipa_to_phonemefeats[ipa][feat]]] = 1

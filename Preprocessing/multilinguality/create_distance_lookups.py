@@ -28,16 +28,14 @@ class CacheCreator:
         self.pair_to_depth = dict()
         for pair in tqdm(self.pairs, desc="Generating tree pairs"):
             self.pair_to_tree_similarity[pair] = len(set(iso_to_family_memberships[pair[0]]).intersection(set(iso_to_family_memberships[pair[1]])))
-            self.pair_to_depth[pair] = len(iso_to_family_memberships[pair[0]]) + len(iso_to_family_memberships[pair[1]])
-
         lang_1_to_lang_2_to_tree_dist = dict()
-        for pair in self.pair_to_tree_similarity:
+        for pair in tqdm(self.pair_to_tree_similarity):
             lang_1 = pair[0]
             lang_2 = pair[1]
             if self.pair_to_tree_similarity[pair] == 2:
                 dist = 1.0
             else:
-                dist = 1 - ((self.pair_to_tree_similarity[pair] * 2) / self.pair_to_depth[pair])
+                dist = 1.0 - (self.pair_to_tree_similarity[pair] / max(len(iso_to_family_memberships[pair[0]]), len(iso_to_family_memberships[pair[1]])))
             if lang_1 not in lang_1_to_lang_2_to_tree_dist.keys():
                 lang_1_to_lang_2_to_tree_dist[lang_1] = dict()
             lang_1_to_lang_2_to_tree_dist[lang_1][lang_2] = dist
@@ -69,7 +67,7 @@ class CacheCreator:
 
     def create_oracle_cache(self, model_path, cache_root="."):
         """Oracle language-embedding distance of supervised languages is only used for evaluation, not usable for zero-shot.
-        
+
         Note: The generated oracle cache is only valid for the given `model_path`!"""
         loss_fn = torch.nn.MSELoss(reduction="mean")
         self.pair_to_oracle_dist = dict()

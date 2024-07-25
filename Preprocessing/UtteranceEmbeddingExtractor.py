@@ -5,7 +5,7 @@ import torch.multiprocessing
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
-from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
+from Modules.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.storage_config import MODELS_DIR
 

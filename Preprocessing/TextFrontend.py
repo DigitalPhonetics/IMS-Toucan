@@ -2,6 +2,7 @@
 
 
 import json
+import logging
 import re
 
 import torch
@@ -29,7 +30,8 @@ class ArticulatoryCombinedTextFrontend:
                  use_lexical_stress=True,
                  silent=True,
                  add_silence_to_end=True,
-                 use_word_boundaries=True):
+                 use_word_boundaries=True,
+                 device="cpu"):
         """
         Mostly preparing ID lookups
         """
@@ -67,7 +69,7 @@ class ArticulatoryCombinedTextFrontend:
                     elif register_to_height[first_tone] < register_to_height[second_tone] > register_to_height[third_tone]:
                         self.peaking_perms.append(first_tone + second_tone + third_tone)
 
-        if language == "eng":
+        if language == "eng" or language == "en-us":
             self.g2p_lang = "en-us"  # English as spoken in USA
             self.expand_abbreviations = english_text_expansion
             self.phonemizer = "espeak"
@@ -84,6 +86,11 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "spa":
             self.g2p_lang = "es"  # Spanish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "spa-lat":
+            self.g2p_lang = "es-419"  # Spanish
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
@@ -112,6 +119,16 @@ class ArticulatoryCombinedTextFrontend:
             self.expand_abbreviations = remove_french_spacing
             self.phonemizer = "espeak"
 
+        elif language == "fr-be":
+            self.g2p_lang = "fr-be"  # French
+            self.expand_abbreviations = remove_french_spacing
+            self.phonemizer = "espeak"
+
+        elif language == "fr-sw":
+            self.g2p_lang = "fr-ch"  # French
+            self.expand_abbreviations = remove_french_spacing
+            self.phonemizer = "espeak"
+
         elif language == "ita":
             self.g2p_lang = "it"  # Italian
             self.expand_abbreviations = lambda x: x
@@ -119,6 +136,11 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "por":
             self.g2p_lang = "pt"  # Portuguese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "pt-br":
+            self.g2p_lang = "pt-br"  # Portuguese
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
@@ -134,6 +156,16 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "vie":
             self.g2p_lang = "vi"  # Northern Vietnamese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "vi-ctr":
+            self.g2p_lang = "vi-vn-x-central"  # Central Vietnamese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "vi-so":
+            self.g2p_lang = "vi-vn-x-south"  # Southern Vietnamese
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
@@ -277,6 +309,11 @@ class ArticulatoryCombinedTextFrontend:
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
+        elif language == "en-sc":
+            self.g2p_lang = "en-gb-scotland"
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
         elif language == "kat":
             self.g2p_lang = "ka"  # Georgian
             self.expand_abbreviations = lambda x: x
@@ -313,9 +350,13 @@ class ArticulatoryCombinedTextFrontend:
             self.phonemizer = "espeak"
 
         elif language == "jpn":
-            self.g2p_lang = "ja"  # Japanese
-            self.expand_abbreviations = lambda x: x
-            self.phonemizer = "espeak"
+            import pykakasi
+
+            self.kakasi = pykakasi.Kakasi()  # this is not a satisfactory solution, but it is the best one I could come up with so far.
+            self.expand_abbreviations = lambda x: " ".join([chunk["hepburn"] for chunk in self.kakasi.convert(x)])
+            self.g2p_lang = language
+            self.phonemizer = "transphone"
+            self.transphone = read_g2p(device=device)
 
         elif language == "kan":
             self.g2p_lang = "kn"  # Kannada
@@ -539,20 +580,22 @@ class ArticulatoryCombinedTextFrontend:
 
         else:
             # blanket solution for the rest
+            print("Using Transphone. A specialized phonemizer might work better.")
             self.g2p_lang = language
             self.phonemizer = "transphone"
             self.expand_abbreviations = lambda x: x
-            self.transphone = read_g2p()
+            self.transphone = read_g2p(device=device)
 
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
         if self.phonemizer == "espeak":
             try:
                 self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
-                                                        punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
+                                                        punctuation_marks=';:,.!?¡¿—…()"«»“”~/。【】、‥،؟“”؛',
                                                         preserve_punctuation=True,
                                                         language_switch='remove-flags',
-                                                        with_stress=self.use_stress)
+                                                        with_stress=self.use_stress,
+                                                        logger=logging.getLogger(__file__))
             except RuntimeError:
                 print("Error in loading espeak! \n"
                       "Maybe espeak is not installed on your system? \n"
@@ -621,50 +664,96 @@ class ArticulatoryCombinedTextFrontend:
 
         for char in phones:
             # affects following phoneme -----------------
-            if char == '\u02C8':
+            if char.strip() == '\u02C8':
                 # primary stress
                 stressed_flag = True
             # affects previous phoneme -----------------
-            elif char == '\u02D0':
+            elif char.strip() == '\u02D0':
                 # lengthened
                 phones_vector[-1][get_feature_to_index_lookup()["lengthened"]] = 1
-            elif char == '\u02D1':
+            elif char.strip() == '\u02D1':
                 # half length
                 phones_vector[-1][get_feature_to_index_lookup()["half-length"]] = 1
-            elif char == '\u0306':
+            elif char.strip() == '\u0306':
                 # shortened
                 phones_vector[-1][get_feature_to_index_lookup()["shortened"]] = 1
-            elif char == '̃':
+            elif char.strip() == '̃' and phones_vector[-1][get_feature_to_index_lookup()["nasal"]] != 1:
                 # nasalized (vowel)
-                phones_vector[-1][get_feature_to_index_lookup()["nasal"]] = 1
-            elif char == "̧":
+                phones_vector[-1][get_feature_to_index_lookup()["nasal"]] = 2
+            elif char.strip() == "̧" != phones_vector[-1][get_feature_to_index_lookup()["palatal"]] != 1:
                 # palatalized
-                phones_vector[-1][get_feature_to_index_lookup()["palatal"]] = 1
-            elif char == "˥":
+                phones_vector[-1][get_feature_to_index_lookup()["palatal"]] = 2
+            elif char.strip() == "ʷ" and phones_vector[-1][get_feature_to_index_lookup()["labial-velar"]] != 1:
+                # labialized
+                phones_vector[-1][get_feature_to_index_lookup()["labial-velar"]] = 2
+            elif char.strip() == "ʰ" and phones_vector[-1][get_feature_to_index_lookup()["aspirated"]] != 1:
+                # aspirated
+                phones_vector[-1][get_feature_to_index_lookup()["aspirated"]] = 2
+            elif char.strip() == "ˠ" and phones_vector[-1][get_feature_to_index_lookup()["velar"]] != 1:
+                # velarized
+                phones_vector[-1][get_feature_to_index_lookup()["velar"]] = 2
+            elif char.strip() == "ˁ" and phones_vector[-1][get_feature_to_index_lookup()["pharyngal"]] != 1:
+                # pharyngealized
+                phones_vector[-1][get_feature_to_index_lookup()["pharyngal"]] = 2
+            elif char.strip() == "ˀ" and phones_vector[-1][get_feature_to_index_lookup()["glottal"]] != 1:
+                # glottalized
+                phones_vector[-1][get_feature_to_index_lookup()["glottal"]] = 2
+            elif char.strip() == "ʼ" and phones_vector[-1][get_feature_to_index_lookup()["ejective"]] != 1:
+                # ejective
+                phones_vector[-1][get_feature_to_index_lookup()["ejective"]] = 2
+            elif char.strip() == "̹" and phones_vector[-1][get_feature_to_index_lookup()["rounded"]] != 1:
+                # rounding
+                phones_vector[-1][get_feature_to_index_lookup()["rounded"]] = 2
+            elif char.strip() == "̞" and phones_vector[-1][get_feature_to_index_lookup()["open"]] != 1:
+                # open
+                phones_vector[-1][get_feature_to_index_lookup()["open"]] = 2
+            elif char.strip() == "̪" and phones_vector[-1][get_feature_to_index_lookup()["dental"]] != 1:
+                # dental
+                phones_vector[-1][get_feature_to_index_lookup()["dental"]] = 2
+            elif char.strip() == "̬" and phones_vector[-1][get_feature_to_index_lookup()["voiced"]] != 1:
+                # voiced
+                phones_vector[-1][get_feature_to_index_lookup()["voiced"]] = 2
+            elif char.strip() == "̝" and phones_vector[-1][get_feature_to_index_lookup()["close"]] != 1:
+                # closed
+                phones_vector[-1][get_feature_to_index_lookup()["close"]] = 2
+            elif char.strip() == "̰" and phones_vector[-1][get_feature_to_index_lookup()["glottal"]] != 1 and phones_vector[-1][get_feature_to_index_lookup()["epiglottal"]] != 1:
+                # laryngalization
+                phones_vector[-1][get_feature_to_index_lookup()["glottal"]] = 2
+                phones_vector[-1][get_feature_to_index_lookup()["epiglottal"]] = 2
+            elif char.strip() == "̈" and phones_vector[-1][get_feature_to_index_lookup()["central"]] != 1:
+                # centralization
+                phones_vector[-1][get_feature_to_index_lookup()["central"]] = 2
+            elif char.strip() == "̜" and phones_vector[-1][get_feature_to_index_lookup()["unrounded"]] != 1:
+                # unrounded
+                phones_vector[-1][get_feature_to_index_lookup()["unrounded"]] = 2
+            elif char.strip() == "̥" and phones_vector[-1][get_feature_to_index_lookup()["unvoiced"]] != 1:
+                # voiceless
+                phones_vector[-1][get_feature_to_index_lookup()["unvoiced"]] = 2
+            elif char.strip() == "˥":
                 # very high tone
                 phones_vector[-1][get_feature_to_index_lookup()["very-high-tone"]] = 1
-            elif char == "˦":
+            elif char.strip() == "˦":
                 # high tone
                 phones_vector[-1][get_feature_to_index_lookup()["high-tone"]] = 1
-            elif char == "˧":
+            elif char.strip() == "˧":
                 # mid tone
                 phones_vector[-1][get_feature_to_index_lookup()["mid-tone"]] = 1
-            elif char == "˨":
+            elif char.strip() == "˨":
                 # low tone
                 phones_vector[-1][get_feature_to_index_lookup()["low-tone"]] = 1
-            elif char == "˩":
+            elif char.strip() == "˩":
                 # very low tone
                 phones_vector[-1][get_feature_to_index_lookup()["very-low-tone"]] = 1
-            elif char == "⭧":
+            elif char.strip() == "⭧":
                 # rising tone
                 phones_vector[-1][get_feature_to_index_lookup()["rising-tone"]] = 1
-            elif char == "⭨":
+            elif char.strip() == "⭨":
                 # falling tone
                 phones_vector[-1][get_feature_to_index_lookup()["falling-tone"]] = 1
-            elif char == "⮁":
+            elif char.strip() == "⮁":
                 # peaking tone
                 phones_vector[-1][get_feature_to_index_lookup()["peaking-tone"]] = 1
-            elif char == "⮃":
+            elif char.strip() == "⮃":
                 # dipping tone
                 phones_vector[-1][get_feature_to_index_lookup()["dipping-tone"]] = 1
             else:
@@ -675,7 +764,12 @@ class ArticulatoryCombinedTextFrontend:
                         print("unknown phoneme: {}".format(char))
                 else:
                     phones_vector.append(self.phone_to_vector[char].copy())  # leave error handling to elsewhere
-
+                # the following lines try to emulate whispering by removing all voiced features
+                # phones_vector[-1][get_feature_to_index_lookup()["voiced"]] = 0
+                # phones_vector[-1][get_feature_to_index_lookup()["unvoiced"]] = 1
+                # the following lines explore what would happen, if the system is told to produce sounds a human cannot
+                # for dim, _ in enumerate(phones_vector[-1]):
+                #     phones_vector[-1][dim] = 1
                 if stressed_flag:
                     stressed_flag = False
                     phones_vector[-1][get_feature_to_index_lookup()["stressed"]] = 1
@@ -722,6 +816,7 @@ class ArticulatoryCombinedTextFrontend:
                 (" ；", "~"),
                 ("－", "~"),
                 ("·", " "),
+                ("`", ""),
                 # symbols that indicate a pause or silence
                 ('"', "~"),
                 (" - ", "~ "),
@@ -762,7 +857,14 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('5', "˧˩˧")
             phones = phones.replace('6', "˧˩˨ʔ")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
-        # TODO add more of this handling for more tonal languages
+        elif self.g2p_lang == "yue":
+            phones = phones.replace('1', "˥")
+            phones = phones.replace('2', "˧˥")
+            phones = phones.replace('3', "˧")
+            phones = phones.replace('4', "˧˩")
+            phones = phones.replace('5', "˩˧")
+            phones = phones.replace('6', "˨")
+        # more of this handling for more tonal languages can be added here, simply make an elif statement and check for the language.
         return self.postprocess_phoneme_string(phones, for_feature_extraction, include_eos_symbol, for_plot_labels)
 
     def postprocess_phoneme_string(self, phoneme_string, for_feature_extraction, include_eos_symbol, for_plot_labels):
@@ -793,6 +895,8 @@ class ArticulatoryCombinedTextFrontend:
             # latin script punctuation
             ("/", " "),
             ("—", ""),
+            ("(", "~"),
+            (")", "~"),
             ("...", "…"),
             ("\n", ", "),
             ("\t", " "),
@@ -801,8 +905,13 @@ class ArticulatoryCombinedTextFrontend:
             ("«", '"'),
             ("»", '"'),
             # unifying some phoneme representations
+            ("N", "ŋ"),  # somehow transphone doesn't transform this to IPA
             ("ɫ", "l"),  # alveolopalatal
             ("ɚ", "ə"),
+            ("g", "ɡ"),
+            ("ε", "e"),
+            ("ʦ", "ts"),
+            ("ˤ", "ˁ"),
             ('ᵻ', 'ɨ'),
             ("ɧ", "ç"),  # velopalatal
             ("ɥ", "j"),  # labiopalatal
@@ -833,11 +942,8 @@ class ArticulatoryCombinedTextFrontend:
             (";", "~"),
             (",", "~")  # make sure this remains the final one when adding new ones
         ]
-        unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
-                                      '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
-                                      '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ',
-                                      '̚', '↗', 'ꜛ', '̻', '̥', 'ˁ', '̘', '͡', '̺'}
-        # TODO support more of these. Problem: bridge over to aligner ID lookups after modifying the feature vector
+        unsupported_ipa_characters = {'̙', '̯', '̤', '̩', '̠', '̟', 'ꜜ', '̽', '|', '•', '↘',
+                                      '‖', '‿', 'ᷝ', 'ᷠ', '̚', '↗', 'ꜛ', '̻', '̘', '͡', '̺'}
         #  https://en.wikipedia.org/wiki/IPA_number
         for char in unsupported_ipa_characters:
             replacements.append((char, ""))
@@ -861,6 +967,22 @@ class ArticulatoryCombinedTextFrontend:
                 ('⮃', ""),  # dipping
                 ('⮁', ""),  # peaking
                 ('̃', ""),  # nasalizing
+                ("̧", ""),  # palatalized
+                ("ʷ", ""),  # labialized
+                ("ʰ", ""),  # aspirated
+                ("ˠ", ""),  # velarized
+                ("ˁ", ""),  # pharyngealized
+                ("ˀ", ""),  # glottalized
+                ("ʼ", ""),  # ejective
+                ("̹", ""),  # rounding
+                ("̞", ""),  # open
+                ("̪", ""),  # dental
+                ("̬", ""),  # voiced
+                ("̝", ""),  # closed
+                ("̰", ""),  # laryngalization
+                ("̈", ""),  # centralization
+                ("̜", ""),  # unrounded
+                ("̥", ""),  # voiceless
             ]
         for replacement in replacements:
             phoneme_string = phoneme_string.replace(replacement[0], replacement[1])
@@ -906,11 +1028,12 @@ class ArticulatoryCombinedTextFrontend:
                 if immutable_vector in self.text_vector_to_phone_cache:
                     tokens.append(self.phone_to_id[self.text_vector_to_phone_cache[immutable_vector]])
                     continue
-                if vector[get_feature_to_index_lookup()["vowel"]] == 1 and vector[get_feature_to_index_lookup()["nasal"]] == 1:
-                    # for the sake of alignment, we ignore the difference between nasalized vowels and regular vowels
-                    features[get_feature_to_index_lookup()["nasal"]] = 0
                 features = features[13:]
                 # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                for index in range(len(features)):
+                    if features[index] == 2:
+                        # we remove all features that stem from a modifier, so we can map back to the unmodified sound
+                        features[index] = 0
                 for phone in self.phone_to_vector:
                     if features == self.phone_to_vector[phone][13:]:
                         tokens.append(self.phone_to_id[phone])
@@ -955,33 +1078,33 @@ def get_language_id(language):
         except FileNotFoundError:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
     if language not in iso_codes_to_ids:
-        print("Please specify the language as ISO 639-2 code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)")
+        print("Please specify the language as ISO 639-3 code (https://en.wikipedia.org/wiki/List_of_ISO_639-3_codes)")
         return None
     return torch.LongTensor([iso_codes_to_ids[language]])
 
 
 if __name__ == '__main__':
+    print("\n\nEnglish Test")
     tf = ArticulatoryCombinedTextFrontend(language="eng")
     tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="deu")
-    tf.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True)
-
+    print("\n\nChinese Test")
     tf = ArticulatoryCombinedTextFrontend(language="cmn")
     tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
     tf.string_to_tensor("李绅 《悯农》 锄禾日当午， 汗滴禾下土。 谁知盘中餐， 粒粒皆辛苦。", view=True)
     tf.string_to_tensor("巴 拔 把 爸 吧", view=True)
 
+    print("\n\nVietnamese Test")
     tf = ArticulatoryCombinedTextFrontend(language="vie")
     tf.string_to_tensor("Xin chào thế giới, quả là một ngày tốt lành để học nói tiếng Việt!", view=True)
     tf.string_to_tensor("ba bà bá bạ bả bã", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="fra")
-    tf.string_to_tensor("Je ne te fais pas un dessin.", view=True)
-    print(tf.get_phone_string("Je ne te fais pas un dessin."))
+    print("\n\nJapanese Test")
+    tf = ArticulatoryCombinedTextFrontend(language="jpn")
+    tf.string_to_tensor("医師会がなくても、近隣の病院なら紹介してくれると思います。", view=True)
+    print(tf.get_phone_string("医師会がなくても、近隣の病院なら紹介してくれると思います。"))
 
+    print("\n\nZero-Shot Test")
     tf = ArticulatoryCombinedTextFrontend(language="acr")
-    tf.string_to_tensor("I don't know this language, but this is just a dummy anyway.", view=True)
-    print(tf.get_phone_string("I don't know this language, but this is just a dummy anyway."))
-
-    print(get_language_id("eng"))
+    tf.string_to_tensor("I don't know this language, but this is just a dummy text anyway.", view=True)
+    print(tf.get_phone_string("I don't know this language, but this is just a dummy text anyway."))

@@ -1,8 +1,8 @@
 import torch.multiprocessing
 
-from Architectures.Aligner.CodecAlignerDataset import CodecAlignerDataset
-from Architectures.Aligner.autoaligner_train_loop import train_loop as train_aligner
-from Architectures.ToucanTTS.TTSDataset import TTSDataset
+from Modules.Aligner.CodecAlignerDataset import CodecAlignerDataset
+from Modules.Aligner.autoaligner_train_loop import train_loop as train_aligner
+from Modules.ToucanTTS.TTSDataset import TTSDataset
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
@@ -13,7 +13,7 @@ def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, phone_inpu
     return CodecAlignerDataset(transcript_dict,
                                cache_dir=corpus_dir,
                                lang=lang,
-                               loading_processes=10,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
+                               loading_processes=5,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
                                device=device,
                                phone_input=phone_input,
                                gpu_count=gpu_count,

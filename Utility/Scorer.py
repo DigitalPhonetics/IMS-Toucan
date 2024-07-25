@@ -6,11 +6,14 @@ find mispronunciations or errors in the labels. The TTS scorer
 can help you find outliers in the audio part of text-audio pairs.
 """
 
+import math
+import statistics
+
 import torch
 import torch.multiprocessing
 from tqdm import tqdm
 
-from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
+from Modules.ToucanTTS.ToucanTTS import ToucanTTS
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.corpus_preparation import prepare_tts_corpus
@@ -76,8 +79,8 @@ class TTSScorer:
                                                                                       utterance_embedding=utterance_embedding,
                                                                                       lang_ids=lang_ids,
                                                                                       return_feats=False,
-                                                                                      run_glow=False)
-                loss = regression_loss + duration_loss + pitch_loss + energy_loss  # we omit the glow loss
+                                                                                      run_stochastic=False)
+                loss = regression_loss  # + duration_loss + pitch_loss + energy_loss  # we omit the stochastic loss
             except TypeError:
                 loss = torch.tensor(torch.nan)
             if torch.isnan(loss):
@@ -122,6 +125,28 @@ class TTSScorer:
                 for index, path in enumerate(sorted(self.path_to_score, key=self.path_to_score.get, reverse=True)):
                     if index < n:
                         remove_ids.append(self.path_to_id[path])
+                self.current_dset.remove_samples(remove_ids)
+                self.nans_removed = True
+
+    def remove_samples_with_loss_three_std_devs_higher_than_avg(self):
+        if self.current_dset is None:
+            print("Please run the scoring first.")
+        else:
+            if self.nans_removed:
+                print("Indexes are no longer accurate. Please re-run the scoring. \n\n"
+                      "This function also removes NaNs, so if you want to remove the NaN samples and the outliers, only call this one here.")
+            else:
+                remove_ids = list()
+                remove_ids.extend(self.nan_indexes)
+                scores_without_nans = [value for value in list(self.path_to_score.values()) if not math.isnan(value)]
+                avg = statistics.mean(scores_without_nans)
+                std = statistics.stdev(scores_without_nans)
+                thresh = avg + (3 * std)
+                for path in self.path_to_score:
+                    if not math.isnan(self.path_to_score[path]):
+                        if self.path_to_score[path] > thresh:  # we found an outlier!
+                            remove_ids.append(self.path_to_id[path])
+                print(f"removing {len(remove_ids)} outliers!")
                 self.current_dset.remove_samples(remove_ids)
                 self.nans_removed = True
 

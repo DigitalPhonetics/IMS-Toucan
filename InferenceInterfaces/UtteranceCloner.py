@@ -4,11 +4,11 @@ import numpy
 import soundfile as sf
 import torch
 
-from Architectures.Aligner.Aligner import Aligner
-from Architectures.ToucanTTS.DurationCalculator import DurationCalculator
-from Architectures.ToucanTTS.EnergyCalculator import EnergyCalculator
-from Architectures.ToucanTTS.PitchCalculator import Parselmouth
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
+from Modules.Aligner.Aligner import Aligner
+from Modules.ToucanTTS.DurationCalculator import DurationCalculator
+from Modules.ToucanTTS.EnergyCalculator import EnergyCalculator
+from Modules.ToucanTTS.PitchCalculator import Parselmouth
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -26,7 +26,7 @@ class UtteranceCloner:
     def __init__(self, model_id, device, language="eng"):
         self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, cut_silence=False)
-        self.tf = ArticulatoryCombinedTextFrontend(language=language)
+        self.tf = ArticulatoryCombinedTextFrontend(language=language, device=device)
         self.device = device
         acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
         self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location=device)["asr_model"]
@@ -43,6 +43,7 @@ class UtteranceCloner:
         self.acoustic_model = Aligner()
         self.acoustic_model = self.acoustic_model.to(self.device)
         self.acoustic_model.load_state_dict(self.aligner_weights)
+        self.acoustic_model.eval()
         self.parsel = Parselmouth(reduction_factor=1, fs=16000)
         self.energy_calc = EnergyCalculator(reduction_factor=1, fs=16000)
         self.dc = DurationCalculator(reduction_factor=1)
@@ -50,10 +51,11 @@ class UtteranceCloner:
     def extract_prosody(self, transcript, ref_audio_path, lang="eng", on_line_fine_tune=True):
         if on_line_fine_tune:
             self.acoustic_model.load_state_dict(self.aligner_weights)
+            self.acoustic_model.eval()
 
         wave, sr = sf.read(ref_audio_path)
         if self.tf.language != lang:
-            self.tf = ArticulatoryCombinedTextFrontend(language=lang)
+            self.tf = ArticulatoryCombinedTextFrontend(language=lang, device=self.device)
         if self.ap.input_sr != sr:
             self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=False)
         try:

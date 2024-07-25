@@ -45,6 +45,19 @@ process, with which I am unfortunately not familiar.
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one cuda enabled GPU if you intend to train models on that machine. For inference, you don't need
 a GPU).
+
+If you're using Linux, you should have the following packages installed, or install them with apt-get if you haven't (on
+most distributions they come pre-installed):
+
+```
+libsndfile1
+espeak-ng
+ffmpeg
+libasound-dev
+libportaudio2
+libsqlite3-dev
+```
+
 Navigate to the directory you have cloned. We recommend creating and activating a
 [virtual environment](https://docs.python.org/3/library/venv.html)
 to install the basic requirements into. The commands below summarize everything you need to do under Linux. If you are
@@ -145,7 +158,7 @@ pass them to the interface when you use it in your own code.
 
 ---
 
-## Creating a new Training Pipeline 🐣
+## Creating a new Recipe (Training Pipeline) 🐣
 
 In the directory called
 *Utility* there is a file called
@@ -154,7 +167,7 @@ absolute paths to each of the audio files in your dataset as strings as the keys
 corresponding audios as the values.
 
 Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of the `finetuning_example_simple.py` file if you just want to finetune on a single dataset or `finetuning_example_multilingual.py` if you want to finetune on multiple datasets, potentially even multiple languages. We will use this copy
+*TrainingInterfaces/Recipes*. In there, make a copy of the `finetuning_example_simple.py` file if you just want to finetune on a single dataset or `finetuning_example_multilingual.py` if you want to finetune on multiple datasets, potentially even multiple languages. We will use this copy
 as reference and only make the necessary changes to use the new dataset. Find the call(s) to the *prepare_tts_corpus* function. Replace the path_to_transcript_dict used there with the one(s) you just created. Then change the name of the corresponding cache directory to something that makes sense for the dataset.
 Also look out for the variable *save_dir*, which is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling
 the pipeline later using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a
@@ -175,7 +188,7 @@ Once this is complete, we are almost done, now we just need to make it available
 
 ## Training a Model 🦜
 
-Once you have a training pipeline built, training is super easy:
+Once you have a recipe built, training is super easy:
 
 ```
 python run_training_pipeline.py <shorthand of the pipeline>
@@ -257,17 +270,17 @@ Here are a few points that were brought up by users:
 The basic PyTorch modules of FastSpeech 2 and GST are taken from
 [ESPnet](https://github.com/espnet/espnet), the PyTorch modules of
 HiFi-GAN are taken from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN).
-Some modules related to the Glow based PostNet as outlined in PortaSpeech are taken
-from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech).
-We use audio watermarking from [audioseal](https://github.com/facebookresearch/audioseal). For
-grapheme-to-phoneme conversion, we rely on the aforementioned eSpeak-NG as
+Some modules related to the ConditionalFlowMatching based PostNet as outlined in MatchaTTS are taken
+from the [official MatchaTTS codebase](https://github.com/shivammehta25/Matcha-TTS) and some are taken
+from [the StableTTS codebase](https://github.com/KdaiP/StableTTS).
+For grapheme-to-phoneme conversion, we rely on the aforementioned eSpeak-NG as
 well as [transphone](https://github.com/xinjli/transphone). We
 use [encodec, a neural audio codec](https://github.com/yangdongchao/AcademiCodec) as intermediate representation
 for caching the train data to save space.
 
 ## Citation 🐧
 
-If you find this repo useful, consider giving it a star. Large numbers make me happy and they are quite motivating :)
+If you find this repo useful, consider giving it a star. Large numbers make me happy, and they are quite motivating :)
 
 <a href="https://star-history.com/#DigitalPhonetics/IMS-Toucan&Date">
  <picture>

@@ -1,6 +1,10 @@
 import glob
+import json
 import os
 import random
+import xml.etree.ElementTree as ET
+from csv import DictReader
+from pathlib import Path
 
 import torch
 
@@ -66,7 +70,155 @@ def build_path_to_transcript_dict_hui_template(root):
     return path_to_transcript
 
 
+def indic_voices_template(root, lang):
+    path_to_transcript = dict()
+    transcripts = list()
+    import json
+    for jpath in [f"{root}/{lang}/metadata_test.json",
+                  f"{root}/{lang}/metadata_train.json"]:
+        with open(jpath, encoding='utf-8', mode='r') as jfile:
+            for line in jfile.read().split("\n"):
+                if line.strip() != "":
+                    transcripts.append(json.loads(line))
+    for transcript in transcripts:
+        path = f"{root}/{lang}/{lang}/wavs/{transcript['filepath']}"
+        norm_text = transcript["normalized"]
+        path_to_transcript[path] = norm_text
+    return path_to_transcript
+
+
 # ENGLISH
+
+def build_path_to_transcript_dict_ears(re_cache=False):
+    transcript_for_ears = {
+        "emo_adoration_sentences"     : "You're just the sweetest person I know and I am so happy to call you my friend. I had the best time with you, I just adore you. I love this gift, thank you!",
+        "emo_amazement_sentences"     : "I just love how you can play guitar. You're so impressive. I admire your abilities so much.",
+        "emo_amusement_sentences"     : "The sound that baby just made was quite amusing. I liked that stand up comic, I found her pretty funny. What a fun little show to watch!",
+        "emo_anger_sentences"         : "I'm so mad right now I could punch a hole in the wall. I can't believe he said that, he's such a jerk! There's a stop sign there and parents are just letting their kids run around!",
+        "emo_confusion_sentences"     : "Huh, what is going on over here? What is this? Where are we going?",
+        "emo_contentment_sentences"   : "I really enjoyed dinner tonight, it was quite nice. Everything is working out just fine. I'm good either way.",
+        "emo_cuteness_sentences"      : "Look at that cute little kitty cat! Oh my goodness, she's so cute! That's the cutest thing I've ever seen!",
+        "emo_desire_sentences"        : "Mmm that chocolate fudge lava cake looks divine. I want that car so badly. I can't wait to see you again.",
+        "emo_disappointment_sentences": "I'm so disappointed in myself. I wish I had worked harder. I had such higher expectations for you. I really was hoping you were better than this.",
+        "emo_disgust_sentences"       : "I have never seen anything grosser than this in my entire life. This is the worst dinner I've ever had. Yuck, I can't even look at that.",
+        "emo_distress_sentences"      : "Oh god, I am not sure if we are going to make this flight on time. This is all too stressful to handle right now. I don't know where anything is and I'm running late.",
+        "emo_embarassment_sentences"  : "I don't know what happened, I followed the recipe perfectly but the cake just deflated. I'm so embarrassed. I hope no one saw that, I'd be mortified if they did.",
+        "emo_extasy_sentences"        : "This is the most exciting thing I've ever seen in my life! I can't believe I got to see that. I'm so excited, I've never been there before.",
+        "emo_fear_sentences"          : "Did you hear that sound? I'm afraid someone or something is outside. Oh my gosh, what is that? What do you think is going to happen if we don't run?",
+        "emo_guilt_sentences"         : "I'm sorry I did that to you. I really didn't mean to hurt you. I feel horrible that happened to you.",
+        "emo_interest_sentences"      : "Hmm, I wonder what that cookie tastes like. Oh, what is that over there? So what exactly is it that you do?",
+        "emo_neutral_sentences"       : "That wall in the living room is white. There is one more piece of bread in the pantry. The store closes at 8pm tonight.",
+        "emo_pain_sentences"          : "Oh, this headache is the worst one I've ever had! My foot hurts so badly right now! I'm in terrible pain from that medication.",
+        "emo_pride_sentences"         : "That was all me, I'm the one who found the project, created the company and made it succeed. I have worked hard to get here and I deserve it. I'm really proud of how well you did.",
+        "emo_realization_sentences"   : "Wow, I never know that the body was made up of 75% water. Did you know that a flamingo is actually white but turns pink because it eats too many shrimp? Apparently dolphins sleep with one eye open.",
+        "emo_relief_sentences"        : "I'm so relieved my taxes are done. That was so stressful. I'm so relieved that is over with. Thank goodness that's all done.",
+        "emo_sadness_sentences"       : "I am so upset by the state of the world. I hope it gets better soon. I really miss her, life isn't the same without her. I'm sorry for your loss.",
+        "emo_serenity_sentences"      : "This has been the most peaceful day of my life. I am very calm right now. I'm going to relax and take a nap here on the beach.",
+        "rainbow_01_fast"             : "When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors.",
+        "rainbow_01_highpitch"        : "When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors.",
+        "rainbow_01_loud"             : "When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors.",
+        "rainbow_01_lowpitch"         : "When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors.",
+        "rainbow_01_regular"          : "When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors.",
+        "rainbow_01_slow"             : "When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors.",
+        "rainbow_01_whisper"          : "When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors.",
+        "rainbow_02_fast"             : "These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon. There is, according to legend, a boiling pot of gold at one end.",
+        "rainbow_02_highpitch"        : "These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon. There is, according to legend, a boiling pot of gold at one end.",
+        "rainbow_02_loud"             : "These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon. There is, according to legend, a boiling pot of gold at one end.",
+        "rainbow_02_lowpitch"         : "These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon. There is, according to legend, a boiling pot of gold at one end.",
+        "rainbow_02_regular"          : "These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon. There is, according to legend, a boiling pot of gold at one end.",
+        "rainbow_02_slow"             : "These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon. There is, according to legend, a boiling pot of gold at one end.",
+        "rainbow_02_whisper"          : "These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon. There is, according to legend, a boiling pot of gold at one end.",
+        "rainbow_03_fast"             : "People look, but no one ever finds it. When a man looks for something beyond his reach, his friends say he is looking for the pot of gold at the end of the rainbow. Throughout the centuries people have explained the rainbow in various ways.",
+        "rainbow_03_highpitch"        : "People look, but no one ever finds it. When a man looks for something beyond his reach, his friends say he is looking for the pot of gold at the end of the rainbow. Throughout the centuries people have explained the rainbow in various ways.",
+        "rainbow_03_loud"             : "People look, but no one ever finds it. When a man looks for something beyond his reach, his friends say he is looking for the pot of gold at the end of the rainbow. Throughout the centuries people have explained the rainbow in various ways.",
+        "rainbow_03_lowpitch"         : "People look, but no one ever finds it. When a man looks for something beyond his reach, his friends say he is looking for the pot of gold at the end of the rainbow. Throughout the centuries people have explained the rainbow in various ways.",
+        "rainbow_03_regular"          : "People look, but no one ever finds it. When a man looks for something beyond his reach, his friends say he is looking for the pot of gold at the end of the rainbow. Throughout the centuries people have explained the rainbow in various ways.",
+        "rainbow_03_slow"             : "People look, but no one ever finds it. When a man looks for something beyond his reach, his friends say he is looking for the pot of gold at the end of the rainbow. Throughout the centuries people have explained the rainbow in various ways.",
+        "rainbow_03_whisper"          : "People look, but no one ever finds it. When a man looks for something beyond his reach, his friends say he is looking for the pot of gold at the end of the rainbow. Throughout the centuries people have explained the rainbow in various ways.",
+        "rainbow_04_fast"             : "Some have accepted it as a miracle without physical explanation. To the Hebrews it was a token that there would be no more universal floods. The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.",
+        "rainbow_04_highpitch"        : "Some have accepted it as a miracle without physical explanation. To the Hebrews it was a token that there would be no more universal floods. The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.",
+        "rainbow_04_loud"             : "Some have accepted it as a miracle without physical explanation. To the Hebrews it was a token that there would be no more universal floods. The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.",
+        "rainbow_04_lowpitch"         : "Some have accepted it as a miracle without physical explanation. To the Hebrews it was a token that there would be no more universal floods. The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.",
+        "rainbow_04_regular"          : "Some have accepted it as a miracle without physical explanation. To the Hebrews it was a token that there would be no more universal floods. The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.",
+        "rainbow_04_slow"             : "Some have accepted it as a miracle without physical explanation. To the Hebrews it was a token that there would be no more universal floods. The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.",
+        "rainbow_04_whisper"          : "Some have accepted it as a miracle without physical explanation. To the Hebrews it was a token that there would be no more universal floods. The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.",
+        "rainbow_05_fast"             : "The Norsemen considered the rainbow as a bridge over which the gods passed from earth to their home in the sky. Others have tried to explain the phenomenon physically. Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.",
+        "rainbow_05_highpitch"        : "The Norsemen considered the rainbow as a bridge over which the gods passed from earth to their home in the sky. Others have tried to explain the phenomenon physically. Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.",
+        "rainbow_05_loud"             : "The Norsemen considered the rainbow as a bridge over which the gods passed from earth to their home in the sky. Others have tried to explain the phenomenon physically. Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.",
+        "rainbow_05_lowpitch"         : "The Norsemen considered the rainbow as a bridge over which the gods passed from earth to their home in the sky. Others have tried to explain the phenomenon physically. Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.",
+        "rainbow_05_regular"          : "The Norsemen considered the rainbow as a bridge over which the gods passed from earth to their home in the sky. Others have tried to explain the phenomenon physically. Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.",
+        "rainbow_05_slow"             : "The Norsemen considered the rainbow as a bridge over which the gods passed from earth to their home in the sky. Others have tried to explain the phenomenon physically. Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.",
+        "rainbow_05_whisper"          : "The Norsemen considered the rainbow as a bridge over which the gods passed from earth to their home in the sky. Others have tried to explain the phenomenon physically. Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.",
+        "rainbow_06_fast"             : "Since then physicists have found that it is not reflection, but refraction by the raindrops which causes the rainbows. Many complicated ideas about the rainbow have been formed.",
+        "rainbow_06_highpitch"        : "Since then physicists have found that it is not reflection, but refraction by the raindrops which causes the rainbows. Many complicated ideas about the rainbow have been formed.",
+        "rainbow_06_loud"             : "Since then physicists have found that it is not reflection, but refraction by the raindrops which causes the rainbows. Many complicated ideas about the rainbow have been formed.",
+        "rainbow_06_lowpitch"         : "Since then physicists have found that it is not reflection, but refraction by the raindrops which causes the rainbows. Many complicated ideas about the rainbow have been formed.",
+        "rainbow_06_regular"          : "Since then physicists have found that it is not reflection, but refraction by the raindrops which causes the rainbows. Many complicated ideas about the rainbow have been formed.",
+        "rainbow_06_slow"             : "Since then physicists have found that it is not reflection, but refraction by the raindrops which causes the rainbows. Many complicated ideas about the rainbow have been formed.",
+        "rainbow_06_whisper"          : "Since then physicists have found that it is not reflection, but refraction by the raindrops which causes the rainbows. Many complicated ideas about the rainbow have been formed.",
+        "rainbow_07_fast"             : "The difference in the rainbow depends considerably upon the size of the drops, and the width of the colored band increases as the size of the drops increases. The actual primary rainbow observed is said to be the effect of super-imposition of a number of bows.",
+        "rainbow_07_highpitch"        : "The difference in the rainbow depends considerably upon the size of the drops, and the width of the colored band increases as the size of the drops increases. The actual primary rainbow observed is said to be the effect of super-imposition of a number of bows.",
+        "rainbow_07_loud"             : "The difference in the rainbow depends considerably upon the size of the drops, and the width of the colored band increases as the size of the drops increases. The actual primary rainbow observed is said to be the effect of super-imposition of a number of bows.",
+        "rainbow_07_lowpitch"         : "The difference in the rainbow depends considerably upon the size of the drops, and the width of the colored band increases as the size of the drops increases. The actual primary rainbow observed is said to be the effect of super-imposition of a number of bows.",
+        "rainbow_07_regular"          : "The difference in the rainbow depends considerably upon the size of the drops, and the width of the colored band increases as the size of the drops increases. The actual primary rainbow observed is said to be the effect of super-imposition of a number of bows.",
+        "rainbow_07_slow"             : "The difference in the rainbow depends considerably upon the size of the drops, and the width of the colored band increases as the size of the drops increases. The actual primary rainbow observed is said to be the effect of super-imposition of a number of bows.",
+        "rainbow_07_whisper"          : "The difference in the rainbow depends considerably upon the size of the drops, and the width of the colored band increases as the size of the drops increases. The actual primary rainbow observed is said to be the effect of super-imposition of a number of bows.",
+        "rainbow_08_fast"             : "If the red of the second bow falls upon the green of the first, the result is to give a bow with an abnormally wide yellow band, since red and green light when mixed form yellow. This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.",
+        "rainbow_08_highpitch"        : "If the red of the second bow falls upon the green of the first, the result is to give a bow with an abnormally wide yellow band, since red and green light when mixed form yellow. This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.",
+        "rainbow_08_loud"             : "If the red of the second bow falls upon the green of the first, the result is to give a bow with an abnormally wide yellow band, since red and green light when mixed form yellow. This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.",
+        "rainbow_08_lowpitch"         : "If the red of the second bow falls upon the green of the first, the result is to give a bow with an abnormally wide yellow band, since red and green light when mixed form yellow. This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.",
+        "rainbow_08_regular"          : "If the red of the second bow falls upon the green of the first, the result is to give a bow with an abnormally wide yellow band, since red and green light when mixed form yellow. This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.",
+        "rainbow_08_slow"             : "If the red of the second bow falls upon the green of the first, the result is to give a bow with an abnormally wide yellow band, since red and green light when mixed form yellow. This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.",
+        "rainbow_08_whisper"          : "If the red of the second bow falls upon the green of the first, the result is to give a bow with an abnormally wide yellow band, since red and green light when mixed form yellow. This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.",
+        "sentences_01_fast"           : "I will not stay here. God, we simply must dress the character. Stay, stay, I will go myself. May one ask what it is for. He rushed to the window and opened the movable pane.",
+        "sentences_01_highpitch"      : "I will not stay here. God, we simply must dress the character. Stay, stay, I will go myself. May one ask what it is for. He rushed to the window and opened the movable pane.",
+        "sentences_01_loud"           : "I will not stay here. God, we simply must dress the character. Stay, stay, I will go myself. May one ask what it is for. He rushed to the window and opened the movable pane.",
+        "sentences_01_lowpitch"       : "I will not stay here. God, we simply must dress the character. Stay, stay, I will go myself. May one ask what it is for. He rushed to the window and opened the movable pane.",
+        "sentences_01_regular"        : "I will not stay here. God, we simply must dress the character. Stay, stay, I will go myself. May one ask what it is for. He rushed to the window and opened the movable pane.",
+        "sentences_01_slow"           : "I will not stay here. God, we simply must dress the character. Stay, stay, I will go myself. May one ask what it is for. He rushed to the window and opened the movable pane.",
+        "sentences_01_whisper"        : "I will not stay here. God, we simply must dress the character. Stay, stay, I will go myself. May one ask what it is for. He rushed to the window and opened the movable pane.",
+        "sentences_02_fast"           : "It might happen, he added with an involuntary smile. It is sold, sir, was again his laconic reply. And you must have some water, my dear fellow. What is that flying about? Who wants a dead cert for the Gold cup?",
+        "sentences_02_highpitch"      : "It might happen, he added with an involuntary smile. It is sold, sir, was again his laconic reply. And you must have some water, my dear fellow. What is that flying about? Who wants a dead cert for the Gold cup?",
+        "sentences_02_loud"           : "It might happen, he added with an involuntary smile. It is sold, sir, was again his laconic reply. And you must have some water, my dear fellow. What is that flying about? Who wants a dead cert for the Gold cup?",
+        "sentences_02_lowpitch"       : "It might happen, he added with an involuntary smile. It is sold, sir, was again his laconic reply. And you must have some water, my dear fellow. What is that flying about? Who wants a dead cert for the Gold cup?",
+        "sentences_02_regular"        : "It might happen, he added with an involuntary smile. It is sold, sir, was again his laconic reply. And you must have some water, my dear fellow. What is that flying about? Who wants a dead cert for the Gold cup?",
+        "sentences_02_slow"           : "It might happen, he added with an involuntary smile. It is sold, sir, was again his laconic reply. And you must have some water, my dear fellow. What is that flying about? Who wants a dead cert for the Gold cup?",
+        "sentences_02_whisper"        : "It might happen, he added with an involuntary smile. It is sold, sir, was again his laconic reply. And you must have some water, my dear fellow. What is that flying about? Who wants a dead cert for the Gold cup?",
+        "sentences_03_whisper"        : "Had it been but one, it had been easy. We have boxed the compass among us. I shall rush out and prevent it. All that is mean slander. The doctor seemed tired and in a hurry.",
+        "sentences_04_whisper"        : "I only heard it last night. We had now got into the month of March. But go thy ways; I had forgot. Conceited fellow with his waxed up moustache! Anne's unhappiness continued for a week.",
+        "sentences_05_loud"           : "In fact, the count's face brightened. For God's sake, talk to her. In what an amiable light does this place him! Take me out of my way. I heard many things in hell.",
+        "sentences_06_loud"           : "Yes; but we do not invite people of fashion. You see what he writes. Silent with awe and pity I went to her bedside. Happy to say, I never knew him. Birthdays are of no importance to a rational being.",
+        "sentences_07_slow"           : "But it may all be put in two words. Clear up the room, the sick man said with effort. He was still in sight. He delayed; he seemed almost afraid of something. Then they carried me in.",
+        "sentences_08_slow"           : "But I have never been presented. But we were only in fun! Now, look at that third name. And serve them both right, too. Good glass of burgundy take away that.",
+        "sentences_09_fast"           : "And it seemed to her that God heard her prayer. My word, I admire you. I also have a pious visit to pay. She has promised to come on the twentieth. I want to tell you something.",
+        "sentences_10_fast"           : "Oh, sir, it will break bones. I am very glad to see you. This question absorbed all his mental powers. Before going away forever, I'll tell him all. I told you it was mother.",
+        "sentences_11_highpitch"      : "You're all in good spirits. They might retreat and leave the pickets. But I like sentimental people. Our potato crop is very good this year. Why is the chestnut on the right?",
+        "sentences_12_highpitch"      : "His room was on the first floor. I have had a pattern in my hand. The knocking still continued and grew louder. May my sorrows ever shun the light. How must I arrange it, then?",
+        "sentences_13_lowpitch"       : "Just read it out to me. I shall take your advice in every particular. What mortal imagination could conceive it? The gate was again hidden by smoke. After a while I left him.",
+        "sentences_14_lowpitch"       : "There was a catch in her breath. They told me, but I didn't understand. What a cabin it is. A cry of joy broke from his lips. He had obviously prepared the sentence beforehand.",
+        "sentences_15_regular"        : "They were all sitting in her room. So that's how it stands. He did not know why he embraced it. Why don't you speak, cousin? I didn't tell a tale.",
+        "sentences_16_regular"        : "My head aches dreadfully now. Not to say every word. I have only found out. He is trying to discover something. I have done my duty.",
+        "sentences_17_regular"        : "I always had a value for him. He is a deceiver and a villain. But those tears were pleasant to them both. She conquered her fears, and spoke. Oh, he couldn't overhear me at the door.",
+        "sentences_18_regular"        : "How could I have said it more directly? She remembered her oath. My kingdom for a drink! Have they caught the little girl and the boy? Then she gave him the dry bread.",
+        "sentences_19_regular"        : "Your sister is given to government. Water was being sprinkled on his face. The clumsy things are dear. He jumped up and sat on the sofa. How do you know her?",
+        "sentences_20_regular"        : "I never could guess a riddle in my life. The expression of her face was cold. Besides, what on earth could happen to you? Allow me to give you a piece of advice. This must be stopped at once.",
+        "sentences_21_regular"        : "The lawyer was right about that. You are fond of fighting. Every word is so deep. So you were never in London before? Death is now, perhaps, striking a fourth blow.",
+        "sentences_22_regular"        : "It seemed that sleep and night had resumed their empire. The snowstorm was still raging. But we'll talk later on. Take the baby, Mum, and give me your book. The doctor gave him his hand.",
+        "sentences_23_regular"        : "It is, nevertheless, conclusive to my mind. Give this to the countess. It is only a question of a few hours. No, we don't keep a cat. The cool evening air refreshed him.",
+        "sentences_24_regular"        : "You can well enjoy the evening now. We'll make up for it now. The weakness of a murderer. But they wouldn't leave me alone. The telegram was from his wife."
+    }
+    root = "/mount/resources/speech/corpora/EARS/"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = dict()
+        for speaker in os.listdir(root):
+            if os.path.isdir(os.path.join(root, speaker)):
+                for sentence_type in transcript_for_ears:
+                    path = os.path.join(root, speaker, sentence_type + ".wav")
+                    path_to_transcript[path] = transcript_for_ears[sentence_type]
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
 
 def build_path_to_transcript_dict_mls_english(re_cache=False):
     lang = "english"
@@ -884,7 +1036,287 @@ def build_path_to_transcript_dict_css10hu(re_cache=False):
     return torch.load(cache_path)
 
 
+# JAPANESE
+
+def build_path_to_transcript_dict_captain_japanese(re_cache=False):
+    root = "/mount/resources/speech/corpora/HiFiCaptainJapanese"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = dict()
+        with open(root + "/male/text/train_parallel.txt", encoding="utf8") as f:
+            transcriptions = f.read()
+        for line in transcriptions.split("\n"):
+            if line.strip() != "":
+                parsed_line = line.split()
+                audio_path = parsed_line[0]
+                transcript = parsed_line[1]
+                audio_path = os.path.join(root, "male", "wav", "train_parallel", audio_path + ".wav")
+                if os.path.exists(audio_path):
+                    path_to_transcript[audio_path] = transcript.strip()
+                else:
+                    print(f"{audio_path} does not seem to exist!")
+        with open(root + "/female/text/train_parallel.txt", encoding="utf8") as f:
+            transcriptions = f.read()
+        for line in transcriptions.split("\n"):
+            if line.strip() != "":
+                parsed_line = line.split()
+                audio_path = parsed_line[0]
+                transcript = parsed_line[1]
+                audio_path = os.path.join(root, "female", "wav", "train_parallel", audio_path + ".wav")
+                if os.path.exists(audio_path):
+                    path_to_transcript[audio_path] = transcript.strip()
+                else:
+                    print(f"{audio_path} does not seem to exist!")
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_jvs(re_cache=False):
+    root = "/mount/resources/speech/corpora/JVS/jvs_ver1"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = dict()
+        for data_dir in os.listdir(root):
+            if os.path.isdir(os.path.join(root, data_dir)):
+                for data_type in ["parallel100", "nonpara30"]:
+                    with open(os.path.join(root, data_dir, data_type, "transcripts_utf8.txt"), encoding="utf8") as f:
+                        transcriptions = f.read()
+                    for line in transcriptions.split("\n"):
+                        if line.strip() != "":
+                            parsed_line = line.split(":")
+                            audio_path = parsed_line[0]
+                            transcript = parsed_line[1]
+                            audio_path = os.path.join(root, data_dir, data_type, "wav24kHz16bit", audio_path + ".wav")
+                            if os.path.exists(audio_path):
+                                path_to_transcript[audio_path] = transcript.strip()
+                            else:
+                                print(f"{audio_path} does not seem to exist!")
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
 # OTHER
+
+
+def build_path_to_transcript_dict_indicvoices_Assamese(re_cache=False):
+    language = "Assamese"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Bengali(re_cache=False):
+    language = "Bengali"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Bodo(re_cache=False):
+    language = "Bodo"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Dogri(re_cache=False):
+    language = "Dogri"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Gujarati(re_cache=False):
+    language = "Gujarati"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Hindi(re_cache=False):
+    language = "Hindi"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Kannada(re_cache=False):
+    language = "Kannada"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Kashmiri(re_cache=False):
+    language = "Kashmiri"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Konkani(re_cache=False):
+    language = "Konkani"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Maithili(re_cache=False):
+    language = "Maithili"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Malayalam(re_cache=False):
+    language = "Malayalam"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Manipuri(re_cache=False):
+    language = "Manipuri"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Marathi(re_cache=False):
+    language = "Marathi"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Nepali(re_cache=False):
+    language = "Nepali"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Odia(re_cache=False):
+    language = "Odia"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Punjabi(re_cache=False):
+    language = "Punjabi"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Sanskrit(re_cache=False):
+    language = "Sanskrit"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Santali(re_cache=False):
+    language = "Santali"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Sindhi(re_cache=False):
+    language = "Sindhi"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Tamil(re_cache=False):
+    language = "Tamil"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Telugu(re_cache=False):
+    language = "Telugu"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_indicvoices_Urdu(re_cache=False):
+    language = "Urdu"
+    root = f"/mount/resources/speech/corpora/IndicVoicesR"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = indic_voices_template(root=root, lang=language)
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
 
 def build_file_list_singing_voice_audio_database(re_cache=False):
     root = "/mount/resources/speech/corpora/singing_voice_audio_dataset/monophonic"
@@ -897,12 +1329,6 @@ def build_file_list_singing_voice_audio_database(re_cache=False):
                     file_list.append(os.path.join(root, corw, singer, audio))
         torch.save(file_list, cache_path)
     return torch.load(cache_path)
-
-
-from pathlib import Path
-import xml.etree.ElementTree as ET
-from csv import DictReader
-import json
 
 
 def build_path_to_transcript_dict_nst_norwegian():
