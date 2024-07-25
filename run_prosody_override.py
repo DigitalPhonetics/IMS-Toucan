@@ -3,7 +3,7 @@ import torch
 from InferenceInterfaces.UtteranceCloner import UtteranceCloner
 
 if __name__ == '__main__':
-    uc = UtteranceCloner(model_id="Nancy", device="cuda" if torch.cuda.is_available() else "cpu")
+    uc = UtteranceCloner(model_id="Meta", device="cuda" if torch.cuda.is_available() else "cpu" if torch.cuda.is_available() else "cpu")
 
     # What is said in path_to_reference_audio_for_intonation has to match the text in the reference_transcription exactly!
     uc.clone_utterance(path_to_reference_audio_for_intonation="audios/speaker_references_for_testing/sad.wav",
