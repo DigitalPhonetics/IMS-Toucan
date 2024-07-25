@@ -4,7 +4,6 @@ import pickle
 import random
 
 import kan
-import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 
@@ -107,8 +106,8 @@ def create_learned_cache(model_path, cache_root="."):
             print("\n\n")
             running_loss = list()
 
-        model_list[-1].scoring_function.plot(folder=f"kan_vis_{m}", beta=5000)
-        plt.show()
+        # model_list[-1].scoring_function.plot(folder=f"kan_vis_{m}", beta=5000)
+        # plt.show()
 
     # Time to see if the final ensemble is any good
     ensemble = EnsembleModel(model_list)
