@@ -10,6 +10,7 @@ from Recipes.HiFiGAN_combined import run as HiFiGAN
 from Recipes.ToucanTTS_IntegrationTest import run as tt_integration_test
 from Recipes.ToucanTTS_Massive_English_stage1 import run as eng1
 from Recipes.ToucanTTS_Massive_English_stage2 import run as eng2
+from Recipes.ToucanTTS_Massive_German import run as deu
 from Recipes.ToucanTTS_Massive_stage1 import run as stage1
 from Recipes.ToucanTTS_Massive_stage2 import run as stage2
 from Recipes.ToucanTTS_Massive_stage3 import run as stage3
@@ -27,6 +28,7 @@ pipeline_dict = {
     "nancy"                          : nancy,
     "eng1"                           : eng1,
     "eng2"                           : eng2,
+    "deu"                            : deu,
     "stage1"                         : stage1,
     "stage2"                         : stage2,
     "stage3"                         : stage3,
