@@ -4,6 +4,7 @@ This is basically an integration test
 
 import time
 
+import torch
 import wandb
 
 from Modules.ToucanTTS.ToucanTTS import ToucanTTS

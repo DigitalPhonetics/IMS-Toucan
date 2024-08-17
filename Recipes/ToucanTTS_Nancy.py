@@ -1,5 +1,6 @@
 import time
 
+import torch
 import wandb
 
 from Modules.ToucanTTS.ToucanTTS import ToucanTTS

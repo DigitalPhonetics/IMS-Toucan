@@ -6,6 +6,7 @@ Comments in ALL CAPS are instructions
 
 import time
 
+import torch
 import wandb
 from torch.utils.data import ConcatDataset
 

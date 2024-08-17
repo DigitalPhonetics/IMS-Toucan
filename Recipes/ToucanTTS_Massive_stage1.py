@@ -6,6 +6,7 @@ STAGE 2: Introduce multilinguality, on a small and clean scale first
 
 import time
 
+import torch
 import torch.multiprocessing
 import wandb
 from torch.utils.data import ConcatDataset
