@@ -35,7 +35,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, "ToucanTTS_FinetuningExample")  # RENAME TO SOMETHING MEANINGFUL FOR YOUR DATA
     os.makedirs(save_dir, exist_ok=True)
 
-    train_data = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),
+    train_data = prepare_tts_corpus(transcript_dict=build_path_to_transcript_integration_test(),
                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "integration_test"),
                                     lang="eng")  # CHANGE THE TRANSCRIPT DICT, THE NAME OF THE CACHE DIRECTORY AND THE LANGUAGE TO YOUR NEEDS
 

@@ -42,11 +42,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # =    German Data      =
     # =======================
     german_datasets = list()
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_karlsson(),
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
                                               lang="deu"))  # CHANGE THE TRANSCRIPT DICT, THE NAME OF THE CACHE DIRECTORY AND THE LANGUAGE TO YOUR NEEDS
 
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_eva(),
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
                                               lang="deu"))  # YOU CAN SIMPLY ADD MODE CORPORA AND DO THE SAME, BUT YOU DON'T HAVE TO, ONE IS ENOUGH
 
@@ -56,11 +56,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # =    English Data      =
     # ========================
     english_datasets = list()
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_nancy(),
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                                lang="eng"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ljspeech(),
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                                lang="eng"))
 

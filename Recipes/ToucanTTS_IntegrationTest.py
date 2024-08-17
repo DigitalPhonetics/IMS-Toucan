@@ -36,7 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         rank = 0
 
-    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),
+    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_integration_test(),
                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "IntegrationTest"),
                                    lang="eng",
                                    save_imgs=True,

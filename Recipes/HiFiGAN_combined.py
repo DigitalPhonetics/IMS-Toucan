@@ -35,176 +35,176 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     take_all = False  # use only files with a large enough samplerate or just use all of them
 
     file_lists_for_this_run_combined = list()
-    fl = list(build_path_to_transcript_dict_mls_italian().keys())
+    fl = list(build_path_to_transcript_mls_italian().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_mls_english().keys())
+    fl = list(build_path_to_transcript_mls_english().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_mls_french().keys())
+    fl = list(build_path_to_transcript_mls_french().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_mls_dutch().keys())
+    fl = list(build_path_to_transcript_mls_dutch().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_mls_polish().keys())
+    fl = list(build_path_to_transcript_mls_polish().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_mls_spanish().keys())
+    fl = list(build_path_to_transcript_mls_spanish().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_mls_portuguese().keys())
+    fl = list(build_path_to_transcript_mls_portuguese().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_karlsson().keys())
+    fl = list(build_path_to_transcript_karlsson().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_eva().keys())
+    fl = list(build_path_to_transcript_eva().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_bernd().keys())
+    fl = list(build_path_to_transcript_bernd().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_friedrich().keys())
+    fl = list(build_path_to_transcript_friedrich().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_hokus().keys())
+    fl = list(build_path_to_transcript_hokus().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_hui_others().keys())
+    fl = list(build_path_to_transcript_hui_others().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_elizabeth().keys())
+    fl = list(build_path_to_transcript_elizabeth().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_nancy().keys())
+    fl = list(build_path_to_transcript_nancy().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_vctk().keys())
+    fl = list(build_path_to_transcript_vctk().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_libritts_all_clean().keys())
+    fl = list(build_path_to_transcript_libritts_all_clean().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_ljspeech().keys())
+    fl = list(build_path_to_transcript_ljspeech().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_css10cmn().keys())
+    fl = list(build_path_to_transcript_css10cmn().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_thorsten_emotional().keys())
+    fl = list(build_path_to_transcript_thorsten_emotional().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_thorsten_2022_10().keys())
+    fl = list(build_path_to_transcript_thorsten_2022_10().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_thorsten_neutral().keys())
+    fl = list(build_path_to_transcript_thorsten_neutral().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_css10el().keys())
+    fl = list(build_path_to_transcript_css10el().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_css10nl().keys())
+    fl = list(build_path_to_transcript_css10nl().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
-    fl = list(build_path_to_transcript_dict_css10fi().keys())
-    wav, sr = sf.read(fl[0])
-    if sr >= 24000 or take_all:
-        file_lists_for_this_run_combined += fl
-
-    fl = list(build_path_to_transcript_dict_css10ru().keys())
+    fl = list(build_path_to_transcript_css10fi().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_css10hu().keys())
+    fl = list(build_path_to_transcript_css10ru().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_css10es().keys())
+    fl = list(build_path_to_transcript_css10hu().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_css10fr().keys())
+    fl = list(build_path_to_transcript_css10es().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_nvidia_hifitts().keys())
+    fl = list(build_path_to_transcript_css10fr().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_spanish_blizzard_train().keys())
+    fl = list(build_path_to_transcript_nvidia_hifitts().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_aishell3().keys())
+    fl = list(build_path_to_transcript_spanish_blizzard_train().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_VIVOS_viet().keys())
+    fl = list(build_path_to_transcript_aishell3().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_ESDS().keys())
+    fl = list(build_path_to_transcript_VIVOS_viet().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_CREMA_D().keys())
+    fl = list(build_path_to_transcript_ESDS().keys())
+    wav, sr = sf.read(fl[0])
+    if sr >= 24000 or take_all:
+        file_lists_for_this_run_combined += fl
+
+    fl = list(build_path_to_transcript_CREMA_D().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
@@ -242,7 +242,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
 
     selection = file_lists_for_this_run_combined[:250000]  # adjust the sample size until it fits into RAM
 
-    fl = list(build_path_to_transcript_dict_RAVDESS().keys())  # these three datasets are kind of important to represent some out-of-distribution data for what we expect.
+    fl = list(build_path_to_transcript_RAVDESS().keys())  # these three datasets are kind of important to represent some out-of-distribution data for what we expect.
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         selection += fl
@@ -252,7 +252,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if sr >= 24000 or take_all:
         selection += fl
 
-    fl = list(build_path_to_transcript_dict_ears().keys())  # these three datasets are kind of important to represent some out-of-distribution data for what we expect.
+    fl = list(build_path_to_transcript_ears().keys())  # these three datasets are kind of important to represent some out-of-distribution data for what we expect.
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         selection += fl

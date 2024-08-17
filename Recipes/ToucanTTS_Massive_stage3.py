@@ -48,37 +48,37 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["eng"] = list()
 
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy,
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_nancy,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                                       lang="eng",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ryanspeech,
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ryanspeech,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Ryan"),
                                                       lang="eng",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech,
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ljspeech,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                                       lang="eng",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean,
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_libritts_all_clean,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
                                                       lang="eng",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013,
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_blizzard_2013,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
                                                       lang="eng",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_jenny,
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_jenny,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "jenny"),
                                                       lang="eng",
                                                       gpu_count=gpu_count,
@@ -87,43 +87,43 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # GERMAN
     lang_to_datasets["deu"] = list()
 
-    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_karlsson,
+    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_karlsson,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
                                                       lang="deu",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_eva,
+    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_eva,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
                                                       lang="deu",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hokus,
+    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_hokus,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Hokus"),
                                                       lang="deu",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_bernd,
+    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_bernd,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Bernd"),
                                                       lang="deu",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_friedrich,
+    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_friedrich,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Friedrich"),
                                                       lang="deu",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hui_others,
+    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_hui_others,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "hui_others"),
                                                       lang="deu",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_thorsten_neutral(),
+    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_thorsten_neutral(),
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_neutral"),
                                                       lang="deu",
                                                       gpu_count=gpu_count,
@@ -133,19 +133,19 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["fra"] = list()
 
-    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_silence_removed,
+    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_blizzard2023_ad_silence_removed,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "ad_e"),
                                                       lang="fra",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_silence_removed,
+    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_blizzard2023_neb_silence_removed,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "neb"),
                                                       lang="fra",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e_silence_removed,
+    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_blizzard2023_neb_e_silence_removed,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "neb_e"),
                                                       lang="fra",
                                                       gpu_count=gpu_count,
@@ -155,7 +155,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["spa"] = list()
 
-    lang_to_datasets["spa"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train,
+    lang_to_datasets["spa"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_spanish_blizzard_train,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "spanish_blizzard"),
                                                       lang="spa",
                                                       gpu_count=gpu_count,
@@ -165,7 +165,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["cmn"] = list()
 
-    lang_to_datasets["cmn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_aishell3,
+    lang_to_datasets["cmn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_aishell3,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "aishell3"),
                                                       lang="cmn",
                                                       gpu_count=gpu_count,
@@ -175,13 +175,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["jpn"] = list()
 
-    lang_to_datasets["jpn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_captain_japanese,
+    lang_to_datasets["jpn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_captain_japanese,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "captain_japanese"),
                                                       lang="jpn",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["jpn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_jvs,
+    lang_to_datasets["jpn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_jvs,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "jvs"),
                                                       lang="jpn",
                                                       gpu_count=gpu_count,
@@ -200,7 +200,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         if lang not in lang_to_datasets:
             lang_to_datasets[lang] = list()
 
-        lang_to_datasets[lang].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mms_template(lang=lang),
+        lang_to_datasets[lang].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_mms_template(lang=lang),
                                                          corpus_dir=os.path.join(PREPROCESSING_DIR, f"mms_{lang}"),
                                                          lang=f"{lang}",
                                                          gpu_count=gpu_count,

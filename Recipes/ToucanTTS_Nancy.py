@@ -32,7 +32,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         rank = 0
 
-    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_nancy(),
                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                    lang="eng",
                                    save_imgs=False,

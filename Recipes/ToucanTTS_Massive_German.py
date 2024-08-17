@@ -35,62 +35,62 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_karlsson,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_karlsson,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_eva,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_eva,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hokus,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_hokus,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "Hokus"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_bernd,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_bernd,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "Bernd"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_friedrich,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_friedrich,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "Friedrich"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hui_others,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_hui_others,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "hui_others"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_thorsten_emotional(),
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_thorsten_emotional(),
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_emotional"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_thorsten_neutral(),
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_thorsten_neutral(),
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_neutral"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_thorsten_2022_10(),
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_thorsten_2022_10(),
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_2022"),
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
     chunk_count = 20
-    chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_german(), split_n=chunk_count)
+    chunks = split_dictionary_into_chunks(build_path_to_transcript_mls_german(), split_n=chunk_count)
     for index in range(chunk_count):
         datasets.append(prepare_tts_corpus(transcript_dict=chunks[index],
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_german_chunk_{index}"),
