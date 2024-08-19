@@ -23,7 +23,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_German")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_German_refined")
     os.makedirs(save_dir, exist_ok=True)
 
     if gpu_count > 1:
@@ -70,33 +70,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                        lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_thorsten_emotional(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_emotional"),
-                                       lang="deu",
-                                       gpu_count=gpu_count,
-                                       rank=rank))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_thorsten_neutral(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_neutral"),
-                                       lang="deu",
-                                       gpu_count=gpu_count,
-                                       rank=rank))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_thorsten_2022_10(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_2022"),
-                                       lang="deu",
-                                       gpu_count=gpu_count,
-                                       rank=rank))
-
-    chunk_count = 20
-    chunks = split_dictionary_into_chunks(build_path_to_transcript_mls_german(), split_n=chunk_count)
-    for index in range(chunk_count):
-        datasets.append(prepare_tts_corpus(transcript_dict=chunks[index],
-                                           corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_german_chunk_{index}"),
-                                           lang="deu",
-                                           gpu_count=gpu_count,
-                                           rank=rank))
 
     train_set = ConcatDataset(datasets)
 
