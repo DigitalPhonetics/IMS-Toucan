@@ -186,3 +186,4 @@ class HiFiGAN(torch.nn.Module):
 if __name__ == "__main__":
     hifi = HiFiGAN()
     print(f"HiFiGAN parameter count: {sum(p.numel() for p in hifi.parameters() if p.requires_grad)}")
+    print(hifi(torch.randn([1, 128, 100]))[0].shape)
