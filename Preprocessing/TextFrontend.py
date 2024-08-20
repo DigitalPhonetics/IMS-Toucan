@@ -4,6 +4,7 @@
 import json
 import logging
 import re
+from pathlib import Path
 
 import torch
 from dragonmapper.transcriptions import pinyin_to_ipa
@@ -1074,7 +1075,7 @@ def get_language_id(language):
         iso_codes_to_ids = load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[-1]
     except FileNotFoundError:
         try:
-            iso_codes_to_ids = load_json_from_path("multilinguality/iso_lookup.json")[-1]
+            iso_codes_to_ids = load_json_from_path(str(Path(__file__).parent / "multilinguality/iso_lookup.json"))[-1]
         except FileNotFoundError:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
     if language not in iso_codes_to_ids:
