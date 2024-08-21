@@ -7,6 +7,7 @@ import torch
 
 from Recipes.AlignerPipeline import run as aligner
 from Recipes.HiFiGAN_combined import run as HiFiGAN
+from Recipes.HiFiGAN_e2e import run as e2e
 from Recipes.ToucanTTS_IntegrationTest import run as tt_integration_test
 from Recipes.ToucanTTS_Massive_English_stage1 import run as eng1
 from Recipes.ToucanTTS_Massive_English_stage2 import run as eng2
@@ -35,7 +36,8 @@ pipeline_dict = {
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"                        : aligner,
     # vocoder training (not recommended, best to use provided checkpoint)
-    "hifigan"                        : HiFiGAN
+    "hifigan"                        : HiFiGAN,
+    "e2e"                            : e2e
 }
 
 if __name__ == '__main__':
