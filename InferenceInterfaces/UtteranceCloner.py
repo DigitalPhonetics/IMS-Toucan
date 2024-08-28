@@ -3,7 +3,7 @@ import os
 import numpy
 import soundfile as sf
 import torch
-
+import librosa
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Modules.Aligner.Aligner import Aligner
 from Modules.ToucanTTS.DurationCalculator import DurationCalculator
@@ -54,6 +54,10 @@ class UtteranceCloner:
             self.acoustic_model.eval()
 
         wave, sr = sf.read(ref_audio_path)
+        if len(wave.shape) > 1:  # oh no, we found a stereo audio!
+            if len(wave[0]) == 2:  # let's figure out whether we need to switch the axes
+                wave = wave.transpose()  # if yes, we switch the axes.
+        wave = librosa.to_mono(wave)
         if self.tf.language != lang:
             self.tf = ArticulatoryCombinedTextFrontend(language=lang, device=self.device)
         if self.ap.input_sr != sr:
