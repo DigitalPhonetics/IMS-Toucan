@@ -353,7 +353,7 @@ If you find this repo useful, consider giving it a star. Large numbers make me h
 ### Our Contribution to the Blizzard Challenge 2023 [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.b)
 
 ```
-@inproceedings{lux2023controllable,
+@inproceedings{lux2023blizzard,
   year         = 2023,
   title        = {{The IMS Toucan System for the Blizzard Challenge 2023}},
   author       = {Florian Lux and Julia Koch and Sarina Meyer and Thomas Bott and Nadja Schauffler and Pavel Denisov and Antje Schweitzer and Ngoc Thang Vu},
