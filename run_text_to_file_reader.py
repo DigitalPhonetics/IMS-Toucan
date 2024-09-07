@@ -24,7 +24,7 @@ def english_test(version, model_id="Meta", exec_device="cpu", speaker_reference=
                             Over many a quaint, and curious volume, of forgotten lore,
                             While I nodded, nearly napping, suddenly, there came a tapping,
                             As of someone gently rapping, rapping at my chamber door."""],
-               filename=f"audios/{version}_english_test.wav",
+               filename=f"audios/{model_id}_english_test_{version}.wav",
                device=exec_device,
                language="eng",
                speaker_reference=speaker_reference)
@@ -35,7 +35,7 @@ def japanese_test(version, model_id="Meta", exec_device="cpu", speaker_reference
 
     read_texts(model_id=model_id,
                sentence=["医師会がなくても、近隣の病院なら紹介してくれると思います。"],
-               filename=f"audios/{version}_japanese_test.wav",
+               filename=f"audios/{model_id}_japanese_test_{version}.wav",
                device=exec_device,
                language="jpn",
                speaker_reference=speaker_reference)
@@ -46,7 +46,7 @@ def chinese_test(version, model_id="Meta", exec_device="cpu", speaker_reference=
 
     read_texts(model_id=model_id,
                sentence=["李绅 《悯农》 锄禾日当午， 汗滴禾下土。 谁知盘中餐， 粒粒皆辛苦。"],
-               filename=f"audios/{version}_chinese_test.wav",
+               filename=f"audios/{model_id}_chinese_test_{version}.wav",
                device=exec_device,
                language="cmn",
                speaker_reference=speaker_reference)
@@ -60,7 +60,7 @@ def german_test(version, model_id="Meta", exec_device="cpu", speaker_reference=N
                             Steht die Form, aus Lehm gebrannt.
                             Heute muss die Glocke werden!
                             Frisch, Gesellen, seid zur Hand!"""],
-               filename=f"audios/{version}_german_test.wav",
+               filename=f"audios/{model_id}_german_test_{version}.wav",
                device=exec_device,
                language="deu",
                speaker_reference=speaker_reference)
@@ -83,7 +83,7 @@ def vietnamese_test(version, model_id="Meta", exec_device="cpu", speaker_referen
                             những quyển sách chuyền tay nhau như ăn cắp,
                             ngôn luận ư?
                             không có đất cho nghĩa tự do."""],
-               filename=f"audios/{version}_vietnamese_test.wav",
+               filename=f"audios/{model_id}_vietnamese_test_{version}.wav",
                device=exec_device,
                language="vie",
                speaker_reference=speaker_reference)
@@ -99,7 +99,7 @@ def french_test(version, model_id="Meta", exec_device="cpu", speaker_reference=N
                             Lui tint à peu près ce langage :
                             «Et bonjour Monsieur du Corbeau.
                             Que vous ętes joli! que vous me semblez beau!"""],
-               filename=f"audios/{version}_french_test.wav",
+               filename=f"audios/{model_id}_french_test_{version}.wav",
                device=exec_device,
                language="fra",
                speaker_reference=speaker_reference)
