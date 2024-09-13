@@ -123,12 +123,12 @@ class CFMDecoder(torch.nn.Module):
         return loss, y
 
 
-def create_plot_of_all_solutions(sol):
+def create_plot_of_all_solutions(sol, fps=8):
     gif_collector = list()
     for step_index, solution in enumerate(sol):
         unbatched_solution = solution[0]  # remove the batch axis (if there are more than one element in the batch, we only take the first)
         plot_spec_tensor(unbatched_solution, "tmp", step_index, title=step_index + 1)
         gif_collector.append(imageio.v2.imread(f"tmp/{step_index}.png"))
-    for _ in range(10):
-        gif_collector.append(gif_collector[-1])
-    imageio.mimsave("tmp/animation.gif", gif_collector, fps=6, loop=0)
+    for _ in range(fps * 2):
+        gif_collector.append(gif_collector[-1])  # freeze-frame on the final one for two seconds
+    imageio.mimsave("tmp/animation.gif", gif_collector, fps=fps, loop=0)

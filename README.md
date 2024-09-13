@@ -158,6 +158,9 @@ There are simple scaling parameters to control the duration, the variance of the
 energy curve. You can either change them in the code when using the interactive demo or the reader, or you can simply
 pass them to the interface when you use it in your own code.
 
+To change the language of the model and see which languages are available in our pretrained model,
+[have a look at the list linked here](https://github.com/DigitalPhonetics/IMS-Toucan/Utility/language_list.md)
+
 ---
 
 ## Creating a new Recipe (Training Pipeline) 🐣
