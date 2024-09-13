@@ -126,7 +126,7 @@ class DiTConVBlock(nn.Module):
         else:
             # no condition version
             x = x + self.attn(self.norm1(x.transpose(1, 2)).transpose(1, 2), attn_mask)
-            x = x + self.mlp(self.norm1(x.transpose(1, 2)).transpose(1, 2), x_mask)
+            x = x + self.mlp(self.norm1(x.transpose(1, 2)).transpose(1, 2), x_mask)  # TODO this is technically a bug, but it seems to work ok with the bug. Before the next major model is trained for a release, norm1 should be changed to norm2 in this line.
         return x
 
     @staticmethod
