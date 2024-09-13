@@ -6,6 +6,8 @@ If you want to change the language of the text and the accent independent of
 one another, you can do so by passing the respective ISO 639-3 codes to the
 `set_phonemizer_language` and `set_accent_language` methods individually.
 
+<br><br>
+
 | ISO 639-3 Code | Full Name of the Language                   |
 |--- |---------------------------------------------|
 | aaa | Ghotuo                                      | 

@@ -159,7 +159,7 @@ energy curve. You can either change them in the code when using the interactive 
 pass them to the interface when you use it in your own code.
 
 To change the language of the model and see which languages are available in our pretrained model,
-[have a look at the list linked here](https://github.com/DigitalPhonetics/IMS-Toucan/Utility/language_list.md)
+[have a look at the list linked here](https://github.com/DigitalPhonetics/IMS-Toucan/blob/feb573ca630823974e6ced22591ab41cdfb93674/Utility/language_list.md)
 
 ---
 
