@@ -166,7 +166,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                                            pause_duration_scaling_factor=pause_duration_scaling_factor,
                                                            prosody_creativity=prosody_creativity)
 
-            wave, _, _ = self.vocoder(mel.unsqueeze(0))
+            wave = self.vocoder(mel.unsqueeze(0))
             wave = wave.squeeze().cpu()
         wave = wave.numpy()
         sr = 24000

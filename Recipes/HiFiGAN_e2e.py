@@ -26,7 +26,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = os.path.join(MODELS_DIR, "HiFiGAN_e2e")
+        model_save_dir = os.path.join(MODELS_DIR, "HiFiGAN_e2e_scratch_direct_cont")
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")
@@ -35,26 +35,35 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     file_lists_for_this_run_combined_synthetic = list()
 
     fl = list(build_path_to_transcript_libritts_all_clean().keys())
-    for f in fl:
-        if os.path.exists(f.replace(".wav", "_synthetic.wav")):
+    fisher_yates_shuffle(fl)
+    fisher_yates_shuffle(fl)
+    for i, f in enumerate(fl):
+        if os.path.exists(f.replace(".wav", "_synthetic_spec.pt")):
             file_lists_for_this_run_combined.append(f)
-            file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic.wav"))
+            file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic_spec.pt"))
+    """
     fl = list(build_path_to_transcript_hui_others().keys())
-    for f in fl:
+    fisher_yates_shuffle(fl)
+    fisher_yates_shuffle(fl)
+    for i, f in enumerate(fl):
         if os.path.exists(f.replace(".wav", "_synthetic.wav")):
             file_lists_for_this_run_combined.append(f)
             file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic.wav"))
     fl = list(build_path_to_transcript_aishell3().keys())
-    for f in fl:
+    fisher_yates_shuffle(fl)
+    fisher_yates_shuffle(fl)
+    for i, f in enumerate(fl):
         if os.path.exists(f.replace(".wav", "_synthetic.wav")):
             file_lists_for_this_run_combined.append(f)
             file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic.wav"))
     fl = list(build_path_to_transcript_jvs().keys())
-    for f in fl:
+    fisher_yates_shuffle(fl)
+    fisher_yates_shuffle(fl)
+    for i, f in enumerate(fl):
         if os.path.exists(f.replace(".wav", "_synthetic.wav")):
             file_lists_for_this_run_combined.append(f)
             file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic.wav"))
-
+    """
     print("filepaths collected")
 
     train_set = HiFiGANDataset(list_of_original_paths=file_lists_for_this_run_combined,
@@ -69,8 +78,8 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
-    train_loop(batch_size=16,
-               epochs=180000,
+    train_loop(batch_size=24,
+               epochs=5180000,
                generator=generator,
                discriminator=discriminator,
                train_dataset=train_set,
