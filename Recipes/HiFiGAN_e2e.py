@@ -29,7 +29,9 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
         model_save_dir = os.path.join(MODELS_DIR, "HiFiGAN_e2e_scratch_direct_cont")
     os.makedirs(model_save_dir, exist_ok=True)
 
-    print("Preparing new data...")
+    # To prepare the data, have a look at Modules/Vocoder/run_end-to-end_data_creation
+
+    print("Collecting new data...")
 
     file_lists_for_this_run_combined = list()
     file_lists_for_this_run_combined_synthetic = list()
@@ -41,29 +43,6 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
         if os.path.exists(f.replace(".wav", "_synthetic_spec.pt")):
             file_lists_for_this_run_combined.append(f)
             file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic_spec.pt"))
-    """
-    fl = list(build_path_to_transcript_hui_others().keys())
-    fisher_yates_shuffle(fl)
-    fisher_yates_shuffle(fl)
-    for i, f in enumerate(fl):
-        if os.path.exists(f.replace(".wav", "_synthetic.wav")):
-            file_lists_for_this_run_combined.append(f)
-            file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic.wav"))
-    fl = list(build_path_to_transcript_aishell3().keys())
-    fisher_yates_shuffle(fl)
-    fisher_yates_shuffle(fl)
-    for i, f in enumerate(fl):
-        if os.path.exists(f.replace(".wav", "_synthetic.wav")):
-            file_lists_for_this_run_combined.append(f)
-            file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic.wav"))
-    fl = list(build_path_to_transcript_jvs().keys())
-    fisher_yates_shuffle(fl)
-    fisher_yates_shuffle(fl)
-    for i, f in enumerate(fl):
-        if os.path.exists(f.replace(".wav", "_synthetic.wav")):
-            file_lists_for_this_run_combined.append(f)
-            file_lists_for_this_run_combined_synthetic.append(f.replace(".wav", "_synthetic.wav"))
-    """
     print("filepaths collected")
 
     train_set = HiFiGANDataset(list_of_original_paths=file_lists_for_this_run_combined,
