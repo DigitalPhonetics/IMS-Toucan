@@ -24,18 +24,26 @@ class CacheCreator:
     def create_tree_cache(self, cache_root="."):
         iso_to_family_memberships = load_json_from_path(os.path.join(cache_root, "iso_to_memberships.json"))
 
-        self.pair_to_tree_similarity = dict()
-        self.pair_to_depth = dict()
+        self.pair_to_tree_distance = dict()
         for pair in tqdm(self.pairs, desc="Generating tree pairs"):
-            self.pair_to_tree_similarity[pair] = len(set(iso_to_family_memberships[pair[0]]).intersection(set(iso_to_family_memberships[pair[1]])))
-        lang_1_to_lang_2_to_tree_dist = dict()
-        for pair in tqdm(self.pair_to_tree_similarity):
             lang_1 = pair[0]
             lang_2 = pair[1]
-            if self.pair_to_tree_similarity[pair] == 2:
-                dist = 1.0
+            depth_of_l1 = len(iso_to_family_memberships[lang_1])
+            depth_of_l2 = len(iso_to_family_memberships[lang_2])
+            depth_of_lca = len(set(iso_to_family_memberships[pair[0]]).intersection(set(iso_to_family_memberships[pair[1]])))
+            self.pair_to_tree_distance[pair] = (depth_of_l1 + depth_of_l2) - (2 * (depth_of_lca + 1) if depth_of_lca > 1 else depth_of_lca)  # with discounting for added importance of earlier nodes
+        min_dist = min(self.pair_to_tree_distance.values())
+        max_dist = max(self.pair_to_tree_distance.values())
+        for pair in self.pair_to_tree_distance:
+            if pair[0] == pair[1]:
+                self.pair_to_tree_distance[pair] = 0.0
             else:
-                dist = 1.0 - (self.pair_to_tree_similarity[pair] / max(len(iso_to_family_memberships[pair[0]]), len(iso_to_family_memberships[pair[1]])))
+                self.pair_to_tree_distance[pair] = (self.pair_to_tree_distance[pair] + abs(min_dist)) / (max_dist + abs(min_dist))
+        lang_1_to_lang_2_to_tree_dist = dict()
+        for pair in tqdm(self.pair_to_tree_distance):
+            lang_1 = pair[0]
+            lang_2 = pair[1]
+            dist = self.pair_to_tree_distance[pair]
             if lang_1 not in lang_1_to_lang_2_to_tree_dist.keys():
                 lang_1_to_lang_2_to_tree_dist[lang_1] = dict()
             lang_1_to_lang_2_to_tree_dist[lang_1][lang_2] = dist
