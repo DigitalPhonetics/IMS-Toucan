@@ -1,10 +1,23 @@
-![image](Utility/toucan.png)
-
-IMS Toucan is a toolkit for teaching, training and using state-of-the-art Speech Synthesis models, developed at the
-**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
-PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
+<p align="right">
+<img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/DigitalPhonetics/IMS-Toucan">
+<img alt="GitHub Repo Downloads" src="https://img.shields.io/github/downloads/DigitalPhonetics/IMS-Toucan/total">
+<img alt="GitHub Release" src="https://img.shields.io/github/v/release/DigitalPhonetics/IMS-Toucan">
+<a href=https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS><img alt="Demo Link" src="https://img.shields.io/badge/DEMO-<COLOR>.svg"></a>
+</p>
 
 ---
+
+
+IMS Toucan is a toolkit for training, using, and teaching state-of-the-art Text-to-Speech Synthesis models, developed at the
+**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
+PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible. 
+
+<br>
+
+![image](Utility/toucan.png)
+
+--- 
+<br>
 
 ## Links 🦚
 
@@ -32,7 +45,8 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 [We have also published a massively multilingual TTS dataset on Huggingface🤗](https://huggingface.co/datasets/Flux9665/BibleMMS)
 
----
+--- 
+<br>
 
 ## Installation 🦉
 
@@ -128,7 +142,8 @@ However, the espeak-ng installation file you need to set this variable to is a .
 Mac. In order to locate the espeak-ng library file, you can run `port contents espeak-ng`. The specific file you are
 looking for is named `libespeak-ng.dylib`.
 
----
+--- 
+<br>
 
 ## Inference 🦢
 
@@ -161,7 +176,8 @@ pass them to the interface when you use it in your own code.
 To change the language of the model and see which languages are available in our pretrained model,
 [have a look at the list linked here](https://github.com/DigitalPhonetics/IMS-Toucan/blob/feb573ca630823974e6ced22591ab41cdfb93674/Utility/language_list.md)
 
----
+--- 
+<br>
 
 ## Creating a new Recipe (Training Pipeline) 🐣
 
@@ -189,7 +205,8 @@ Once this is complete, we are almost done, now we just need to make it available
 *run* function from the pipeline you just created and give it a meaningful name. Now in the
 *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense.
 
----
+--- 
+<br>
 
 ## Training a Model 🦜
 
@@ -242,7 +259,8 @@ fuser -v /dev/nvidia*
 
 Whenever a checkpoint is saved, a compressed version that can be used for inference is also created, which is named _best.py_
 
----
+--- 
+<br>
 
 ## FAQ 🐓
 
@@ -268,9 +286,10 @@ Here are a few points that were brought up by users:
   but nothing that hints at them in the text. That's why ASR corpora, which leave out punctuation, are usually difficult
   to use for TTS.
 
----
+--- 
+<br>
 
-## Disclaimer 🦆
+## Acknowledgements 🦆
 
 The basic PyTorch modules of FastSpeech 2 and GST are taken from
 [ESPnet](https://github.com/espnet/espnet), the PyTorch modules of

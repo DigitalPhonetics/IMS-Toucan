@@ -9,8 +9,6 @@ import copy
 import torch
 import torch.nn.functional as F
 
-from Modules.Vocoder.Avocodo_Discriminators import MultiCoMBDiscriminator
-from Modules.Vocoder.Avocodo_Discriminators import MultiSubBandDiscriminator
 from Modules.Vocoder.SAN_modules import SANConv1d
 from Modules.Vocoder.SAN_modules import SANConv2d
 
@@ -456,10 +454,13 @@ class HiFiGANMultiScaleMultiPeriodDiscriminator(torch.nn.Module):
 
 
 class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
+    """
+    Contradicting the legacy name, the Avocodo parts were removed again for stability
+    """
 
     def __init__(self,
                  # Multi-scale discriminator related
-                 scales=3,
+                 scales=4,
                  scale_downsample_pooling="AvgPool1d",
                  scale_downsample_pooling_params={"kernel_size": 4,
                                                   "stride"     : 2,
@@ -471,7 +472,7 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                                              "max_downsample_channels"    : 1024,
                                              "max_groups"                 : 16,
                                              "bias"                       : True,
-                                             "downsample_scales"          : [4, 4, 4, 4, 1],
+                                             "downsample_scales"          : [4, 4, 4, 1],
                                              "nonlinear_activation"       : "LeakyReLU",
                                              "nonlinear_activation_params": {"negative_slope": 0.1}, },
                  follow_official_norm=True,
@@ -481,41 +482,14 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                                               "out_channels"               : 1,
                                               "kernel_sizes"               : [5, 3],
                                               "channels"                   : 32,
-                                              "downsample_scales"          : [3, 3, 3, 3, 1],
+                                              "downsample_scales"          : [3, 3, 3, 1],
                                               "max_downsample_channels"    : 1024,
                                               "bias"                       : True,
                                               "nonlinear_activation"       : "LeakyReLU",
                                               "nonlinear_activation_params": {"negative_slope": 0.1},
                                               "use_weight_norm"            : True,
                                               "use_spectral_norm"          : False, },
-                 # CoMB discriminator related
-                 kernels=((7, 11, 11, 11, 11, 5),
-                          (11, 21, 21, 21, 21, 5),
-                          (15, 41, 41, 41, 41, 5)),
-                 channels=(16, 64, 256, 1024, 1024, 1024),
-                 groups=(1, 4, 16, 64, 256, 1),
-                 strides=(1, 1, 4, 4, 4, 1),
-                 # Sub-Band discriminator related
-                 tkernels=(7, 5, 3),
-                 fkernel=5,
-                 tchannels=(64, 128, 256, 256, 256),
-                 fchannels=(32, 64, 128, 128, 128),
-                 tstrides=((1, 1, 3, 3, 1),
-                           (1, 1, 3, 3, 1),
-                           (1, 1, 3, 3, 1)),
-                 fstride=(1, 1, 3, 3, 1),
-                 tdilations=(((5, 7, 11), (5, 7, 11), (5, 7, 11), (5, 7, 11), (5, 7, 11), (5, 7, 11)),
-                             ((3, 5, 7), (3, 5, 7), (3, 5, 7), (3, 5, 7), (3, 5, 7)),
-                             ((1, 2, 3), (1, 2, 3), (1, 2, 3), (1, 2, 3), (1, 2, 3))),
-                 fdilations=((1, 2, 3),
-                             (1, 2, 3),
-                             (1, 2, 3),
-                             (2, 3, 5),
-                             (2, 3, 5)),
-                 tsubband=(6, 11, 16),
-                 n=16,
-                 m=64,
-                 freq_init_ch=192):
+                 ):
         super().__init__()
         self.msd = HiFiGANMultiScaleDiscriminator(scales=scales,
                                                   downsample_pooling=scale_downsample_pooling,
@@ -524,10 +498,8 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                                                   follow_official_norm=follow_official_norm, )
         self.mpd = HiFiGANMultiPeriodDiscriminator(periods=periods,
                                                    discriminator_params=period_discriminator_params, )
-        self.mcmbd = MultiCoMBDiscriminator(kernels, channels, groups, strides)
-        self.msbd = MultiSubBandDiscriminator(tkernels, fkernel, tchannels, fchannels, tstrides, fstride, tdilations, fdilations, tsubband, n, m, freq_init_ch)
 
-    def forward(self, wave, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None, discriminator_train_flag=False):
+    def forward(self, wave, discriminator_train_flag=False):
         """
         Calculate forward propagation.
 
@@ -542,9 +514,9 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
         """
         msd_outs, msd_feats = self.msd(wave, discriminator_train_flag)
         mpd_outs, mpd_feats = self.mpd(wave, discriminator_train_flag)
-        mcmbd_outs, mcmbd_feats = self.mcmbd(wave_final=wave,
-                                             intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
-                                             intermediate_wave_upsampled_once=intermediate_wave_upsampled_once,
-                                             discriminator_train_flag=discriminator_train_flag)
-        msbd_outs, msbd_feats = self.msbd(wave, discriminator_train_flag)
-        return msd_outs + mpd_outs + mcmbd_outs + msbd_outs, msd_feats + mpd_feats + mcmbd_feats + msbd_feats
+        return msd_outs + mpd_outs, msd_feats + mpd_feats
+
+
+if __name__ == '__main__':
+    d = AvocodoHiFiGANJointDiscriminator()
+    print(d(torch.randn([2, 1, 12288 * 2])))
