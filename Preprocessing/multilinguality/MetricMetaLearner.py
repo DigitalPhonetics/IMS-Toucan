@@ -14,10 +14,10 @@ from Utility.utils import load_json_from_path
 class MetricsCombiner(torch.nn.Module):
     def __init__(self, m):
         super().__init__()
-        self.scoring_function = kan.KAN(width=[3, 5, 1], grid=5, k=5, seed=m)
+        self.scoring_function = kan.KAN(width=[3, 5, 1], grid=5, k=5, seed=m, auto_save=False)
 
     def forward(self, x):
-        return self.scoring_function(x.squeeze())
+        return self.scoring_function(x)
 
 
 class EnsembleModel(torch.nn.Module):
@@ -64,7 +64,7 @@ def create_learned_cache(model_path, cache_root="."):
     print(f"Training ensemble of {n_models} models for learned distance metric.")
     for m in range(n_models):
         model_list.append(MetricsCombiner(m))
-        optim = torch.optim.Adam(model_list[-1].parameters(), lr=0.0005)
+        optim = torch.optim.RAdam(model_list[-1].parameters(), lr=0.0005)
         running_loss = list()
         for epoch in tqdm(range(35), desc=f"MetricsCombiner {m + 1}/{n_models} - Epoch"):
             for i in range(1000):
@@ -106,8 +106,9 @@ def create_learned_cache(model_path, cache_root="."):
             print("\n\n")
             running_loss = list()
 
-        # model_list[-1].scoring_function.plot(folder=f"kan_vis_{m}", beta=5000)
-        # plt.show()
+        import matplotlib.pyplot as plt
+        model_list[-1].scoring_function.plot(folder=f"kan_vis_{m}", beta=5000, in_vars=["Tree Distance", "Map Distance", "ASP Distance"], out_vars=["Predicted Distance between Embeddings"], scale=1.0)
+        plt.show()
 
     # Time to see if the final ensemble is any good
     ensemble = EnsembleModel(model_list)
@@ -133,9 +134,10 @@ def create_learned_cache(model_path, cache_root="."):
             metric_distance_batch.append(torch.tensor([_tree_dist, _map_dist, _asp_dist], dtype=torch.float32))
 
         scores = ensemble(torch.stack(metric_distance_batch).squeeze())
-        print("==================================")
-        print(scores.detach().squeeze()[:9])
-        print(torch.stack(embedding_distance_batch).squeeze()[:9])
+        if print_intermediate_results:
+            print("==================================")
+            print(scores.detach().squeeze()[:9])
+            print(torch.stack(embedding_distance_batch).squeeze()[:9])
         loss = torch.nn.functional.mse_loss(scores.squeeze(), torch.stack(embedding_distance_batch).squeeze())
         running_loss.append(loss.item())
 
