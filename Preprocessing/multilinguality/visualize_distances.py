@@ -11,9 +11,9 @@ from Utility.utils import load_json_from_path
 
 distance_types = ["tree", "asp", "map", "learned", "l1"]
 modes = ["plot_all", "plot_neighbors"]
-neighbor = "Latin"
+neighbor = "Spanish"
 num_neighbors = 12
-distance_type = distance_types[0]  # switch here
+distance_type = distance_types[1]  # switch here
 mode = modes[1]
 edge_threshold = 0.01
 # TODO histograms to figure out a good threshold
