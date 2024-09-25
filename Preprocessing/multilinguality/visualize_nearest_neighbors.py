@@ -10,8 +10,9 @@ from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Utility.utils import load_json_from_path
 
 distance_types = ["tree", "asp", "map", "learned", "l1"]
+neighbor = "Swabian"
+num_neighbors = 5
 distance_type = distance_types[2]  # switch here
-edge_threshold = 0.1
 
 cache_root = "."
 supervised_iso_codes = load_json_from_path(os.path.join(cache_root, "supervised_languages.json"))
@@ -91,7 +92,14 @@ distances = list()
 for lang_1 in distance_measure:
     if lang_1 not in iso_codes_to_names:
         continue
+    if lang_1 not in supervised_iso_codes and iso_codes_to_names[lang_1] != neighbor:
+        continue
     for lang_2 in distance_measure[lang_1]:
+        try:
+            if lang_2 not in supervised_iso_codes and iso_codes_to_names[lang_2] != neighbor:
+                continue
+        except KeyError:
+            continue
         distances.append((iso_codes_to_names[lang_1], iso_codes_to_names[lang_2], distance_measure[lang_1][lang_2]))
 
 # Create a graph
@@ -102,10 +110,36 @@ min_dist = min(d for _, _, d in distances)
 max_dist = max(d for _, _, d in distances)
 normalized_distances = [(entity1, entity2, (d - min_dist) / (max_dist - min_dist)) for entity1, entity2, d in distances]
 
+fullnames = list()
+fullnames.append(neighbor)
+for code in supervised_iso_codes:
+    fullnames.append(iso_codes_to_names[code])
+supervised_iso_codes = fullnames
+d_dist = list()
 for entity1, entity2, d in tqdm(normalized_distances):
-    if d <= edge_threshold and entity1 != entity2:
-        spring_tension = edge_threshold - d
-        G.add_edge(entity1, entity2, weight=spring_tension * 10)
+    if (neighbor == entity2 or neighbor == entity1) and (entity1 in supervised_iso_codes and entity2 in supervised_iso_codes):
+        if entity1 != entity2:
+            d_dist.append(d)
+thresh = sorted(d_dist)[num_neighbors]
+# distance_scores = sorted(d_dist)[:num_neighbors]
+neighbors = list()
+for entity1, entity2, d in tqdm(normalized_distances):
+    if (d < thresh and (neighbor == entity2 or neighbor == entity1)) and (entity1 in supervised_iso_codes and entity2 in supervised_iso_codes):
+        neighbors.append(entity1)
+        neighbors.append(entity2)
+unique_neighbors = list(set(neighbors))
+unique_neighbors.remove(neighbor)
+for entity1, entity2, d in tqdm(normalized_distances):
+    if (neighbor == entity2 or neighbor == entity1) and (entity1 in supervised_iso_codes and entity2 in supervised_iso_codes):
+        if entity1 != entity2 and d < thresh:
+            spring_tension = ((thresh - d) ** 2) * 20000  # for vis purposes
+            print(f"{d}-->{spring_tension}")
+            G.add_edge(entity1, entity2, weight=spring_tension)
+for entity1, entity2, d in tqdm(normalized_distances):
+    if (entity2 in unique_neighbors and entity1 in unique_neighbors) and (entity1 in supervised_iso_codes and entity2 in supervised_iso_codes):
+        if entity1 != entity2:
+            spring_tension = 1 - d
+            G.add_edge(entity1, entity2, weight=spring_tension)
 
 # Draw the graph
 pos = nx.spring_layout(G, weight="weight")  # Positions for all nodes
@@ -115,15 +149,24 @@ edges = G.edges(data=True)
 nx.draw_networkx_nodes(G, pos, node_size=1, alpha=0.01)
 
 # Draw edges with labels
-nx.draw_networkx_edges(G, pos, alpha=0.01, edge_color="gray")
-# nx.draw_networkx_edge_labels(G, pos, edge_labels={(u, v): d['weight'] for u, v, d in edges})
+edges_connected_to_specific_node = [(u, v) for u, v in G.edges() if u == neighbor or v == neighbor]
+# nx.draw_networkx_edges(G, pos, alpha=0.1)
+nx.draw_networkx_edges(G, pos, edgelist=edges_connected_to_specific_node, edge_color='orange', alpha=0.3, width=3)
+for u, v, d in edges:
+    if u == neighbor or v == neighbor:
+        nx.draw_networkx_edge_labels(G, pos, edge_labels={(u, v): round((thresh - (d['weight'] / 20000) ** (1 / 2)) * 10, 2)}, font_color="red", alpha=0.3)  # reverse modifications
+    else:
+        pass
+        # nx.draw_networkx_edge_labels(G, pos, edge_labels={(u, v): d['weight']})
 
 # Draw node labels
-nx.draw_networkx_labels(G, pos, font_size=10, font_family='sans-serif')
+nx.draw_networkx_labels(G, pos, font_size=14, font_family='sans-serif', font_color='green')
+nx.draw_networkx_labels(G, pos, labels={neighbor: neighbor}, font_size=14, font_family='sans-serif', font_color='red')
 
 plt.title(f'Graph of {distance_type} Distances')
 
 plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
 plt.tight_layout(pad=0)
 
+plt.savefig("avg.png", dpi=300)
 plt.show()

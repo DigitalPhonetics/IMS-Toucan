@@ -3,6 +3,7 @@ import pickle
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -107,19 +108,38 @@ for entity1, entity2, d in tqdm(normalized_distances):
         spring_tension = edge_threshold - d
         G.add_edge(entity1, entity2, weight=spring_tension * 10)
 
-# Draw the graph
-pos = nx.spring_layout(G, weight="weight")  # Positions for all nodes
+
+def spring_layout_3d(G, weight='weight', dim=3):
+    pos_3d = nx.spring_layout(G, dim=dim, weight=weight, seed=42)  # 3D spring layout
+    # Normalize node positions to lie on a unit sphere
+    for node in pos_3d:
+        pos = pos_3d[node]
+        radius = np.linalg.norm(pos)  # Calculate the distance from origin
+        pos_3d[node] = pos / radius  # Normalize to unit sphere
+    return pos_3d
+
+
+pos = spring_layout_3d(G)
+
 edges = G.edges(data=True)
+fig = plt.figure(figsize=(12, 12))
+ax = fig.add_subplot(111, projection='3d')
+x_vals = [pos[node][0] for node in G.nodes()]
+y_vals = [pos[node][1] for node in G.nodes()]
+z_vals = [pos[node][2] for node in G.nodes()]
+ax.scatter(x_vals, y_vals, z_vals, s=1, c='b', alpha=0.01)
 
-# Draw nodes
-nx.draw_networkx_nodes(G, pos, node_size=1, alpha=0.01)
+if False:
+    for edge in G.edges(data=True):
+        x_edge = [pos[edge[0]][0], pos[edge[1]][0]]
+        y_edge = [pos[edge[0]][1], pos[edge[1]][1]]
+        z_edge = [pos[edge[0]][2], pos[edge[1]][2]]
+        weight = edge[2]['weight']
+        ax.plot(x_edge, y_edge, z_edge, c='gray', alpha=0.01, linewidth=weight * 5)
 
-# Draw edges with labels
-nx.draw_networkx_edges(G, pos, alpha=0.01, edge_color="gray")
-# nx.draw_networkx_edge_labels(G, pos, edge_labels={(u, v): d['weight'] for u, v, d in edges})
-
-# Draw node labels
-nx.draw_networkx_labels(G, pos, font_size=10, font_family='sans-serif')
+for node in G.nodes():
+    x, y, z = pos[node]
+    ax.text(x, y, z, s=str(node), fontsize=12, zorder=2, color='black')
 
 plt.title(f'Graph of {distance_type} Distances')
 
