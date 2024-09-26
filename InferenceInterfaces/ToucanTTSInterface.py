@@ -19,6 +19,8 @@ from Utility.storage_config import MODELS_DIR
 from Utility.utils import cumsum_durations
 from Utility.utils import float2pcm
 
+from huggingface_hub import hf_hub_download
+
 
 class ToucanTTSInterface(torch.nn.Module):
 
@@ -27,12 +29,15 @@ class ToucanTTSInterface(torch.nn.Module):
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
+                 hf_repo=""
                  ):
         super().__init__()
         self.device = device
-        if not tts_model_path.endswith(".pt"):
-            # default to shorthand system
-            tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
+        tts_model_path = hf_hub_download(repo_id=hf_repo, filename="toucan_tts_meta_best.pt")
+        vocoder_model_path = hf_hub_download(repo_id=hf_repo, filename="vocoder_tts_model_best.pt")
+        # if not tts_model_path.endswith(".pt"):
+        #     # default to shorthand system
+        #     tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
 
         ################################
         #   build text to phone        #
