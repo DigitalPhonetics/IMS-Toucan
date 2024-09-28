@@ -5,7 +5,7 @@ from Modules.ControllabilityGAN.wgan.init_wgan import create_wgan
 
 class GanWrapper:
 
-    def __init__(self, path_wgan, device, num_cached_voices=1000):
+    def __init__(self, path_wgan, device, num_cached_voices=10):
         self.device = device
         self.path_wgan = path_wgan
 
@@ -20,15 +20,18 @@ class GanWrapper:
 
         self.z_list = list()
 
-        for _ in range(num_cached_voices + 10):
-            self.z_list.append(self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.8))
+        while len(self.z_list) < num_cached_voices + 2:
+            z = self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.8)
+            sims = [-1.0]
+            for other_z in self.z_list:
+                sims.append(torch.nn.functional.cosine_similarity(z, other_z))
+            print(max(sims), len(self.z_list))
+            if max(sims) < 0.25:
+                self.z_list.append(z)
         self.z = self.z_list[0]
 
     def set_latent(self, seed):
-        self.z = self.z = self.z_list[seed]
-
-    def reset_default_latent(self):
-        self.z = self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.8)
+        self.z = self.z_list[seed]
 
     def load_model(self, path):
         gan_checkpoint = torch.load(path, map_location="cpu")
@@ -53,7 +56,7 @@ class GanWrapper:
         self.mean = gan_checkpoint["dataset_mean"]
         self.std = gan_checkpoint["dataset_std"]
 
-    def compute_controllability(self, n_samples=100000):
+    def compute_controllability(self, n_samples=200000):
         _, intermediate, z = self.wgan.sample_generator(num_samples=n_samples, nograd=True, return_intermediate=True)
         intermediate = intermediate.cpu()
         z = z.cpu()
