@@ -10,7 +10,7 @@
 # Text-to-Speech for over 7000 Languages
 
 IMS Toucan is a toolkit for training, using, and teaching state-of-the-art Text-to-Speech Synthesis models, developed at the
-**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**, official home of the massively multilingual ToucanTTS system.
+**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**, official home of the massively multilingual ToucanTTS system. Our system is fast, controllable, and doesn't require a ton of compute power.
 
 If you find this repo useful, consider giving it a star⭐. Large numbers make me happy, and they are quite motivating.
 
