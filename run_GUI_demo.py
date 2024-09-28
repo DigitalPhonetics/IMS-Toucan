@@ -29,7 +29,7 @@ class TTSWebUI:
                                                       label="Select the Language of the Text (type on your keyboard to find it quickly)"),
                                           gr.Audio(type="filepath", show_label=True, container=True, label="Voice to Clone (if left empty, will use an artificial voice instead)"),
                                           gr.Slider(minimum=0, maximum=available_artificial_voices, step=1,
-                                                    value=279,
+                                                    value=27,
                                                     label="Random Seed for the artificial Voice"),
                                           gr.Slider(minimum=0.0, maximum=0.8, step=0.1, value=0.1, label="Prosody Creativity"),
                                           gr.Slider(minimum=0.7, maximum=1.3, step=0.1, value=1.0, label="Duration Scale"),
