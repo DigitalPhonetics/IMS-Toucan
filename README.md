@@ -33,13 +33,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ### Interactive Demos
 
-[Check out our massively-multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
-
-[Check out our demo on exact style cloning on Huggingface🤗](https://huggingface.co/spaces/Flux9665/SpeechCloning)
-
-[Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
-
-[You can also design the voice of a speaker who doesn't exist on Huggingface🤗](https://huggingface.co/spaces/Flux9665/ThisSpeakerDoesNotExist)
+[Check out our interactive massively-multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
 
 ### Dataset
 
@@ -102,9 +96,7 @@ absolute).
 
 #### Pretrained Models
 
-You don't need to use pretrained models, but it can speed things up tremendously. Run the `run_model_downloader.py`
-script to automatically download them from the release page and put them into their appropriate locations with
-appropriate names.
+You don't need to use pretrained models, but it can speed things up tremendously. They will be downloaded on the fly automatically when they are needed, thanks to Huggingface🤗
 
 #### \[optional] eSpeak-NG
 
