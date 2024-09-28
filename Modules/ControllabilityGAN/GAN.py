@@ -5,7 +5,7 @@ from Modules.ControllabilityGAN.wgan.init_wgan import create_wgan
 
 class GanWrapper:
 
-    def __init__(self, path_wgan, device):
+    def __init__(self, path_wgan, device, num_cached_voices=1000):
         self.device = device
         self.path_wgan = path_wgan
 
@@ -20,7 +20,7 @@ class GanWrapper:
 
         self.z_list = list()
 
-        for _ in range(1100):
+        for _ in range(num_cached_voices + 10):
             self.z_list.append(self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.8))
         self.z = self.z_list[0]
 

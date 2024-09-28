@@ -17,7 +17,7 @@ class ControllableInterface:
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if gpu_id != "cpu" else "cpu"
         self.model = ToucanTTSInterface(device=self.device, tts_model_path=tts_model_path)
-        self.wgan = GanWrapper(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="embedding_gan.pt"), device=self.device)
+        self.wgan = GanWrapper(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="embedding_gan.pt", num_cached_voices=available_artificial_voices), device=self.device)
         self.generated_speaker_embeds = list()
         self.available_artificial_voices = available_artificial_voices
         self.current_language = ""

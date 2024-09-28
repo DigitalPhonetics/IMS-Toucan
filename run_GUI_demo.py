@@ -9,7 +9,7 @@ from Utility.utils import load_json_from_path
 
 class TTSWebUI:
 
-    def __init__(self, gpu_id="cpu", title="Controllable Text-to-Speech for over 7000 Languages", article="", tts_model_path=None, available_artificial_voices=1000):
+    def __init__(self, gpu_id="cpu", title="Controllable Text-to-Speech for over 7000 Languages", article="", tts_model_path=None, available_artificial_voices=100):
         path_to_iso_list = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_to_fullname.json")
         iso_to_name = load_json_from_path(path_to_iso_list)
         text_selection = [f"{iso_to_name[iso_code]} ({iso_code})" for iso_code in iso_to_name]
