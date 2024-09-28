@@ -7,10 +7,12 @@
 
 ---
 
+# Text-to-Speech for over 7000 Languages
 
 IMS Toucan is a toolkit for training, using, and teaching state-of-the-art Text-to-Speech Synthesis models, developed at the
-**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
-PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible. 
+**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**, official home of the massively multilingual ToucanTTS system.
+
+If you find this repo useful, consider giving it a star⭐. Large numbers make me happy, and they are quite motivating.
 
 <br>
 
@@ -21,7 +23,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ## Links 🦚
 
-### Pre-Generated Audios
+### Static Demos
 
 [Human-in-the-loop edited poetry for German literary studies](https://poetictts.github.io/)
 
@@ -31,7 +33,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 [Massively-Multi-Lingual audios and study setup](https://anondemos.github.io/MMDemo)
 
-### Interactive Demos
+### Interactive Demo
 
 [Check out our interactive massively-multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
 
@@ -43,10 +45,6 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 <br>
 
 ## Installation 🦉
-
-These instructions should work for most cases, but I heard of some instances where espeak behaves weird, which are
-sometimes resolved after a re-install and sometimes not. Also, M1 and M2 MacBooks require a very different installation
-process, with which I am unfortunately not familiar.
 
 #### Basic Requirements
 
@@ -96,7 +94,7 @@ absolute).
 
 #### Pretrained Models
 
-You don't need to use pretrained models, but it can speed things up tremendously. They will be downloaded on the fly automatically when they are needed, thanks to Huggingface🤗
+You don't need to use pretrained models, but it can speed things up tremendously. They will be downloaded on the fly automatically when they are needed, thanks to Huggingface🤗 and [VB](https://github.com/Vaibhavs10) in particular.
 
 #### \[optional] eSpeak-NG
 
@@ -295,8 +293,6 @@ use [encodec, a neural audio codec](https://github.com/yangdongchao/AcademiCodec
 for caching the train data to save space.
 
 ## Citation 🐧
-
-If you find this repo useful, consider giving it a star. Large numbers make me happy, and they are quite motivating :)
 
 <a href="https://star-history.com/#DigitalPhonetics/IMS-Toucan&Date">
  <picture>
