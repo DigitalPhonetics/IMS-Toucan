@@ -1,9 +1,9 @@
-import os
-
+import librosa
 import numpy
 import soundfile as sf
 import torch
-import librosa
+from huggingface_hub import hf_hub_download
+
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Modules.Aligner.Aligner import Aligner
 from Modules.ToucanTTS.DurationCalculator import DurationCalculator
@@ -12,7 +12,6 @@ from Modules.ToucanTTS.PitchCalculator import Parselmouth
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from Utility.storage_config import MODELS_DIR
 from Utility.utils import float2pcm
 
 
@@ -28,7 +27,7 @@ class UtteranceCloner:
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language=language, device=device)
         self.device = device
-        acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
+        acoustic_checkpoint_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="Aligner.pt")
         self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location=device)["asr_model"]
         torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
         # careful: assumes 16kHz or 8kHz audio

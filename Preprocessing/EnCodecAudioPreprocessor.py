@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import torch
+from huggingface_hub import hf_hub_download
 from torchaudio.transforms import Resample
 
 from Preprocessing.Codec.encodec import EnCodec
@@ -8,7 +9,9 @@ from Preprocessing.Codec.encodec import EnCodec
 
 class CodecAudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=16000, device="cpu", path_to_model="Preprocessing/Codec/encodec_16k_320d.pt"):
+    def __init__(self, input_sr, output_sr=16000, device="cpu", path_to_model=None):
+        if path_to_model is None:
+            path_to_model = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="16kHz_encodec.pt")
         self.device = device
         self.input_sr = input_sr
         self.output_sr = output_sr
@@ -88,7 +91,7 @@ if __name__ == '__main__':
         test_audio2 = "../audios/angry.wav"
         test_audio3 = "../audios/ry.wav"
         test_audio4 = "../audios/test.wav"
-        ap = CodecAudioPreprocessor(input_sr=1, path_to_model="Codec/encodec_16k_320d.pt")
+        ap = CodecAudioPreprocessor(input_sr=1, path_to_model=None)
 
         wav, sr = soundfile.read(test_audio1)
         indexes_1 = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)

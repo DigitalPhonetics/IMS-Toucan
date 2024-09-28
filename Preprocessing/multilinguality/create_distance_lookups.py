@@ -4,17 +4,17 @@ import os.path
 
 import torch
 from geopy.distance import geodesic
+from huggingface_hub import hf_hub_download
 from tqdm import tqdm
 
 from Preprocessing.multilinguality.MetricMetaLearner import create_learned_cache
-from Utility.storage_config import MODELS_DIR
 from Utility.utils import load_json_from_path
 
 
 class CacheCreator:
     def __init__(self, cache_root="."):
-        self.iso_codes = list(load_json_from_path(os.path.join(cache_root, "iso_to_fullname.json")).keys())
-        self.iso_lookup = load_json_from_path(os.path.join(cache_root, "iso_lookup.json"))
+        self.iso_codes = list(load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_to_fullname.json")).keys())
+        self.iso_lookup = load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_lookup.json"))
         self.cache_root = cache_root
         self.pairs = list()  # ignore order, collect all language pairs
         for index_1 in tqdm(range(len(self.iso_codes)), desc="Collecting language pairs"):
@@ -22,7 +22,7 @@ class CacheCreator:
                 self.pairs.append((self.iso_codes[index_1], self.iso_codes[index_2]))
 
     def create_tree_cache(self, cache_root="."):
-        iso_to_family_memberships = load_json_from_path(os.path.join(cache_root, "iso_to_memberships.json"))
+        iso_to_family_memberships = load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_to_fullname.json"))
 
         self.pair_to_tree_distance = dict()
         for pair in tqdm(self.pairs, desc="Generating tree pairs"):
@@ -52,7 +52,7 @@ class CacheCreator:
 
     def create_map_cache(self, cache_root="."):
         self.pair_to_map_dist = dict()
-        iso_to_long_lat = load_json_from_path(os.path.join(cache_root, "iso_to_long_lat.json"))
+        iso_to_long_lat = load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_to_long_lat.json"))
         for pair in tqdm(self.pairs, desc="Generating map pairs"):
             try:
                 long_1, lat_1 = iso_to_long_lat[pair[0]]
@@ -103,13 +103,13 @@ class CacheCreator:
         create_learned_cache(model_path, cache_root=cache_root)
 
     def create_required_files(self, model_path, create_oracle=False):
-        if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_tree_dist.json")):
+        if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_tree_dist.json")) or os.path.exists(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_tree_dist.json")):
             self.create_tree_cache(cache_root="Preprocessing/multilinguality")
-        if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_map_dist.json")):
+        if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_map_dist.json")) or os.path.exists(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_map_dist.json")):
             self.create_map_cache(cache_root="Preprocessing/multilinguality")
-        if not os.path.exists(os.path.join(self.cache_root, "asp_dict.pkl")):
+        if not os.path.exists(os.path.join(self.cache_root, "asp_dict.pkl")) or os.path.exists(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="asp_dict.pkl")):
             raise FileNotFoundError("asp_dict.pkl must be downloaded separately.")
-        if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_learned_dist.json")):
+        if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_learned_dist.json")) or os.path.exists(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_learned_dist.json")):
             self.create_learned_cache(model_path=model_path, cache_root="Preprocessing/multilinguality")
         if create_oracle:
             if not os.path.exists(os.path.join(self.cache_root, "lang_1_to_lang_2_to_oracle_dist.json")):
@@ -120,7 +120,7 @@ class CacheCreator:
 
 
 if __name__ == '__main__':
-    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt")  # MODELS_DIR must be absolute path, the relative path will fail at this location
+    default_model_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt")
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", "-m", type=str, default=default_model_path, help="model path that should be used for creating oracle lang emb distance cache")
     args = parser.parse_args()

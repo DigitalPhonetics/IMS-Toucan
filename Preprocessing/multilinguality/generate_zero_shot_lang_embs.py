@@ -5,6 +5,7 @@ import os
 import numpy as np
 import pandas as pd
 import torch
+from huggingface_hub import hf_hub_download
 from tqdm import tqdm
 
 from Utility.storage_config import MODELS_DIR
@@ -51,7 +52,7 @@ def approximate_and_inject_language_embeddings(model_path, df, iso_lookup, min_n
     threshold = np.percentile(df[closest_dist_columns[-1]], threshold_percentile)
     print(f"threshold: {threshold:.4f}")
     for row in tqdm(df.itertuples(), total=df.shape[0], desc="Approximating language embeddings"):
-        avg_emb = torch.zeros([32])  # If you change the size of the language embedding in the model, you need to change the size here as well. TODO automate this
+        avg_emb = torch.zeros([32])  # If you change the size of the language embedding in the model, you need to change the size here as well.
         dists = [getattr(row, d) for i, d in enumerate(closest_dist_columns) if i < min_n_langs or getattr(row, d) < threshold]
         langs = [getattr(row, l) for l in closest_lang_columns[:len(dists)]]
 
@@ -78,8 +79,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_n_langs", type=int, default=25, help="maximum amount of languages used for averaging")
     parser.add_argument("--threshold_percentile", type=int, default=50, help="percentile of the furthest used languages \
                         used as cutoff threshold (no langs >= the threshold are used for averaging)")
-    args = parser.parse_args() 
-    ISO_LOOKUP_PATH = "iso_lookup.json"
+    args = parser.parse_args()
+    ISO_LOOKUP_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_lookup.json")
     with open(ISO_LOOKUP_PATH, "r") as f:
         iso_lookup = json.load(f) # iso_lookup[-1] = iso2id mapping
     # load language distance dataset

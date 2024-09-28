@@ -12,6 +12,7 @@ from Utility.utils import load_json_from_path
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
+from huggingface_hub import hf_hub_download
 
 class MetricsCombiner(torch.nn.Module):
     def __init__(self, m):
@@ -40,10 +41,10 @@ def create_learned_cache(model_path, cache_root="."):
     checkpoint = torch.load(model_path, map_location='cpu')
     embedding_provider = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"]).encoder.language_embedding
     embedding_provider.requires_grad_(False)
-    language_list = load_json_from_path(os.path.join(cache_root, "supervised_languages.json"))
-    tree_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_tree_dist.json")
-    map_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_map_dist.json")
-    asp_dict_path = os.path.join(cache_root, "asp_dict.pkl")
+    language_list = load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="supervised_languages.json"))
+    tree_lookup_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_tree_dist.json")
+    map_lookup_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_map_dist.json")
+    asp_dict_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="asp_dict.pkl")
     if not os.path.exists(tree_lookup_path) or not os.path.exists(map_lookup_path):
         raise FileNotFoundError("Please ensure the caches exist!")
     if not os.path.exists(asp_dict_path):
@@ -57,7 +58,7 @@ def create_learned_cache(model_path, cache_root="."):
     for _, values in map_dist.items():
         for _, value in values.items():
             largest_value_map_dist = max(largest_value_map_dist, value)
-    iso_codes_to_ids = load_json_from_path(os.path.join(cache_root, "iso_lookup.json"))[-1]
+    iso_codes_to_ids = load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_lookup.json"))[-1]
     train_set = language_list
     batch_size = 256
     model_list = list()
@@ -190,4 +191,4 @@ def create_learned_cache(model_path, cache_root="."):
 
 
 if __name__ == '__main__':
-    create_learned_cache("../../Models/ToucanTTS_Meta/best.pt")
+    create_learned_cache(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt"))

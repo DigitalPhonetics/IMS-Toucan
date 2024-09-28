@@ -5,7 +5,7 @@ import torch
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 
-def read_texts(model_id, sentence, filename, device="cpu", language="eng", speaker_reference=None, duration_scaling_factor=1.0):
+def read_texts(sentence, filename, model_id=None, device="cpu", language="eng", speaker_reference=None, duration_scaling_factor=1.0):
     tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
     tts.set_language(language)
     if speaker_reference is not None:
@@ -16,7 +16,7 @@ def read_texts(model_id, sentence, filename, device="cpu", language="eng", speak
     del tts
 
 
-def english_test(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
+def english_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
@@ -30,7 +30,7 @@ def english_test(version, model_id="Meta", exec_device="cpu", speaker_reference=
                speaker_reference=speaker_reference)
 
 
-def japanese_test(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
+def japanese_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
@@ -41,7 +41,7 @@ def japanese_test(version, model_id="Meta", exec_device="cpu", speaker_reference
                speaker_reference=speaker_reference)
 
 
-def chinese_test(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
+def chinese_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
@@ -52,7 +52,7 @@ def chinese_test(version, model_id="Meta", exec_device="cpu", speaker_reference=
                speaker_reference=speaker_reference)
 
 
-def german_test(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
+def german_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
@@ -66,7 +66,7 @@ def german_test(version, model_id="Meta", exec_device="cpu", speaker_reference=N
                speaker_reference=speaker_reference)
 
 
-def vietnamese_test(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
+def vietnamese_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
@@ -89,7 +89,7 @@ def vietnamese_test(version, model_id="Meta", exec_device="cpu", speaker_referen
                speaker_reference=speaker_reference)
 
 
-def french_test(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
+def french_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
@@ -105,7 +105,7 @@ def french_test(version, model_id="Meta", exec_device="cpu", speaker_reference=N
                speaker_reference=speaker_reference)
 
 
-def all_test(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
+def all_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
     english_test(version, model_id, exec_device, speaker_reference)
     german_test(version, model_id, exec_device, speaker_reference)
     french_test(version, model_id, exec_device, speaker_reference)
@@ -118,9 +118,10 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
+    os.makedirs("audios/speaker_references/", exist_ok=True)
     merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
 
     all_test(version="version_11",
-             model_id="Meta",
+             model_id=None,  # will use the default
              exec_device=exec_device,
              speaker_reference=merged_speaker_references if merged_speaker_references != [] else None)
