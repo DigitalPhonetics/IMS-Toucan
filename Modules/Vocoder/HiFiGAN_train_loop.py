@@ -14,9 +14,9 @@ from Modules.Vocoder.FeatureMatchingLoss import feature_loss
 from Modules.Vocoder.MelSpecLoss import MelSpectrogramLoss
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
-from run_weight_averaging import average_checkpoints
-from run_weight_averaging import get_n_recent_checkpoints_paths
-from run_weight_averaging import load_net_bigvgan
+from Utility.weight_averaging import average_checkpoints
+from Utility.weight_averaging import get_n_recent_checkpoints_paths
+from Utility.weight_averaging import load_net_bigvgan
 
 
 def collate_fn(batch):

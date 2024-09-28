@@ -8,7 +8,6 @@ import torch
 
 from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
-from Utility.storage_config import MODELS_DIR
 
 
 def load_net_toucan(path):
@@ -79,21 +78,6 @@ def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
     torch.save({dict_name: model.state_dict(), "default_emb": default_embed, "config": model.config}, name)
     print("...done!")
 
-
-def make_best_in_all():
-    for model_dir in os.listdir(MODELS_DIR):
-        if os.path.isdir(os.path.join(MODELS_DIR, model_dir)):
-            if "ToucanTTS" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
-                if checkpoint_paths is None:
-                    continue
-                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
-                save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(MODELS_DIR, model_dir, "best.pt"))
-
-
 def count_parameters(net):
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
 
-
-if __name__ == '__main__':
-    make_best_in_all()

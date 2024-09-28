@@ -4,20 +4,20 @@ import pickle
 from copy import deepcopy
 
 import pandas as pd
+from huggingface_hub import hf_hub_download
 from tqdm import tqdm
 
 from Preprocessing.multilinguality.SimilaritySolver import SimilaritySolver
-from Utility.storage_config import MODELS_DIR
 from Utility.utils import load_json_from_path
 
-ISO_LOOKUP_PATH = "iso_lookup.json"
-ISO_TO_FULLNAME_PATH = "iso_to_fullname.json"
-LANG_PAIRS_MAP_PATH = "lang_1_to_lang_2_to_map_dist.json"
-LANG_PAIRS_TREE_PATH = "lang_1_to_lang_2_to_tree_dist.json"
-LANG_PAIRS_ASP_PATH = "asp_dict.pkl"
-LANG_PAIRS_LEARNED_DIST_PATH = "lang_1_to_lang_2_to_learned_dist.json"
 LANG_PAIRS_ORACLE_PATH = "lang_1_to_lang_2_to_oracle_dist.json"
-SUPVERVISED_LANGUAGES_PATH = "supervised_languages.json"
+ISO_LOOKUP_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_lookup.json")
+ISO_TO_FULLNAME_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_to_fullname.json")
+LANG_PAIRS_MAP_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_map_dist.json")
+LANG_PAIRS_TREE_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_tree_dist.json")
+LANG_PAIRS_ASP_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="asp_dict.pkl")
+LANG_PAIRS_LEARNED_DIST_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_learned_dist.json")
+SUPVERVISED_LANGUAGES_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="supervised_languages.json")
 DATASET_SAVE_DIR = "distance_datasets/"
 
 
@@ -188,7 +188,7 @@ class LangDistDatasetCreator():
 
 
 if __name__ == "__main__":
-    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt")  # MODELS_DIR must be absolute path, the relative path will fail at this location
+    default_model_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt")
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", "-m", type=str, default=default_model_path, help="model path from which to obtain pretrained language embeddings")
     args = parser.parse_args()

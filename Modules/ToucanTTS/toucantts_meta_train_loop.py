@@ -12,10 +12,10 @@ from Utility.path_to_transcript_dicts import *
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec_toucantts
-from run_weight_averaging import average_checkpoints
-from run_weight_averaging import get_n_recent_checkpoints_paths
-from run_weight_averaging import load_net_toucan
-from run_weight_averaging import save_model_for_use
+from Utility.weight_averaging import average_checkpoints
+from Utility.weight_averaging import get_n_recent_checkpoints_paths
+from Utility.weight_averaging import load_net_toucan
+from Utility.weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):

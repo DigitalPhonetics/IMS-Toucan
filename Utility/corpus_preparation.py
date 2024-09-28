@@ -1,10 +1,10 @@
 import torch.multiprocessing
+from huggingface_hub import hf_hub_download
 
 from Modules.Aligner.CodecAlignerDataset import CodecAlignerDataset
 from Modules.Aligner.autoaligner_train_loop import train_loop as train_aligner
 from Modules.ToucanTTS.TTSDataset import TTSDataset
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
 
 
 def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, phone_input=False,
@@ -48,30 +48,18 @@ def prepare_tts_corpus(transcript_dict,
 
             if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
                 aligner_datapoints = prepare_aligner_corpus(transcript_dict, corpus_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
-                if os.path.exists(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")):
-                    train_aligner(train_dataset=aligner_datapoints,
-                                  device=torch.device("cuda"),
-                                  save_directory=aligner_dir,
-                                  steps=min(len(aligner_datapoints) // 2, 10000),  # relatively good finetuning heuristic
-                                  batch_size=32 if len(aligner_datapoints) > 32 else len(aligner_datapoints) // 2,
-                                  path_to_checkpoint=os.path.join(MODELS_DIR, "Aligner", "aligner.pt"),
-                                  fine_tune=True,
-                                  debug_img_path=aligner_dir,
-                                  resume=False,
-                                  use_reconstruction=use_reconstruction)
-                else:
-                    train_aligner(train_dataset=aligner_datapoints,
-                                  device=torch.device("cuda"),
-                                  save_directory=aligner_dir,
-                                  steps=len(aligner_datapoints) // 2,  # relatively good heuristic
-                                  batch_size=32 if len(aligner_datapoints) > 32 else len(aligner_datapoints) // 2,
-                                  path_to_checkpoint=None,
-                                  fine_tune=False,
-                                  debug_img_path=aligner_dir,
-                                  resume=False,
-                                  use_reconstruction=use_reconstruction)
+                train_aligner(train_dataset=aligner_datapoints,
+                              device=torch.device("cuda"),
+                              save_directory=aligner_dir,
+                              steps=min(len(aligner_datapoints) // 2, 10000),  # relatively good finetuning heuristic
+                              batch_size=16 if len(aligner_datapoints) > 16 else len(aligner_datapoints) // 2,
+                              path_to_checkpoint=hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="Aligner.pt"),
+                              fine_tune=True,
+                              debug_img_path=aligner_dir,
+                              resume=False,
+                              use_reconstruction=use_reconstruction)
         else:
-            aligner_loc = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
+            aligner_loc = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="Aligner.pt")
     else:
         aligner_loc = None
     return TTSDataset(transcript_dict,

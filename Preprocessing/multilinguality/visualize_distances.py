@@ -1,9 +1,9 @@
-import os
 import pickle
 
 import matplotlib.pyplot as plt
 import networkx as nx
 import torch
+from huggingface_hub import hf_hub_download
 from tqdm import tqdm
 
 from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
@@ -14,11 +14,11 @@ distance_type = distance_types[2]  # switch here
 edge_threshold = 0.1
 
 cache_root = "."
-supervised_iso_codes = load_json_from_path(os.path.join(cache_root, "supervised_languages.json"))
+supervised_iso_codes = load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="supervised_languages.json"))
 
 if distance_type == "l1":
-    iso_codes_to_ids = load_json_from_path(os.path.join(cache_root, "iso_lookup.json"))[-1]
-    model_path = "../../Models/ToucanTTS_Meta/best.pt"
+    iso_codes_to_ids = load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_lookup.json"))[-1]
+    model_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt")
     checkpoint = torch.load(model_path, map_location='cpu')
     embedding_provider = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"]).encoder.language_embedding
     embedding_provider.requires_grad_(False)
@@ -41,12 +41,12 @@ if distance_type == "l1":
     distance_measure = l1_dist
 
 if distance_type == "tree":
-    tree_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_tree_dist.json")
+    tree_lookup_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_tree_dist.json")
     tree_dist = load_json_from_path(tree_lookup_path)
     distance_measure = tree_dist
 
 if distance_type == "map":
-    map_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_map_dist.json")
+    map_lookup_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_map_dist.json")
     map_dist = load_json_from_path(map_lookup_path)
     largest_value_map_dist = 0.0
     for _, values in map_dist.items():
@@ -58,7 +58,7 @@ if distance_type == "map":
     distance_measure = map_dist
 
 if distance_type == "learned":
-    learned_lookup_path = os.path.join(cache_root, "lang_1_to_lang_2_to_map_dist.json")
+    learned_lookup_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_learned_dist.json")
     learned_dist = load_json_from_path(learned_lookup_path)
     largest_value_learned_dist = 0.0
     for _, values in learned_dist.items():
@@ -70,7 +70,7 @@ if distance_type == "learned":
     distance_measure = learned_dist
 
 if distance_type == "asp":
-    asp_dict_path = os.path.join(cache_root, "asp_dict.pkl")
+    asp_dict_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="asp_dict.pkl")
     with open(asp_dict_path, 'rb') as dictfile:
         asp_sim = pickle.load(dictfile)
     lang_list = list(asp_sim.keys())
@@ -85,7 +85,7 @@ if distance_type == "asp":
                 asp_dist[lang_1][lang_2] = 1 - asp_sim[lang_1][index]
     distance_measure = asp_dist
 
-iso_codes_to_names = load_json_from_path(os.path.join(cache_root, "iso_to_fullname.json"))
+iso_codes_to_names = load_json_from_path(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_to_fullname.json"))
 distances = list()
 
 for lang_1 in distance_measure:

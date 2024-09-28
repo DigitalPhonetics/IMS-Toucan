@@ -1,13 +1,13 @@
 import argparse
-import os
+
+from huggingface_hub import hf_hub_download
 
 from Preprocessing.multilinguality.create_distance_lookups import CacheCreator
 from Preprocessing.multilinguality.create_lang_dist_dataset import LangDistDatasetCreator
 from Preprocessing.multilinguality.generate_zero_shot_lang_embs import approximate_and_inject_language_embeddings
-from Utility.storage_config import MODELS_DIR
 
 if __name__ == "__main__":
-    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt")
+    default_model_path = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt")
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", "-m", type=str, default=default_model_path, help="model path from which to obtain pretrained language embeddings")
     parser.add_argument("--distance_type", "-d", type=str, choices=["map", "tree", "asp", "learned", "combined"], default="learned",
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     # make sure that cache files exist
     cc = CacheCreator(cache_root="Preprocessing/multilinguality")
-    cc.create_required_files(model_path=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt"))
+    cc.create_required_files(model_path=hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt"))
 
     # create distance dataset
     dc = LangDistDatasetCreator(args.model_path, cache_root="Preprocessing/multilinguality")

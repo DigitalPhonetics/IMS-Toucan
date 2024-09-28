@@ -1,23 +1,23 @@
 import os
 
 import torch
+from huggingface_hub import hf_hub_download
 
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Modules.ControllabilityGAN.GAN import GanWrapper
-from Utility.storage_config import MODELS_DIR
 
 
 class ControllableInterface:
 
-    def __init__(self, gpu_id="cpu", available_artificial_voices=1000):
+    def __init__(self, gpu_id="cpu", available_artificial_voices=1000, tts_model_path=None):
         if gpu_id == "cpu":
             os.environ["CUDA_VISIBLE_DEVICES"] = ""
         else:
             os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if gpu_id != "cpu" else "cpu"
-        self.model = ToucanTTSInterface(device=self.device, tts_model_path="Meta")
-        self.wgan = GanWrapper(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt"), device=self.device)
+        self.model = ToucanTTSInterface(device=self.device, tts_model_path=tts_model_path)
+        self.wgan = GanWrapper(hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="embedding_gan.pt"), device=self.device)
         self.generated_speaker_embeds = list()
         self.available_artificial_voices = available_artificial_voices
         self.current_language = ""
