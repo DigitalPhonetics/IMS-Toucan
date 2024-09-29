@@ -6,6 +6,7 @@ import sys
 import torch
 
 from Recipes.AlignerPipeline import run as aligner
+from Recipes.BigVGAN_e2e import run as be2e
 from Recipes.HiFiGAN_combined import run as HiFiGAN
 from Recipes.HiFiGAN_e2e import run as e2e
 from Recipes.ToucanTTS_IntegrationTest import run as tt_integration_test
@@ -37,7 +38,8 @@ pipeline_dict = {
     "aligner"                        : aligner,
     # vocoder training (not recommended, best to use provided checkpoint)
     "hifigan"                        : HiFiGAN,
-    "e2e"                            : e2e
+    "e2e" : e2e,
+    "be2e": be2e
 }
 
 if __name__ == '__main__':

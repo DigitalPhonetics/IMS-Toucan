@@ -10,7 +10,6 @@ from tqdm import tqdm
 
 from Modules.Vocoder.AdversarialLoss import discriminator_adv_loss
 from Modules.Vocoder.AdversarialLoss import generator_adv_loss
-from Modules.Vocoder.FeatureMatchingLoss import feature_loss
 from Modules.Vocoder.MelSpecLoss import MelSpectrogramLoss
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
@@ -33,7 +32,7 @@ def train_loop(generator,
                batch_size=32,
                epochs=100,
                resume=False,
-               generator_steps_per_discriminator_step=2,
+               generator_steps_per_discriminator_step=1,
                generator_warmup=30000,
                use_wandb=False,
                finetune=False
@@ -85,7 +84,6 @@ def train_loop(generator,
         discriminator_losses = list()
         generator_losses = list()
         mel_losses = list()
-        feat_match_losses = list()
         adversarial_losses = list()
 
         optimizer_g.zero_grad()
@@ -111,11 +109,6 @@ def train_loop(generator,
                 adversarial_loss = generator_adv_loss(d_outs)
                 adversarial_losses.append(adversarial_loss.item())
                 generator_total_loss = generator_total_loss + adversarial_loss * 2  # based on own experience
-
-                d_gold_outs, d_gold_fmaps = d(gold_wave)
-                feature_matching_loss = feature_loss(d_gold_fmaps, d_fmaps)
-                feat_match_losses.append(feature_matching_loss.item())
-                generator_total_loss = generator_total_loss + feature_matching_loss
 
             if torch.isnan(generator_total_loss):
                 print("Loss turned to NaN, skipping. The GAN possibly collapsed.")
@@ -177,8 +170,6 @@ def train_loop(generator,
         log_dict = dict()
         log_dict["Generator Loss"] = round(sum(generator_losses) / len(generator_losses), 3)
         log_dict["Mel Loss"] = round(sum(mel_losses) / len(mel_losses), 3)
-        if len(feat_match_losses) > 0:
-            log_dict["Feature Matching Loss"] = round(sum(feat_match_losses) / len(feat_match_losses), 3)
         if len(adversarial_losses) > 0:
             log_dict["Adversarial Loss"] = round(sum(adversarial_losses) / len(adversarial_losses), 3)
         if len(discriminator_losses) > 0:
