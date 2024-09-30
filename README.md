@@ -29,10 +29,6 @@ If you find this repo useful, consider giving it a star. ⭐ Large numbers make 
 
 [Cloning prosody across speakers](https://toucanprosodycloningdemo.github.io)
 
-[Multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/)
-
-[Massively-Multi-Lingual audios and study setup](https://anondemos.github.io/MMDemo)
-
 ### Interactive Demo
 
 [Check out our interactive massively-multi-lingual demo on Hugging Face🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
