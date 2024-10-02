@@ -8,6 +8,7 @@ import time
 
 import torch
 import wandb
+from huggingface_hub import hf_hub_download
 from torch.utils.data import ConcatDataset
 
 from Modules.ToucanTTS.ToucanTTS import ToucanTTS
@@ -57,7 +58,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                warmup_steps=500,
                lr=1e-5,  # if you have enough data (over ~1000 datapoints) you can increase this up to 1e-4 and it will still be stable, but learn quicker.
                # DOWNLOAD THESE INITIALIZATION MODELS FROM THE RELEASE PAGE OF THE GITHUB OR RUN THE DOWNLOADER SCRIPT TO GET THEM AUTOMATICALLY
-               path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") if resume_checkpoint is None else resume_checkpoint,
+               path_to_checkpoint=hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt") if resume_checkpoint is None else resume_checkpoint,
                fine_tune=True if resume_checkpoint is None and not resume else finetune,
                resume=resume,
                steps=5000,
