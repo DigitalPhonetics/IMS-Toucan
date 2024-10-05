@@ -88,7 +88,7 @@ class TTSWebUI:
                                                  0.,
                                                  0.,
                                                  0.,
-                                                 -12.)
+                                                 -24.)
         return (sr, float2pcm(wav)), fig
 
 
