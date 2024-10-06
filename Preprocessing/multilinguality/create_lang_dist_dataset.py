@@ -10,7 +10,7 @@ from tqdm import tqdm
 from Preprocessing.multilinguality.SimilaritySolver import SimilaritySolver
 from Utility.utils import load_json_from_path
 
-LANG_PAIRS_ORACLE_PATH = "lang_1_to_lang_2_to_oracle_dist.json"
+LANG_PAIRS_ORACLE_PATH = "lang_1_to_lang_2_to_l1_dist.json"
 ISO_LOOKUP_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_lookup.json")
 ISO_TO_FULLNAME_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="iso_to_fullname.json")
 LANG_PAIRS_MAP_PATH = hf_hub_download(repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_map_dist.json")
