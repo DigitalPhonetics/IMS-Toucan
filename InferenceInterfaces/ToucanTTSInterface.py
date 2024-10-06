@@ -143,7 +143,7 @@ class ToucanTTSInterface(torch.nn.Module):
                 energy=None,
                 input_is_phones=False,
                 return_plot_as_filepath=False,
-                loudness_in_db=-24.0,
+                loudness_in_db=-29.0,
                 prosody_creativity=0.1):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
