@@ -9,17 +9,19 @@ import time
 import torch
 import torch.multiprocessing
 import wandb
-from torch.utils.data import ConcatDataset
 
-from Modules.ToucanTTS.ToucanTTS import ToucanTTS
-from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
-from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
-from Utility.storage_config import PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
+    from torch.utils.data import ConcatDataset
+
+    from Modules.ToucanTTS.ToucanTTS import ToucanTTS
+    from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+    from Utility.corpus_preparation import prepare_tts_corpus
+    from Utility.storage_config import MODELS_DIR
+    from Utility.storage_config import PREPROCESSING_DIR
+
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the GitHub release
     # page and finetune to your desired data

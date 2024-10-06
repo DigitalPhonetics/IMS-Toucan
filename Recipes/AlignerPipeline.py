@@ -1,14 +1,15 @@
 import torch
 from torch.utils.data import ConcatDataset
 
-from Modules.Aligner.autoaligner_train_loop import train_loop as train_aligner
-from Utility.corpus_preparation import prepare_aligner_corpus
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
-from Utility.storage_config import PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
+    from Modules.Aligner.autoaligner_train_loop import train_loop as train_aligner
+    from Utility.corpus_preparation import prepare_aligner_corpus
+    from Utility.storage_config import MODELS_DIR
+    from Utility.storage_config import PREPROCESSING_DIR
+
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:
