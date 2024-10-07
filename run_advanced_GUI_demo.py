@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor
 from PyQt5.QtGui import QCursor
+from PyQt5.QtGui import QFont
 from PyQt5.QtGui import QPen
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QComboBox
@@ -30,7 +31,7 @@ from Utility.utils import load_json_from_path
 class DraggableScatter(pg.ScatterPlotItem):
     pointMoved = pyqtSignal(int, float)  # Emits index and new y-value
 
-    def __init__(self, x, y, pen=None, brush=None, size=10, **kwargs):
+    def __init__(self, x, y, pen=None, brush=None, size=3, **kwargs):
         super().__init__(x=x, y=y, pen=pen, brush=brush, size=size, **kwargs)
         self.setAcceptHoverEvents(True)
         self.dragging = False
@@ -223,21 +224,23 @@ class TTSInterface(QMainWindow):
         self.spectrogram_view.getAxis('bottom').setTicks([spectrogram_ticks])
         spectrogram_label_color = QColor('#006400')
         self.spectrogram_view.getAxis('bottom').setTextPen(QPen(spectrogram_label_color))
-        self.spectrogram_view.getAxis('left').setTextPen(QPen(spectrogram_label_color))
+        self.spectrogram_view.getAxis('bottom').setStyle(tickFont=QFont('Times New Roman', 16))
+        self.spectrogram_view.getAxis('left').setTextPen(QPen(QColor('#f5f5f5')))
 
         # Display Pitch
-        self.pitch_curve = self.pitch_plot.plot(self.cumulative_durations, self.pitch, pen=pg.mkPen('#B8860B', width=8), name='Pitch')
+        self.pitch_curve = self.pitch_plot.plot(self.cumulative_durations, self.pitch, pen=pg.mkPen('#B8860B', width=4), name='Pitch')
         self.pitch_plot.setMouseEnabled(x=False, y=False)  # Disable panning and zooming
-        pitch_ticks = self.get_phoneme_ticks(self.cumulative_durations)
+        pitch_ticks = self.get_phoneme_ticks(self.cumulative_durations, for_pitch=True)
         self.pitch_plot.getAxis('bottom').setTicks([pitch_ticks])
         pitch_label_color = QColor('#006400')
         self.pitch_plot.getAxis('bottom').setTextPen(QPen(pitch_label_color))
-        self.pitch_plot.getAxis('left').setTextPen(QPen(pitch_label_color))
+        self.pitch_plot.getAxis('bottom').setStyle(tickFont=QFont('Times New Roman', 16))
+        self.pitch_plot.getAxis('left').setTextPen(QPen(QColor('#f5f5f5')))
 
         # Display Durations
         self.duration_lines = []
         for i, cum_dur in enumerate(self.cumulative_durations):
-            line = pg.InfiniteLine(pos=cum_dur, angle=90, pen=pg.mkPen('orange', width=2))
+            line = pg.InfiniteLine(pos=cum_dur, angle=90, pen=pg.mkPen('orange', width=3))
             self.spectrogram_view.addItem(line)
             line.setMovable(True)
             # Use lambda with default argument to capture current i
@@ -246,19 +249,23 @@ class TTSInterface(QMainWindow):
 
         self.enable_interactions()
 
-    def get_phoneme_ticks(self, cumulative_durations):
+    def get_phoneme_ticks(self, cumulative_durations, for_pitch=False):
         """
         Create ticks for phoneme labels centered between durations.
         """
         ticks = []
         previous = 0
         for i, cum_dur in enumerate(cumulative_durations):
-            if i == 0:
-                center = cum_dur / 2
+            if for_pitch:
+                ticks.append((cum_dur, self.phonemes[i]))
+                previous = cum_dur
             else:
-                center = (previous + cum_dur) / 2
-            ticks.append((center, self.phonemes[i]))
-            previous = cum_dur
+                if i == 0:
+                    center = cum_dur / 2
+                else:
+                    center = (previous + cum_dur) / 2
+                ticks.append((center, self.phonemes[i]))
+                previous = cum_dur
         return ticks
 
     def init_controls(self):
@@ -292,10 +299,12 @@ class TTSInterface(QMainWindow):
         self.pitch_scatter = DraggableScatter(x_pitch,
                                               y_pitch,
                                               pen=pg.mkPen(None),
-                                              brush=pg.mkBrush(218, 165, 32, 250),  # Pastel accent color
-                                              size=25, )
+                                              brush=pg.mkBrush(218, 165, 32, 255),
+                                              size=18, )
         self.pitch_scatter.pointMoved.connect(self.on_pitch_point_moved)
         self.pitch_plot.addItem(self.pitch_scatter)
+        self.pitch_plot.showGrid(x=True, y=False, alpha=0.1)
+        self.pitch_plot.setYRange(0, 2)
 
     def on_duration_changed(self, idx):
         """
@@ -419,9 +428,8 @@ class TTSInterface(QMainWindow):
             line.blockSignals(False)
 
         # Update phoneme ticks
-        spectrogram_ticks = self.get_phoneme_ticks(self.cumulative_durations)
-        self.spectrogram_view.getAxis('bottom').setTicks([spectrogram_ticks])
-        self.pitch_plot.getAxis('bottom').setTicks([spectrogram_ticks])
+        self.spectrogram_view.getAxis('bottom').setTicks([self.get_phoneme_ticks(self.cumulative_durations)])
+        self.pitch_plot.getAxis('bottom').setTicks([self.get_phoneme_ticks(self.cumulative_durations, for_pitch=True)])
 
         # print("Generated new random prosody.")
 
@@ -454,6 +462,8 @@ class TTSInterface(QMainWindow):
         if save_path:
             try:
                 sample_rate = 24000
+                if "." not in save_path:
+                    save_path = save_path + ".wav"
 
                 # Normalize the audio if it's not in the correct range
                 if self.result_audio.dtype != np.int16:
