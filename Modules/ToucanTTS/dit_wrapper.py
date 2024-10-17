@@ -19,6 +19,8 @@ class DitWrapper(nn.Module):
 
     def __init__(self, hidden_channels, out_channels, filter_channels, num_heads, kernel_size=3, p_dropout=0.1, gin_channels=0, time_channels=0):
         super().__init__()
+        if gin_channels is None:
+            gin_channels = 0
         self.time_fusion = FiLMLayer(hidden_channels, out_channels, time_channels)
         self.conv1 = ConvNeXtBlock(hidden_channels, out_channels, filter_channels, gin_channels)
         self.conv2 = ConvNeXtBlock(hidden_channels, out_channels, filter_channels, gin_channels)
