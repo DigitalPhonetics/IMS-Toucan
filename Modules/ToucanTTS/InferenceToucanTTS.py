@@ -242,7 +242,7 @@ class ToucanTTS(torch.nn.Module):
                                                                              mask=text_masks.float(),
                                                                              n_timesteps=20,
                                                                              temperature=prosody_creativity,
-                                                                             c=utterance_embedding)), min=0.0).long().squeeze(1) if gold_durations is None else gold_durations
+                                                                             c=utterance_embedding)), min=0.0).long().squeeze(1) if gold_durations is None else gold_durations.squeeze(1)
 
         # modifying the predictions with control parameters
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):

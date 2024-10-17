@@ -12,11 +12,13 @@
 IMS Toucan is a toolkit for training, using, and teaching state-of-the-art Text-to-Speech Synthesis, developed at the
 **Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**, official home of the massively multilingual ToucanTTS system. Our system is fast, controllable, and doesn't require a ton of compute.
 
-If you find this repo useful, consider giving it a star⭐. Large numbers make me happy, and they are quite motivating.
-
 <br>
 
 ![image](Utility/toucan.png)
+
+<br>
+
+If you find this repo useful, consider giving it a star. ⭐ Large numbers make me happy, and they are very motivating. If you want to motivate me even more, you can even consider [sponsoring this toolkit](https://github.com/sponsors/Flux9665). We only use GitHub Sponsors for this, there are scammers on other platforms that pretend to be the creator. Don't let them fool you. The code and the models are absolutely free, and thanks to the generous support of Hugging Face🤗, we even have an [instance of the model running on GPU](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS) free for anyone to use.
 
 --- 
 <br>
@@ -29,17 +31,13 @@ If you find this repo useful, consider giving it a star⭐. Large numbers make m
 
 [Cloning prosody across speakers](https://toucanprosodycloningdemo.github.io)
 
-[Multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/)
-
-[Massively-Multi-Lingual audios and study setup](https://anondemos.github.io/MMDemo)
-
 ### Interactive Demo
 
-[Check out our interactive massively-multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
+[Check out our interactive massively-multi-lingual demo on Hugging Face🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
 
 ### Dataset
 
-[We have also published a massively multilingual TTS dataset on Huggingface🤗](https://huggingface.co/datasets/Flux9665/BibleMMS)
+[We have also published a massively multilingual TTS dataset on Hugging Face🤗](https://huggingface.co/datasets/Flux9665/BibleMMS)
 
 --- 
 <br>
@@ -94,7 +92,7 @@ absolute).
 
 #### Pretrained Models
 
-You don't need to use pretrained models, but it can speed things up tremendously. They will be downloaded on the fly automatically when they are needed, thanks to Huggingface🤗 and [VB](https://github.com/Vaibhavs10) in particular.
+You don't need to use pretrained models, but it can speed things up tremendously. They will be downloaded on the fly automatically when they are needed, thanks to Hugging Face🤗 and [VB](https://github.com/Vaibhavs10) in particular.
 
 #### \[optional] eSpeak-NG
 

@@ -4,15 +4,16 @@ import soundfile as sf
 import torch
 import wandb
 
-from Modules.Vocoder.HiFiGAN_Dataset import HiFiGANDataset
-from Modules.Vocoder.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
-from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
-from Modules.Vocoder.HiFiGAN_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb_resume_id, gpu_count):
+    from Modules.Vocoder.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
+    from Modules.Vocoder.HiFiGAN_E2E_Dataset import HiFiGANDataset
+    from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
+    from Modules.Vocoder.HiFiGAN_train_loop import train_loop
+    from Utility.storage_config import MODELS_DIR
+
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:

@@ -55,9 +55,9 @@ class TTSWebUI:
                                   outputs=[gr.Audio(type="numpy", label="Speech"),
                                            gr.Image(label="Visualization")],
                                   title=title,
-                                  theme="default",
                                   allow_flagging="never",
-                                  article=article)
+                                  article=article,
+                                  theme=gr.themes.Default(primary_hue="amber", secondary_hue="orange", spacing_size=gr.themes.sizes.spacing_lg, radius_size=gr.themes.sizes.radius_lg))
         self.iface.launch()
 
     def read(self,
@@ -88,7 +88,7 @@ class TTSWebUI:
                                                  0.,
                                                  0.,
                                                  0.,
-                                                 -12.)
+                                                 -24.)
         return (sr, float2pcm(wav)), fig
 
 

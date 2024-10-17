@@ -143,8 +143,9 @@ class ToucanTTSInterface(torch.nn.Module):
                 energy=None,
                 input_is_phones=False,
                 return_plot_as_filepath=False,
-                loudness_in_db=-24.0,
-                prosody_creativity=0.1):
+                loudness_in_db=-29.0,
+                prosody_creativity=0.1,
+                return_everything=False):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -233,6 +234,8 @@ class ToucanTTSInterface(torch.nn.Module):
                 plt.savefig("tmp.png")
                 plt.close()
                 return wave, sr, "tmp.png"
+        if return_everything:
+            return wave, mel, durations, pitch
         return wave, sr
 
     def read_to_file(self,

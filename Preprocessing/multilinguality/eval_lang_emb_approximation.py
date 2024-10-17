@@ -13,6 +13,7 @@ matplotlib.rcParams['font.size'] = 7
 import matplotlib.pyplot as plt
 from Utility.utils import load_json_from_path
 
+
 def compute_loss_for_approximated_embeddings(csv_path, iso_lookup, language_embeddings, weighted_avg=False, min_n_langs=5, max_n_langs=30, threshold_percentile=95, loss_fn="MSE"):
     df = pd.read_csv(csv_path, sep="|")
 
@@ -23,7 +24,7 @@ def compute_loss_for_approximated_embeddings(csv_path, iso_lookup, language_embe
 
     features_per_closest_lang = 2
     # for combined, df has up to 5 features (if containing individual distances) per closest lang + 1 target lang column
-    if "combined_dist_0" in df.columns: 
+    if "combined_dist_0" in df.columns:
         if "map_dist_0" in df.columns:
             features_per_closest_lang += 1
         if "asp_dist_0" in df.columns:
@@ -63,7 +64,7 @@ def compute_loss_for_approximated_embeddings(csv_path, iso_lookup, language_embe
         except KeyError:
             print(f"KeyError: Unable to retrieve language embedding for {row.target_lang}")
             continue
-        avg_emb = torch.zeros([16])
+        avg_emb = torch.zeros([32])
         dists = [getattr(row, d) for i, d in enumerate(closest_dist_columns) if i < min_n_langs or getattr(row, d) < threshold]
         langs = [getattr(row, l) for l in closest_lang_columns[:len(dists)]]
 
@@ -77,7 +78,7 @@ def compute_loss_for_approximated_embeddings(csv_path, iso_lookup, language_embe
                 lang_emb = language_embeddings[iso_lookup[-1][lang]]
                 avg_emb += lang_emb
             normalization_factor = len(langs)
-        avg_emb /= normalization_factor # normalize
+        avg_emb /= normalization_factor  # normalize
         current_loss = loss_fn(avg_emb, y).item()
         all_losses.append(current_loss)
 
@@ -95,12 +96,10 @@ if __name__ == "__main__":
     parser.add_argument("--loss_fn", choices=["MSE", "L1"], type=str, default="MSE", help="loss function used")
     args = parser.parse_args()
     csv_paths = [
-        "distance_datasets/dataset_map_top30_furthest.csv",
         "distance_datasets/dataset_random_top30.csv",
         "distance_datasets/dataset_asp_top30.csv",
-        "distance_datasets/dataset_tree_top30.csv",
         "distance_datasets/dataset_map_top30.csv",
-        "distance_datasets/dataset_combined_top30_indiv-dists.csv",
+        "distance_datasets/dataset_tree_top30.csv",
         "distance_datasets/dataset_learned_top30.csv",
         "distance_datasets/dataset_oracle_top30.csv",
     ]
@@ -112,49 +111,44 @@ if __name__ == "__main__":
     OUT_DIR = "plots"
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    fig, ax = plt.subplots(figsize=(3.15022, 3.15022*(2/3)), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(6, 4))
     plt.ylabel(args.loss_fn)
     for i, csv_path in enumerate(csv_paths):
         print(f"csv_path: {os.path.basename(csv_path)}")
         for condition in weighted:
-            losses = compute_loss_for_approximated_embeddings(csv_path, 
-                                                         iso_lookup, 
-                                                         lang_embs, 
-                                                         condition, 
-                                                         min_n_langs=args.min_n_langs, 
-                                                         max_n_langs=args.max_n_langs,
-                                                         threshold_percentile=args.threshold_percentile,
-                                                         loss_fn=args.loss_fn)
+            losses = compute_loss_for_approximated_embeddings(csv_path,
+                                                              iso_lookup,
+                                                              lang_embs,
+                                                              condition,
+                                                              min_n_langs=args.min_n_langs,
+                                                              max_n_langs=args.max_n_langs,
+                                                              threshold_percentile=args.threshold_percentile,
+                                                              loss_fn=args.loss_fn)
             print(f"weighted average: {condition} | mean loss: {np.mean(losses)}")
             losses_of_multiple_datasets.append(losses)
 
-    bp_dict = ax.boxplot(losses_of_multiple_datasets, 
-                         labels = [
-                             "map furthest",
-                             "random", 
-                             "inv. ASP", 
-                             "tree", 
-                             "map", 
-                             "avg", 
-                             "meta-learned", 
-                             "oracle", 
-                             ], 
+    bp_dict = ax.boxplot(losses_of_multiple_datasets,
+                         labels=["Random",
+                                 "Inverse ASP",
+                                 "Map Distance",
+                                 "Tree Distance",
+                                 "Learned Distance",
+                                 "Oracle"],
                          patch_artist=True,
-                         boxprops=dict(facecolor = "lightblue", 
+                         boxprops=dict(facecolor="lightblue",
                                        ),
-                        showfliers=False,
-                        widths=0.45
-                        )
-
+                         showfliers=False,
+                         widths=0.55
+                         )
     # major ticks every 0.1, minor ticks every 0.05, between 0.0 and 0.6
-    major_ticks = np.arange(0, 0.6, 0.1)
-    minor_ticks = np.arange(0, 0.6, 0.05)
+    major_ticks = np.arange(0, 1.0, 0.1)
+    minor_ticks = np.arange(0, 1.0, 0.05)
     ax.set_yticks(major_ticks)
     ax.set_yticks(minor_ticks, minor=True)
     # horizontal grid lines for minor and major ticks
     ax.grid(which='both', linestyle='-', color='lightgray', linewidth=0.3, axis='y')
-    ax.set_aspect(4.5)
-    plt.title(f"min. {args.min_n_langs} kNN, max. {args.max_n_langs}\nthreshold: {args.threshold_percentile}th-percentile distance of {args.max_n_langs}th-closest language")
+    # plt.title(f"Using between {args.min_n_langs} and {args.max_n_langs} Nearest Neighbors to approximate an unseen Embedding")
     plt.xticks(rotation=45)
-
-    plt.savefig(os.path.join(OUT_DIR, "example_boxplot_release.pdf"), bbox_inches='tight')
+    plt.tight_layout()
+    plt.show()
+    # plt.savefig(os.path.join(OUT_DIR, "example_boxplot_release.pdf"), bbox_inches='tight')
