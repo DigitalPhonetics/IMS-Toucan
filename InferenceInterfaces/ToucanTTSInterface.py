@@ -81,6 +81,8 @@ class ToucanTTSInterface(torch.nn.Module):
         self.to(torch.device(device))
         self.eval()
 
+        self.language = language
+
     def set_utterance_embedding(self, path_to_reference_audio="", embedding=None):
         if embedding is not None:
             self.default_utterance_embedding = embedding.squeeze().to(self.device)
@@ -107,8 +109,10 @@ class ToucanTTSInterface(torch.nn.Module):
         """
         The id parameter actually refers to the shorthand. This has become ambiguous with the introduction of the actual language IDs
         """
-        self.set_phonemizer_language(lang_id=lang_id)
-        self.set_accent_language(lang_id=lang_id)
+        if self.language != lang_id:
+            self.set_phonemizer_language(lang_id=lang_id)
+            self.set_accent_language(lang_id=lang_id)
+            self.language = lang_id
 
     def set_phonemizer_language(self, lang_id):
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True, device=self.device)
