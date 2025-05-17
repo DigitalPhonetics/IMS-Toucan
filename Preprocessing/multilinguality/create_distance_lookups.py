@@ -23,7 +23,7 @@ class CacheCreator:
                 self.pairs.append((self.iso_codes[index_1], self.iso_codes[index_2]))
 
     def create_tree_cache(self, cache_root="."):
-        iso_to_family_memberships = load_json_from_path(hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="iso_to_fullname.json"))
+        iso_to_family_memberships = load_json_from_path(hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="iso_to_memberships.json"))
 
         self.pair_to_tree_distance = dict()
         for pair in tqdm(self.pairs, desc="Generating tree pairs"):
