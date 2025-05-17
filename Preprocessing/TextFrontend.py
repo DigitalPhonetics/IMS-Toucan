@@ -780,6 +780,8 @@ class ArticulatoryCombinedTextFrontend:
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
         if text == "":
             return ""
+        text = text.replace("|", "."), # Hindi uses this symbol to indicate the end of a sentence.
+
         # expand abbreviations
         utt = self.expand_abbreviations(text)
 
