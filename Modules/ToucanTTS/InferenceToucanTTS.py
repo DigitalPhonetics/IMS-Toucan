@@ -219,25 +219,34 @@ class ToucanTTS(torch.nn.Module):
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         # predicting pitch, energy and durations
-        reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
+        reduced_pitch_space = self.pitch_latent_reduction(encoded_texts).transpose(1, 2)
         pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space,
                                                  mask=text_masks.float(),
                                                  n_timesteps=20,
                                                  temperature=prosody_creativity,
                                                  c=utterance_embedding) if gold_pitch is None else gold_pitch
+        # because of the way we are processing the data, the last few elements of a sequence will always receive an unnaturally low pitch value. To fix this, we just overwrite them here.
+        pitch_predictions[0][0][0] = pitch_predictions[0][0][1]
+        pitch_predictions[0][0][-1] = pitch_predictions[0][0][-3]
+        pitch_predictions[0][0][-2] = pitch_predictions[0][0][-3]
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
-        reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.1).transpose(1, 2)
+        reduced_energy_space = self.energy_latent_reduction(encoded_texts + embedded_pitch_curve).transpose(1, 2)
         energy_predictions = self.energy_predictor(mu=reduced_energy_space,
                                                    mask=text_masks.float(),
                                                    n_timesteps=20,
                                                    temperature=prosody_creativity,
                                                    c=utterance_embedding) if gold_energy is None else gold_energy
+
+        # because of the way we are processing the data, the last few elements of a sequence will always receive an unnaturally low energy value. To fix this, we just overwrite them here.
+        energy_predictions[0][0][0] = energy_predictions[0][0][1]
+        energy_predictions[0][0][-1] = energy_predictions[0][0][-3]
+        energy_predictions[0][0][-2] = energy_predictions[0][0][-3]
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
         embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
-        reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.1).transpose(1, 2)
+        reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve).transpose(1, 2)
         predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=reduced_duration_space,
                                                                              mask=text_masks.float(),
                                                                              n_timesteps=20,
@@ -245,6 +254,7 @@ class ToucanTTS(torch.nn.Module):
                                                                              c=utterance_embedding)), min=0.0).long().squeeze(1) if gold_durations is None else gold_durations.squeeze(1)
 
         # modifying the predictions with control parameters
+        predicted_durations[0][0] = 1 # if the initial pause is too long, we get artifacts. This is once more a dirty hack.
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
             if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                 predicted_durations[0][phoneme_index] = 0
@@ -267,8 +277,8 @@ class ToucanTTS(torch.nn.Module):
 
         refined_codec_frames = self.flow_matching_decoder(mu=preliminary_spectrogram.transpose(1, 2),
                                                           mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2),
-                                                          n_timesteps=25,
-                                                          temperature=0.1,  # low temperature, so the model follows the specified prosody curves better.
+                                                          n_timesteps=30,
+                                                          temperature=0.2,  # low temperature, so the model follows the specified prosody curves better.
                                                           c=None).transpose(1, 2)
 
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()

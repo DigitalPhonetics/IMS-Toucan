@@ -1,5 +1,4 @@
 import sys
-
 import numpy as np
 import pyqtgraph as pg
 import scipy.io.wavfile
@@ -392,7 +391,7 @@ class TTSInterface(QMainWindow):
         """
         if self.text_input.text().strip() == "":
             return
-        wave, mel, durations, pitch = self.tts_backend(text=self.text_input.text(),
+        wave, mel, durations, pitch = self.tts_backend(text=self.text_input.text().strip(),
                                                        view=False,
                                                        duration_scaling_factor=1.0,
                                                        pitch_variance_scale=1.0,
@@ -404,7 +403,7 @@ class TTSInterface(QMainWindow):
                                                        input_is_phones=False,
                                                        return_plot_as_filepath=False,
                                                        loudness_in_db=-24.0,
-                                                       prosody_creativity=0.8,
+                                                       prosody_creativity=0.6,
                                                        return_everything=True)
         # reset and clear everything
         self.clear_all_widgets()
@@ -483,7 +482,7 @@ class TTSInterface(QMainWindow):
     def play_audio(self):
         # print("playing current audio...")
         if self.result_audio is not None:
-            sounddevice.play(self.result_audio, samplerate=24000)
+            sounddevice.play(self.result_audio, samplerate=24000, blocking=True) # blocking is required on MacOS
 
     def update_result_audio(self, audio_array):
         """
@@ -498,14 +497,14 @@ class TTSInterface(QMainWindow):
         Marks that a TTS update is required and starts/resets the timer.
         """
         self.tts_update_required = True
-        self.tts_timer.start(800)  # 800 milliseconds delay before the model starts to compute something
+        self.tts_timer.start(1500)  # 800 milliseconds delay before the model starts to compute something
 
     def run_tts(self):
         """
         Dummy method to simulate running the TTS model.
         This should be replaced with actual TTS integration.
         """
-        text = self.text_input.text()
+        text = self.text_input.text().strip()
         while self.tts_update_required:
             self.tts_update_required = False
             if text.strip() == "":
@@ -541,7 +540,7 @@ class TTSInterface(QMainWindow):
                                                            input_is_phones=False,
                                                            return_plot_as_filepath=False,
                                                            loudness_in_db=-24.0,
-                                                           prosody_creativity=0.1,
+                                                           prosody_creativity=0.6,
                                                            return_everything=True)
 
             self.word_boundaries = find_zero_indexes(durations)
