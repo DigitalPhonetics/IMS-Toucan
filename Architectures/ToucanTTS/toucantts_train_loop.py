@@ -31,7 +31,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             None,
             torch.stack([datapoint[8] for datapoint in batch]),
-            torch.stack([datapoint[9] for datapoint in batch]))
+            torch.stack([datapoint[9] for datapoint in batch]),
+            [datapoint[10] for datapoint in batch])
 
 
 def train_loop(net,
@@ -50,7 +51,8 @@ def train_loop(net,
                train_sampler,
                gpu_count,
                steps_per_checkpoint,
-               architecture="CFM"
+               architecture="CFM",
+               start_reflow = 40000
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -93,11 +95,17 @@ def train_loop(net,
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
-        model.load_state_dict(check_dict["model"])
+        
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
             step_counter = check_dict["step_counter"]
+        
+        if architecture == "RF" or architecture=="CFM":
+            if step_counter >= start_reflow:
+                net.init_reflow(device=device)
+        
+        model.load_state_dict(check_dict["model"])
     start_time = time.time()
     regression_losses_total = list()
     stochastic_losses_total = list()
@@ -106,6 +114,7 @@ def train_loop(net,
     energy_losses_total = list()
     prosody_losses_total = list()
     while True:
+        
         net.train()
         epoch += 1
         for batch in tqdm(train_loader):
@@ -118,6 +127,18 @@ def train_loop(net,
             gold_pitch = batch[6].to(device)  # mind the switched order
             gold_energy = batch[5].to(device)  # mind the switched order
             lang_ids = batch[8].squeeze(1).to(device)
+            path = batch[10][0]
+            #sentence = train_dataset.pttd[path]
+
+            # check if any tensor is nan
+            if torch.isnan(gold_durations).any() or torch.isnan(gold_pitch).any() or torch.isnan(gold_energy).any() or torch.isnan(text_tensors).any():
+                print("Nan in gold truth. Skipping this batch ...")
+                print("gold durations ", torch.isnan(gold_durations).any())
+                print("gold gold_pitch ", torch.isnan(gold_pitch).any())
+                print("gold gold_energy ", torch.isnan(gold_energy).any())
+                print("gold text_tensors ", torch.isnan(text_tensors).any())
+                #print("sentence ", sentence)
+                continue
 
             speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
             for speech_sample in speech_indexes:
@@ -150,6 +171,7 @@ def train_loop(net,
                     )
                     if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss):
                         print("One of the losses turned to NaN! Skipping this batch ...")
+                       
                         continue
 
                     train_loss = train_loss + duration_loss
@@ -227,9 +249,14 @@ def train_loop(net,
             optimizer.step()
             scheduler.step()
             step_counter += 1
+
+            if architecture == "RF" or architecture == "CFM":
+                if step_counter == start_reflow:
+                    net.init_reflow(device=device)
             if step_counter % steps_per_checkpoint == 0:
                 # evaluation interval is happening
                 if rank == 0:
+                    
                     net.eval()
                     default_embedding = train_dataset[0][9].to(device)
                     torch.save({
@@ -285,12 +312,13 @@ def train_loop(net,
                         }, step=step_counter)
 
                     checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=1)
-                    averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan, architecture=architecture)
+                   
+                    averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan, architecture=architecture, start_reflow=(start_reflow <= step_counter))
                     save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
 
                     if step_counter > steps:
                         return  # DONE
-
+        	        
                     net.train()
                 if gpu_count > 1:
                     # just to be extra sure tht all models are synchronous

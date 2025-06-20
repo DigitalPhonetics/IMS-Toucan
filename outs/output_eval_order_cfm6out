@@ -1,0 +1,178 @@
+nohup: Eingabe wird ignoriert
+Eval models:
+['CFM_ped_c8', 'CFM_all_c24', 'CFM_epd_c8']
+   Unnamed: 0            model  self_test  self_test_variance  \
+0           0   CFM_ped_c8_0.4         -1                  -1   
+1           1  CFM_all_c24_0.4         -1                  -1   
+2           2   CFM_epd_c8_0.4         -1                  -1   
+
+   distance_speaker   overlap           gmm  mean_sum_score  var_sum_score  \
+0          0.389425  0.254823  17905.040560        9.489525       1.152553   
+1          0.100998  0.511091  17315.388909       16.136725       4.842408   
+2          0.397549  0.252674  17979.860615        9.222048       1.011874   
+
+   mean_arithmetic_score  var_arithmetic_score  mean_geometric_score  \
+0               3.163175              0.384184              1.044628   
+1               5.378908              1.614136              1.321057   
+2               3.074016              0.337291              1.006235   
+
+   var_geometric_score  mean_harmonic_score  var_harmonic_score  pitch_mean  \
+0             0.082936             0.473956            0.021925    0.220370   
+1             0.310724             0.513281            0.103254    0.237832   
+2             0.073938             0.463220            0.019418    0.221081   
+
+   pitch_var  energy_mean  energy_var  duration_mean  duration_var    wv_mos  \
+0   0.008324     0.596457    0.063410       8.672699      1.080819  4.066920   
+1   0.046125     0.635083    0.139677      15.263810      4.656606  3.844666   
+2   0.007339     0.544981    0.058197       8.455986      0.946337  4.075797   
+
+   predicted  distance_speaker_transformed  gmm_transformed  \
+0         -1                     -0.389425    -17905.040560   
+1         -1                     -0.100998    -17315.388909   
+2         -1                     -0.397549    -17979.860615   
+
+   wv_mos_transformed  overlap_transformed  mean_sum_score_transformed  \
+0            4.066920            -0.745177                    9.489525   
+1            3.844666            -0.488909                   16.136725   
+2            4.075797            -0.747326                    9.222048   
+
+   var_sum_score_transformed  mean_arithmetic_score_transformed  \
+0                   1.152553                           3.163175   
+1                   4.842408                           5.378908   
+2                   1.011874                           3.074016   
+
+   var_arithmetic_score_transformed  mean_geometric_score_transformed  \
+0                          0.384184                          1.044628   
+1                          1.614136                          1.321057   
+2                          0.337291                          1.006235   
+
+   var_geometric_score_transformed  mean_harmonic_score_transformed  \
+0                         0.082936                         0.473956   
+1                         0.310724                         0.513281   
+2                         0.073938                         0.463220   
+
+   var_harmonic_score_transformed  pitch_mean_transformed  \
+0                        0.021925                0.220370   
+1                        0.103254                0.237832   
+2                        0.019418                0.221081   
+
+   pitch_var_transformed  energy_mean_transformed  energy_var_transformed  \
+0               0.008324                 0.596457                0.063410   
+1               0.046125                 0.635083                0.139677   
+2               0.007339                 0.544981                0.058197   
+
+   duration_mean_transformed  duration_var_transformed  \
+0                   8.672699                  1.080819   
+1                  15.263810                  4.656606   
+2                   8.455986                  0.946337   
+
+   distance_speaker_zscore  gmm_zscore  wv_mos_zscore  overlap_zscore  \
+0                -0.553136   -0.471507       0.543126       -0.570102   
+1                 1.154367    1.148585      -1.154037        1.154670   
+2                -0.601231   -0.677078       0.610912       -0.584568   
+
+   mean_sum_score_zscore  var_sum_score_zscore  mean_arithmetic_score_zscore  \
+0              -0.542873             -0.544664                     -0.542873   
+1               1.154027              1.154095                      1.154027   
+2              -0.611155             -0.609431                     -0.611155   
+
+   var_arithmetic_score_zscore  mean_geometric_score_zscore  \
+0                    -0.544664                    -0.461965   
+1                     1.154095                     1.147466   
+2                    -0.609431                    -0.685500   
+
+   var_geometric_score_zscore  mean_harmonic_score_zscore  \
+0                   -0.543495                   -0.361573   
+1                    1.154051                    1.130496   
+2                   -0.610556                   -0.768924   
+
+   var_harmonic_score_zscore  pitch_mean_zscore  pitch_var_zscore  \
+0                  -0.550877          -0.612989         -0.554945   
+1                   1.154302           1.153952          1.154414   
+2                  -0.603425          -0.540963         -0.599469   
+
+   energy_mean_zscore  energy_var_zscore  duration_mean_zscore  \
+0            0.094756          -0.519261             -0.549121   
+1            0.949250           1.152814              1.154248   
+2           -1.044005          -0.633552             -0.605127   
+
+   duration_var_zscore                                          predictor  
+0            -0.545103  Models/KAN/6_7_2-g3-k3-distance_speaker-gmm-wv...  
+1             1.154111  Models/KAN/6_7_2-g3-k3-distance_speaker-gmm-wv...  
+2            -0.609008  Models/KAN/6_7_2-g3-k3-distance_speaker-gmm-wv...  
+True
+CSV saved at: visualizations/Study_cfm_order2_metrics.csv
+architecture
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_distance_speaker_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_gmm_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_wv_mos_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_overlap_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_mean_sum_score_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_var_sum_score_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_mean_arithmetic_score_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_var_arithmetic_score_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_mean_geometric_score_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_var_geometric_score_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_mean_harmonic_score_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_var_harmonic_score_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_pitch_mean_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_pitch_var_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_energy_mean_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_energy_var_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_duration_mean_architecture_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_duration_var_architecture_plot.png
+all
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_distance_speaker_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_gmm_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_wv_mos_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_overlap_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_mean_sum_score_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_var_sum_score_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_mean_arithmetic_score_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_var_arithmetic_score_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_mean_geometric_score_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_var_geometric_score_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_mean_harmonic_score_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_var_harmonic_score_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_pitch_mean_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_pitch_var_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_energy_mean_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_energy_var_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_duration_mean_all_plot.png
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Plot saved at: visualizations/Study_cfm_order2_duration_var_all_plot.png

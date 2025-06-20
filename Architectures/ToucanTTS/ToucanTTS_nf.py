@@ -467,7 +467,7 @@ class ToucanTTS_nf(torch.nn.Module):
                 #print("utterance_embedding.unsqueeze(-1): ", utterance_embedding.unsqueeze(-1).shape)
                 predicted_durations = self.duration_predictor(reduced_duration_space, variance_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True)
                 
-                predicted_durations = predicted_durations.squeeze(1)# .transpose(1, 2)
+                predicted_durations = torch.exp(predicted_durations).squeeze(1)# .transpose(1, 2)
                 #print("1predicted_durations: ", predicted_durations.shape)
             
                 """
@@ -555,8 +555,6 @@ class ToucanTTS_nf(torch.nn.Module):
                     scaled_pitch_targets = gold_pitch.transpose(1,2).detach().clone()
                     scaled_pitch_targets[idx] = torch.exp(gold_pitch.transpose(1,2)[idx])  # we scale up, so that the log in the flow can handle the value ranges better.
                     
-                    print("pitch_targets: ", scaled_pitch_targets)
-                    print("predicted: ", self.pitch_predictor(reduced_pitch_space.transpose(1, 2).detach(), pitch_mask, g=utterance_embedding.unsqueeze(-1), reverse=True))
                     pitch_loss = torch.sum(self.pitch_predictor(reduced_pitch_space.transpose(1, 2).detach(), pitch_mask, w=scaled_pitch_targets, g=utterance_embedding.unsqueeze(-1), reverse=False))
                     pitch_loss = torch.sum(pitch_loss / torch.sum(pitch_mask))  # weighted masking
                     embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
@@ -567,10 +565,8 @@ class ToucanTTS_nf(torch.nn.Module):
                 idx = transformed_gold_durations != 0
                 duration_mask = torch.logical_and(text_masks, idx)
                 duration_targets = transformed_gold_durations.detach().clone().float()
-                duration_targets[idx] = torch.exp(duration_targets[idx])  # we scale up, so that the log in the flow can handle the value ranges better.
+                #duration_targets[idx] = torch.exp(duration_targets[idx])  # we scale up, so that the log in the flow can handle the value ranges better.
                 
-                print("duration_targets: ", duration_targets)
-                print("predicted: ", self.duration_predictor(reduced_duration_space.transpose(1, 2).detach(), duration_mask, g=utterance_embedding.unsqueeze(-1), reverse=True))
                 duration_loss = torch.sum(self.duration_predictor(reduced_duration_space.transpose(1, 2).detach(), duration_mask, w=duration_targets, g=utterance_embedding.unsqueeze(-1), reverse=False))
                 duration_loss = torch.sum(duration_loss / torch.sum(duration_mask))  # weighted masking
                 
@@ -608,31 +604,31 @@ class ToucanTTS_nf(torch.nn.Module):
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         
-        try:
-            decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
-        except:
-            print("speech lengths:", speech_lengths)
-            print("encoded_texts: ", encoded_texts.shape)
-            print("embedded_pitch_curve: ", embedded_pitch_curve.shape)
-            print("embedded_energy_curve: ", embedded_energy_curve.shape)
-            if gold_durations is not None:
-                print("gold_durations: ", gold_durations.shape)
-            if gold_energy is not None:
-                print("gold_energy: ", gold_energy.shape)
-            if gold_pitch is not None:
-                print("gold_pitch: ", gold_pitch.shape)
-            if energy_predictions is not None:
-                print("energy_predictions: ", energy_predictions.shape)
-            if pitch_predictions is not None:
-                print("pitch_predictions: ", pitch_predictions.shape)
-            if predicted_durations is not None:
-                print("predicted_durations: ", predicted_durations)
-            print("enriched_encoded_texts: ", enriched_encoded_texts)
-            print("upsampled_enriched_encoded_texts: ", upsampled_enriched_encoded_texts.shape)
+        #try:
+        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
+        # except:
+        #     print("speech lengths:", speech_lengths)
+        #     print("encoded_texts: ", encoded_texts.shape)
+        #     print("embedded_pitch_curve: ", embedded_pitch_curve.shape)
+        #     print("embedded_energy_curve: ", embedded_energy_curve.shape)
+        #     if gold_durations is not None:
+        #         print("gold_durations: ", gold_durations.shape)
+        #     if gold_energy is not None:
+        #         print("gold_energy: ", gold_energy.shape)
+        #     if gold_pitch is not None:
+        #          print("gold_pitch: ", gold_pitch.shape)
+        #     # if energy_predictions is not None:
+        #     #     print("energy_predictions: ", energy_predictions.shape)
+        #     # if pitch_predictions is not None:
+        #     #     print("pitch_predictions: ", pitch_predictions.shape)
+        #     # if predicted_durations is not None:
+        #     #     print("predicted_durations: ", predicted_durations)
+        #     print("enriched_encoded_texts: ", enriched_encoded_texts)
+        #     print("upsampled_enriched_encoded_texts: ", upsampled_enriched_encoded_texts.shape)
 
-            if decoder_masks is not None:
-                print("decoder_masks: ", decoder_masks.shape)
-            print("utterance_embedding: ", utterance_embedding.shape)
+        #     if decoder_masks is not None:
+        #         print("decoder_masks: ", decoder_masks.shape)
+        #     print("utterance_embedding: ", utterance_embedding.shape)
 
 
 
@@ -640,11 +636,12 @@ class ToucanTTS_nf(torch.nn.Module):
 
         if is_inference:
             if run_stochastic:
-                refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
+                refined_codec_frames, _ = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
                                                                   mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2).float(),
                                                                   n_timesteps=15,
                                                                   temperature=0.2,
-                                                                  c=utterance_embedding).transpose(1, 2)
+                                                                  c=utterance_embedding)
+                refined_codec_frames = refined_codec_frames.transpose(1, 2)
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \

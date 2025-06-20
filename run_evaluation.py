@@ -1,3 +1,4 @@
+import re
 import time
 import wandb
 import argparse
@@ -24,7 +25,7 @@ class HiddenPrints:
         sys.stdout.close()
         sys.stdout = self._original_stdout
 
-def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=False):
+def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=False, multi_speaker=False):
     torch.set_deterministic_debug_mode(False)
     # Suppress specific warning from transformers configuration
     warnings.filterwarnings("ignore", message="Passing `gradient_checkpointing` to a config initialization is deprecated")
@@ -90,11 +91,15 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
     if not os.path.exists(f"samples/evaluation_{version}.csv"):
         with tqdm(total=total_length, desc="Evaluating Models") as outer_bar:
             for model_id in model_ids:
-                temperatures = [0.4]
+                temperatures = [0.4,0.8]#[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
                 if "NF" in model_id:
                     architecture = "NF"
                 elif "CFM" in model_id:
                     architecture = "CFM"
+                elif "RF" in model_id:
+                    architecture = "RF"
+                elif "DET" in model_id:
+                    architecture = "DET"
                 else:
                     architecture = "CFM"
                 with tqdm(total=len(temperatures), desc="Start") as inner_bar:
@@ -104,21 +109,30 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
                         outer_bar.set_description(f"Evaluating Model {full_name}")
                         outer_bar.refresh()
                         full_model_path = path_to_models + "/" + model_id + "/best.pt"
-                        audio_samples=40
+                        audio_samples=16
                         
                         # if not any(model_id in dir_name for dir_name in os.listdir(f"audios/{version}/")):
-                        #if not os.path.exists(f"audios/{version}/{full_name}/{full_name}-0.wav"):
-                        # create data for self-test
-                        inner_bar.set_description("Creating sample audios")
-                        inner_bar.refresh()
-                        #with HiddenPrints():
-                        test.variance_test(f"{full_name}", dir=str(version), samples= audio_samples, model_id=full_model_path, exec_device=device, speaker_reference="audios/RAVDESS_one/Actor_19/03-01-01-01-01-01-19.wav", prosody_creativity=temp, architecture=architecture)
+                        if not os.path.exists(f"audios/{version}/{full_name}/{full_name}-0.wav"):
+                            # create data for self-test
+                            inner_bar.set_description("Creating sample audios")
+                            inner_bar.refresh()
+                            with HiddenPrints():
+                                test.variance_test(f"{full_name}", dir=str(version), samples= audio_samples, model_id=full_model_path, exec_device=device, speaker_reference="audios/RAVDESS_one/Actor_19/03-01-01-01-01-01-19.wav", prosody_creativity=temp, architecture=architecture)
                         
                         # get distance to speaker
                         inner_bar.set_description("Compare to speaker")
                         inner_bar.refresh()
-                        with HiddenPrints():
-                            speaker_distance, speaker_overlap = test.compare_to_reference(version=f"{full_name}", reference_speaker="audios/RAVDESS_one/Actor_19/03-01-01-01-01-01-19.wav", samples=100 ,model_id=full_model_path, device=device, use_wandb=use_wandb, prosody_creativity=temp, number = counter, architecture=architecture)
+                        if multi_speaker:
+                            reference_speaker = [f"audios/RAVDESS_all/{file}" for file in os.listdir("audios/RAVDESS_all") if os.path.isfile(os.path.join("audios/RAVDESS_all", file))]
+                            print(reference_speaker)
+                        else:
+                            reference_speaker="audios/RAVDESS_one/Actor_19/03-01-01-01-01-01-19.wav"
+                        #with HiddenPrints():
+                        speaker_distance, speaker_overlap = test.compare_to_reference(version=f"{full_name}", 
+                                                                                      reference_speaker=reference_speaker,
+                                                                                      samples=16 ,model_id=full_model_path, device=device, use_wandb=use_wandb,
+                                                                                      prosody_creativity=temp, number = counter,
+                                                                                        architecture=architecture, eval_name=version)
                         counter += 1 # set counter for slider in wandb
 
                         inner_bar.set_description("Computing Variance score")
@@ -148,7 +162,8 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
                         inner_bar.refresh()
                         with HiddenPrints():
                             gmm_score = test.compare_speaker_gmm(path_to_model_data=f"samples/{full_name}_data_samples_sentence.csv", path_to_speaker_data="samples/speaker.csv")    
-                            
+                        
+                        
                         inner_bar.set_description("Computing MOS score")
                         inner_bar.refresh()
                         # remove prosody_creativity and remove duplicates
@@ -290,7 +305,8 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
     torch.set_default_dtype(torch.float64)
     scorer = Scorer(config=None, path=path_to_predictor)
     score = scorer.predict(df)
-
+    pd.set_option('display.max_columns', 60)
+    print(df)
     with_variance = True if score[0].shape[-1] == 2 else False
 
     torch.set_default_dtype(default_type)
@@ -314,11 +330,28 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
 
     #aggregations = ['all', 'model', 'temp', 'drop', 'log', 'order']
 
-    aggregations = ['channels', 'layers', 'kernal', 'temp', 'all']
-    
+    #aggregations = ['channels', 'layers', 'kernal', 'temp', 'all']
+    aggregations = ['architecture', 'all']
+    # Select the required columns
+    df_metrics = df_sorted[['model', 'wv_mos', 'distance_speaker', 'overlap', 'gmm', "predicted", 'pitch_mean', 'duration_mean']]
+
+    # Save to CSV (not grouped, keeping original values)
+    csv_path = f"visualizations/{version}_metrics.csv"
+    df_metrics.to_csv(csv_path, index=False)
+
+    print(f"CSV saved at: {csv_path}")
     
     df_sorted['group'] = df_sorted['model'].apply(lambda x: x.split('_')[0])
-    
+    model_order = {"NF": 1, "CFM": 2, "RF": 3}
+    df_sorted['sort_key'] = df_sorted['group'].map(model_order)
+    # Extract numerical part from model names
+    def extract_numeric_part(model_name):
+        match = re.search(r'[-+]?\d*\.\d+|\d+', model_name)  # Finds a floating-point or integer number
+        return float(match.group()) if match else float('inf')  # Assigns 'inf' if no number is found (to keep them last)
+
+    df_sorted['numeric_part'] = df_sorted['model'].apply(extract_numeric_part)
+    # Filter data to only include numeric_part values from 0.0 to 1.0
+    df_sorted = df_sorted[df_sorted['numeric_part'] <= 1.0]
     for agg in aggregations:
         print(agg)
         df_current = df_sorted.copy()
@@ -343,9 +376,78 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
             df_current['agg'] = df_current['model'].apply(lambda x: x.replace("_log", "")[x.replace("_log", "").find("_l"):-1].split("_")[1])
         elif agg == 'kernal':
             df_current['agg'] = df_current['model'].apply(lambda x: x[x.find("_k"):-1].split("_")[1])
+        elif agg == 'architecture':
+            df_current['agg'] = df_current['model'].apply(lambda x: "CFM" if "CFM" in x else "NF" if "NF" in x else "RF" if "RF" in x else "DET")
+        
+        
+        if per_sample:
+            metrics = ['distance_speaker', 'gmm', 'wv_mos', 'overlap', 'pitch_mean', 'pitch_var', 'energy_mean',
+                    'energy_var', 'duration_mean', 'duration_var']
+        else:
+            metrics = ['distance_speaker', 'gmm', 'wv_mos', 'overlap', 'mean_sum_score', 'var_sum_score',
+                    'mean_arithmetic_score', 'var_arithmetic_score', 'mean_geometric_score', 'var_geometric_score',
+                    'mean_harmonic_score', 'var_harmonic_score', 'pitch_mean', 'pitch_var', 'energy_mean',
+                    'energy_var', 'duration_mean', 'duration_var']
+        
+        for metric in metrics:
+             # Normalize y-values within each group (CFM, NF, RF)
+            df_current['normalized_value'] = df_current.groupby('group')[metric].transform(
+                lambda x: (x - x.min()) / (x.max() - x.min())  # Min-Max Normalization
+            )
+            plt.figure(figsize=(15, 6))
+            if metric == 'pitch_var' or metric == 'duration_var' or metric == 'pitch_mean' or metric == 'duration_mean'or metric == 'energy_mean' or metric == 'energy_var':
+                df_current = df_current.sort_values(by=['sort_key', 'numeric_part'], ascending=[True, True])
+                print("11111111111111111111111111111")
+                order = df_current['agg'].unique()
+            else:
+                
+                print("22222222222222222222222222")
+                order = df_current.groupby('agg')[metric].mean().sort_values(ascending=False).index
+            # Create a bar plot for the metric (no grouping)
+            palette_dict = {
+                "NF": "#3274A1",  # Extracted blue
+                "CFM": "#E1812C", # Extracted orange
+                "RF": "#3A923A"   # Extracted green
+            }
+            ax = sns.barplot(x='agg', y='normalized_value', data=df_current, hue='group', order=order, errorbar='sd', palette=palette_dict, saturation=1.3)
 
-        
-        
+            # Customize plot labels and title
+            plt.xlabel('Temperature', fontsize=28, weight='bold') 
+            if metric == 'pitch_mean':
+                y_label = "Variance of Mean"
+            elif metric== 'duration_mean':
+                y_label = "Variance of Mean"
+            elif metric == 'pitch_var':
+                y_label = "Variance of Variance"
+            elif metric== 'duration_var':
+                y_label = "Variance of Variance"
+            elif metric== 'energy_mean':
+                y_label = "Variance of Mean"
+            elif metric == 'energy_var':
+                y_label = "Variance of Variance"
+            else:
+                y_label=metric
+            plt.ylabel(y_label, fontsize=28, weight='bold') 
+            plt.yticks(fontsize=26)
+            #plt.title(f'{metric} across Models', fontsize=16, weight='bold')
+
+            plt.legend(fontsize=26)
+            # Rotate x-axis labels for better visibility
+            new_labels = [label if i % 2 == 0 else '' for i, label in enumerate(df_current['numeric_part'].astype(str))]
+
+            # Apply the modified labels
+            ax.set_xticklabels(new_labels)
+            plt.xticks(fontsize=26)
+            plt.tight_layout(rect=[0,0,1,1]) 
+
+            # Save the plot
+            plot_path = f"visualizations/{version}_{metric}_{agg}_plot.pdf"
+            plt.savefig(plot_path)
+            plot_path = f"visualizations/{version}_{metric}_{agg}_plot.png"
+            plt.savefig(plot_path)
+            print(f"Plot saved at: {plot_path}")
+            plt.close()
+        """
         plt.figure(figsize=(20, 6))
         if agg == 'drop' or agg == 'log' or agg == 'temp':
             order = df_current.groupby('group')['predicted'].mean().sort_values(ascending=False).index
@@ -354,6 +456,7 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
             if per_sample:
                 order = df_current.groupby('model')['predicted'].mean().sort_values(ascending=False).index
                 sns.barplot(x='model', y='predicted', data=df_current, order=order, hue='model', errorbar='sd')
+                
             elif with_variance and agg == 'all':
                 ax = sns.barplot(x='model', y='predicted', data=df_current, hue='model', errorbar=None)
                 # Calculate the positions of the bars
@@ -366,7 +469,7 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
             else:
                 order = df_current.groupby('agg')['predicted'].mean().sort_values(ascending=False).index
                 sns.barplot(x='agg', y='predicted', hue='group', order=order, data=df_current, palette='coolwarm', errorbar='sd')
-        
+                
         # Adding labels and title
         plt.xlabel('Models')
         plt.ylabel('Score')
@@ -377,12 +480,13 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
         plt.tight_layout(rect=[0, 0, 1, 1]) 
 
         plt.savefig(f"visualizations/{version}_{agg}_{path_to_predictor}_results.png")
-        
+    
         if use_wandb:
             bar_plot = wandb.Image(f"visualizations/{version}_{agg}_{path_to_predictor}_results.png")
             wandb.log({"Result barplot": bar_plot})
 
         plt.close()
+        """
         fig, axes = plt.subplots(2, 1, figsize=(30, 40))
        
         df_melted_var = pd.melt(df_current, id_vars=['agg', 'group'], value_vars=['mean_sum_score_zscore', 'var_sum_score_zscore'],
@@ -415,7 +519,7 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
 
         # Adjust the plot layout to prevent cutting off labels
         plt.tight_layout(rect=[0, 0, 1, 1]) 
-        plt.savefig(f"visualizations/{version}_{agg}_metrics_results.png")
+        plt.savefig(f"visualizations/{version}_{agg}_metrics_results.pdf")
         
         if use_wandb:
             bar_plot = wandb.Image(f"visualizations/{version}_{agg}_metrics_results.png")
@@ -450,7 +554,11 @@ if __name__ == '__main__':
                         action="store_true",
                         help="Whether to compute MOS and Variance per sample or per model.",
                         default=False)
+    parser.add_argument('--multi_speaker',
+                        action="store_true",
+                        help="Whether to use more than one speaker.",
+                        default=False)
 
     args = parser.parse_args()
 
-    run_eval(path_to_models = args.model_dir, version=args.version, use_wandb = args.wandb, gpu_id = args.gpu_id, per_sample=args.per_sample)
+    run_eval(path_to_models = args.model_dir, version=args.version, use_wandb = args.wandb, gpu_id = args.gpu_id, per_sample=args.per_sample, multi_speaker=args.multi_speaker)

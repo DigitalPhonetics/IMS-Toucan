@@ -100,7 +100,9 @@ class NormalizingFlowProsodyPredictor(nn.Module):
             z0, logdet = self.log_flow(z0, x_mask)
             logdet_tot += logdet
             z = torch.cat([z0, z1], 1)
+            #print("############")
             for flow in flows:
+                #print("flow: ", z)
                 z, logdet = flow(z, x_mask, g=x, reverse=reverse)
                 logdet_tot = logdet_tot + logdet
             nll = torch.sum(0.5 * (math.log(2 * math.pi) + (z ** 2)) * x_mask, [1, 2]) - logdet_tot
@@ -209,7 +211,7 @@ class ConvFlow(nn.Module):
         unnormalized_widths = h[..., :self.num_bins] / math.sqrt(self.filter_channels)
         unnormalized_heights = h[..., self.num_bins:2 * self.num_bins] / math.sqrt(self.filter_channels)
         unnormalized_derivatives = h[..., 2 * self.num_bins:]
-
+       
         x1, logabsdet = piecewise_rational_quadratic_transform(x1,
                                                                unnormalized_widths,
                                                                unnormalized_heights,
@@ -303,6 +305,7 @@ def rational_quadratic_spline(inputs,
                               min_bin_width=DEFAULT_MIN_BIN_WIDTH,
                               min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
                               min_derivative=DEFAULT_MIN_DERIVATIVE):
+    
     if torch.min(inputs) < left or torch.max(inputs) > right:
         raise ValueError('Input to a transform is not within its domain')
 

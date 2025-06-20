@@ -8,16 +8,22 @@ import torch
 
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.ToucanTTS.InferenceToucanTTS_nf import ToucanTTS_nf
+from Architectures.Toucan_self.InferenceToucanTTS import ToucanTTS as ToucanTTS_det
+from Architectures.ToucanTTS_rf.InferenceToucanTTS import ToucanTTS as ToucanTTS_rf
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Utility.storage_config import MODELS_DIR
 
 
-def load_net_toucan(path, architecture="CFM"):
+def load_net_toucan(path, architecture="CFM", start_reflow=False):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     if architecture == "CFM":
-        net = ToucanTTS(weights=check_dict["model"], config=check_dict["config"])
+        net = ToucanTTS(weights=check_dict["model"], config=check_dict["config"],reflow=start_reflow)
     elif architecture == "NF":
         net = ToucanTTS_nf(weights=check_dict["model"], config=check_dict["config"])
+    elif architecture == "DET":
+        net = ToucanTTS_det(weights=check_dict["model"], config=check_dict["config"])
+    elif architecture == "RF":
+        net = ToucanTTS_rf(weights=check_dict["model"], config=check_dict["config"],reflow=start_reflow)
     return net, check_dict["default_emb"]
 
 
@@ -44,7 +50,7 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
     return [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in checkpoint_list[:n]]
 
 
-def average_checkpoints(list_of_checkpoint_paths, load_func, architecture="CFM"):
+def average_checkpoints(list_of_checkpoint_paths, load_func, architecture="CFM", start_reflow=False):
     # COLLECT CHECKPOINTS
     if list_of_checkpoint_paths is None or len(list_of_checkpoint_paths) == 0:
         return None
@@ -55,7 +61,7 @@ def average_checkpoints(list_of_checkpoint_paths, load_func, architecture="CFM")
     # LOAD CHECKPOINTS
     for path_to_checkpoint in list_of_checkpoint_paths:
         print("loading model {}".format(path_to_checkpoint))
-        model, default_embed = load_func(path=path_to_checkpoint, architecture=architecture)
+        model, default_embed = load_func(path=path_to_checkpoint, architecture=architecture, start_reflow=start_reflow)
         checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
 
     # AVERAGE CHECKPOINTS

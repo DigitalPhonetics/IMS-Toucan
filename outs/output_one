@@ -1,0 +1,8 @@
+nohup: Eingabe wird ignoriert
+usage: run_training_pipeline.py [-h] [--gpu_id GPU_ID]
+                                [--resume_checkpoint RESUME_CHECKPOINT]
+                                [--resume] [--finetune]
+                                [--model_save_dir MODEL_SAVE_DIR] [--wandb]
+                                [--wandb_resume_id WANDB_RESUME_ID]
+                                {finetuning_example_simple,finetuning_example_multilingual,tt_it,nancy,eng1,eng2,stage1,stage2,prosody,aligner,hifigan}
+run_training_pipeline.py: error: unrecognized arguments: _rf_debug.out

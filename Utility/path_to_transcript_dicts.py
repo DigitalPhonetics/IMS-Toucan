@@ -230,6 +230,19 @@ def build_path_to_transcript_dict_mls_english(re_cache=False):
     return torch.load(cache_path)
 
 
+def build_path_to_transcript_tedlium():
+    root = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/tedlium/output"
+    path_to_transcript = dict()
+    for speaker in os.listdir(root):
+        for file in os.listdir(os.path.join(root, speaker)):
+            if file.endswith(".txt"):
+                full_path = os.path.join(root, speaker, file)
+                with open(full_path, 'r') as text_file:
+                    transcript = text_file.read()
+                path = os.path.join(root, speaker, file).replace(".txt", ".wav")
+                path_to_transcript[path] = transcript
+    return path_to_transcript
+    
 def build_path_to_transcript_dict_gigaspeech(re_cache=False):
     root = "/mount/resources/speech/corpora/GigaSpeech/"
     cache_path = os.path.join(root, "pttd_cache.pt")
@@ -245,7 +258,6 @@ def build_path_to_transcript_dict_gigaspeech(re_cache=False):
                 path_to_transcript[wav_path] = norm_transcript
         torch.save(path_to_transcript, cache_path)
     return torch.load(cache_path)
-
 
 def build_path_to_transcript_dict_elizabeth(re_cache=False):
     root = "/mount/resources/speech/corpora/MAILabs_british_single_speaker_elizabeth"
@@ -479,22 +491,7 @@ def build_path_to_transcript_libritts_all_clean():
     path_train = "/mount/resources/speech/corpora/LibriTTS_R/"  # using all files from the "clean" subsets from LibriTTS-R https://arxiv.org/abs/2305.18802
     path_to_transcript = dict()
     for speaker in os.listdir(path_train):
-        for chapter in os.listdir(os.path.join(path_train, speaker)):
-            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
-                if file.endswith("normalized.txt"):
-                    with open(os.path.join(path_train, speaker, chapter, file), 'r', encoding='utf8') as tf:
-                        transcript = tf.read()
-                    wav_file = file.split(".")[0] + ".wav"
-                    path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
-    return path_to_transcript
-
-def build_path_to_transcript_dict_libritts_one_speaker(re_cache=False):
-    root = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/speaker_dataset/libritts_one"
-    cache_path = os.path.join(root, "pttd_cache.pt")
-    if not os.path.exists(cache_path) or re_cache:
-        path_train = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/speaker_dataset/libritts_one"  # using all files from the "clean" subsets from LibriTTS-R https://arxiv.org/abs/2305.18802
-        path_to_transcript = dict()
-        for speaker in os.listdir(path_train):
+        if not speaker.endswith(".pt"):
             for chapter in os.listdir(os.path.join(path_train, speaker)):
                 for file in os.listdir(os.path.join(path_train, speaker, chapter)):
                     if file.endswith("normalized.txt"):
@@ -502,8 +499,23 @@ def build_path_to_transcript_dict_libritts_one_speaker(re_cache=False):
                             transcript = tf.read()
                         wav_file = file.split(".")[0] + ".wav"
                         path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
-        torch.save(path_to_transcript, cache_path)
-    return torch.load(cache_path)
+    return path_to_transcript
+
+def build_path_to_transcript_dict_libritts_one_speaker():
+    root =       "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/libritts_one"
+    path_train = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/libritts_one"  # using all files from the "clean" subsets from LibriTTS-R https://arxiv.org/abs/2305.18802
+    path_to_transcript = dict()
+    for speaker in os.listdir(path_train):
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if file.endswith("normalized.txt"):
+                    with open(os.path.join(path_train, speaker, chapter, file), 'r', encoding='utf8') as tf:
+                        transcript = tf.read()
+                    wav_file = file.split(".")[0] + ".wav"
+                    path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
+    
+    return path_to_transcript
+
 
 
 def build_path_to_transcript_dict_ears_one_speaker_regular(re_cache=False):
