@@ -8,7 +8,7 @@ from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
 from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.RectifiedFlow.rectified_flow import RectifiedFlow, Unet
 from Architectures.RectifiedFlow.reflow import Reflow
-from Architectures.Toucan_self.VariancePredictor import VariancePredictor
+from Architectures.Toucan_det.VariancePredictor import VariancePredictor
 from Architectures.GeneralLayers.Conformer import Conformer
 from Architectures.GeneralLayers.LayerNorm import LayerNorm
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator

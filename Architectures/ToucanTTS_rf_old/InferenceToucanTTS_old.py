@@ -13,8 +13,8 @@ from Architectures.RectifiedFlow.rectified_flow import RectifiedFlow, Unet
 from Architectures.RectifiedFlow.reflow import Reflow
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
 from Architectures.ToucanTTS.flow_matching import CFMDecoder
-from Architectures.Toucan_self.DurationPredictor import DurationPredictor
-from Architectures.Toucan_self.VariancePredictor import VariancePredictor
+from Architectures.Toucan_det.DurationPredictor import DurationPredictor
+from Architectures.Toucan_det.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import integrate_with_utt_embed
 from Utility.utils import make_non_pad_mask

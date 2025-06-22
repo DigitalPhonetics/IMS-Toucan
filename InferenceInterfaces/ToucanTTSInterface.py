@@ -12,7 +12,7 @@ from torchaudio.transforms import Resample
 
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.ToucanTTS.InferenceToucanTTS_nf import ToucanTTS_nf
-from Architectures.Toucan_self.InferenceToucanTTS import ToucanTTS as ToucanTTS_det
+from Architectures.Toucan_det.InferenceToucanTTS import ToucanTTS as ToucanTTS_det
 from Architectures.ToucanTTS_rf.InferenceToucanTTS import ToucanTTS as ToucanTTS_rf
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor

@@ -6,7 +6,7 @@ from abc import ABC
 
 import torch
 
-from Architectures.Toucan_self.ConditionalLayerNorm import ConditionalLayerNorm
+from Architectures.Toucan_det.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.LayerNorm import LayerNorm
 from Utility.utils import make_non_pad_mask
 

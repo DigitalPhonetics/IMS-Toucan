@@ -6,8 +6,8 @@ from torch.nn import Tanh
 
 from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
 from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
-from Architectures.Toucan_self.DurationPredictor import DurationPredictor
-from Architectures.Toucan_self.VariancePredictor import VariancePredictor
+from Architectures.Toucan_det.DurationPredictor import DurationPredictor
+from Architectures.Toucan_det.VariancePredictor import VariancePredictor
 from Architectures.GeneralLayers.Conformer import Conformer
 from Architectures.GeneralLayers.LayerNorm import LayerNorm
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
