@@ -510,6 +510,7 @@ def create_speaker_values(device, multi_speaker=False):
     'duration_var': []
     }
 
+    # create a "train"loader with the given speaker data to extract the values
     if multi_speaker:
             speaker_data = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
                                             corpus_dir=os.path.join(PREPROCESSING_DIR, "RAVDESS_all"),

@@ -1,5 +1,5 @@
 """
-Example script for fine-tuning the pretrained model to your own data.
+Script to train with probabilistic variance prediction
 
 Comments in ALL CAPS are instructions
 """
@@ -11,10 +11,8 @@ from torch.utils.data import ConcatDataset
 
 from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
 from Architectures.ToucanTTS.ToucanTTS_nf import ToucanTTS_nf
-#from Architectures.ToucanTTS_det.ToucanTTS import ToucanTTS as ToucanTTS_det
 from Architectures.Toucan_self.ToucanTTS import ToucanTTS as ToucanTTS_det
 from Architectures.ToucanTTS_rf.ToucanTTS import ToucanTTS as ToucanTTS_rf
-from Architectures.ToucanTTS_det.toucantts_train_loop_arbiter import train_loop as det_train_loop
 from Architectures.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
