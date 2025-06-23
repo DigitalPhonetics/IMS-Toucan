@@ -636,7 +636,6 @@ class ToucanTTS_nf(torch.nn.Module):
 
 if __name__ == '__main__':
     model = ToucanTTS_nf()
-    # print(sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     # print(" TESTING TRAINING ")
 
@@ -664,7 +663,6 @@ if __name__ == '__main__':
                                lang_ids=dummy_language_id)
 
     loss = ce + dl + pl + el + fl
-    # print(loss)
     loss.backward()
 
     # print(" TESTING INFERENCE ")

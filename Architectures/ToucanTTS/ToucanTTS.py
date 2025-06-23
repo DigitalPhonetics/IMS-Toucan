@@ -730,7 +730,6 @@ class ToucanTTS(torch.nn.Module):
 
 if __name__ == '__main__':
     model = ToucanTTS()
-    print(sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     print(" TESTING TRAINING ")
 

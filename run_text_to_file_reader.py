@@ -123,15 +123,12 @@ if __name__ == '__main__':
     temps = [0.4]
 
     for model in models:
-        print(model)
         for temp in temps:
-            print(temp)
             if model == "DET":
                 samples = 1
             else:
                 samples = 1
             for sample in range(samples):
-                print(sample)
                 if model == "DET":
                     model_id ="studyDET_epd_c8_l6_k5_d0.2"
                 if model == "CFM":
@@ -144,10 +141,8 @@ if __name__ == '__main__':
                 #sentences = ["Galleries are free on thursdays,",
                 #              "Jessie dunked the basketball in the hoop,"]
                 sentences = []
-                if model == "RF":
-                    model_id = f"CFM/{model_id}"
-                else:
-                    model_id = f"{model}/{model_id}"
+                
+                model_id = f"{model}/{model_id}"
                 for i, sentence in enumerate(sentences):
 
                     create_multiple(version=f"StudyCompletedet/{model}-speaker1-sentence{i}-temp{temp}_{sample}",

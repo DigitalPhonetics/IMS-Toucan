@@ -509,10 +509,8 @@ class Quantizer(torch.nn.Module):
 
     def embed(self, x):
         # idx: N, T, 4
-        # print('x ', x.shape)
         quantized_out = torch.tensor(0.0, device=x.device)
         x = torch.split(x, 1, 2)  # split, 将最后一个维度分开, 每个属于一个index group
-        # print('x.shape ', len(x),x[0].shape)
 
         for i in range(self.residual_layer):
             ret = []
@@ -523,7 +521,6 @@ class Quantizer(torch.nn.Module):
                     q = embed.embedding(q.squeeze(-1))
                     ret.append(q)
                 ret = torch.cat(ret, -1)
-                # print(ret.shape)
                 quantized_out = quantized_out + ret
             else:
                 for j in range(self.n_code_groups):

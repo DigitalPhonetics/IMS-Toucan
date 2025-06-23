@@ -19,8 +19,6 @@ class DitWrapper(nn.Module):
 
     def __init__(self, hidden_channels, out_channels, filter_channels, num_heads, kernel_size=3, p_dropout=0.1, gin_channels=0, time_channels=0):
         super().__init__()
-        #print("hiddenchannels", hidden_channels)
-        #print("out_channels", out_channels)
         self.time_fusion = FiLMLayer(hidden_channels, out_channels, time_channels)
         self.conv1 = ConvNeXtBlock(hidden_channels, out_channels, filter_channels, gin_channels)
         self.conv2 = ConvNeXtBlock(hidden_channels, out_channels, filter_channels, gin_channels)
@@ -45,14 +43,10 @@ class FiLMLayer(nn.Module):
     def __init__(self, in_channels, out_channels, cond_channels):
         super(FiLMLayer, self).__init__()
         self.in_channels = in_channels
-        #print("film ", (in_channels + out_channels) * 2)
         self.film = nn.Conv1d(cond_channels, (in_channels + out_channels) * 2, 1)
 
     def forward(self, x, c):
         gamma, beta = torch.chunk(self.film(c.unsqueeze(2)), chunks=2, dim=1)
-        #print("xfilm ", x.shape)
-        #print("gamma ", gamma.shape)
-        #print("beta ", beta.shape)
         return gamma * x + beta
 
 

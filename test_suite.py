@@ -117,7 +117,6 @@ def plot_freq(version, path_to_data="samples/test_freq_pitch.csv"):
         
             # Plotting the pitch (F0) contours with different colors
             plt.plot(row_times, f0, label=f'Row {idx}', color="#3274A1", linewidth=3)
-            print("mean ", f0)
             plt.axhline(y=mean_f0, color='#E1812C', linestyle='--', linewidth=2, label=f'Mean F0: {mean_f0:.2f} Hz')
             plt.fill_between(row_times, f0 - std_f0, f0 + std_f0, color='#3A923A', alpha=0.2, label='±1 STD')
 
@@ -150,7 +149,6 @@ def create_audio_samples(version, dir , model_id="Meta", exec_device="cpu", samp
 
     """
     os.makedirs(f"audios/{dir}/{version}", exist_ok=True)
-    print("speaker ", speaker_reference)
     for i in tqdm(range(samples)):
         read_texts_to_file(model_id=model_id,
                 sentence=["It snowed, rained, and hailed the same morning."],
@@ -674,17 +672,13 @@ def compare_to_reference(version, reference_speaker, model_id, samples=100, devi
 
         Returns: Overlap, Distance
     """
-    print(type(reference_speaker))
     if isinstance(reference_speaker, str):
-        print("Single")
         if not os.path.exists("samples/speaker.csv") or not os.path.exists("samples/speaker_sentence.csv"):
             create_speaker_values(device)
         if not os.path.exists(f"samples/{version}_data_samples_sentence_phones.csv") or not os.path.exists(f"samples/{version}_data_samples_sentence.csv"):
             create_model_samples(version, model_id, device, reference_speaker, samples, prosody_creativity, architecture=architecture)
     
     else: 
-        
-        print("Multi")
         if not os.path.exists("samples/speakers.csv") or not os.path.exists("samples/speakers_sentence.csv"):
             create_speaker_values(device, multi_speaker= True)
         if not os.path.exists(f"samples/{version}_data_samples_sentence_phones_multi.csv") or not os.path.exists(f"samples/{version}_data_samples_sentence_multy.csv"):
@@ -940,7 +934,6 @@ def clip_variances(X, means, covariances, threshold=4.0):
     new_covariances = []
     for i in range(len(means)):
         md = mahalanobis_distance(X, means[i], covariances[i])
-        print("md ", md)
         if md > threshold:  # If MD is too high, reduce variance
             print(f"Clipping variance for component {i}, MD={md:.2f}")
             new_covariances.append(np.clip(covariances[i], a_min=1e-4, a_max=0.5))  # Adjust max variance
@@ -995,9 +988,7 @@ def get_automatic_mos_score(path_to_audios, device="cpu", per_sample=False):
     
     if per_sample:
         mos = []
-        print(os.listdir(path_to_audios))
         for audio in os.listdir(path_to_audios):
-            print(audio)
             mos.append(model.calculate_one(path_to_audios + "/" + audio))
     else:
         if path_to_audios[-4:] == '.wav':
