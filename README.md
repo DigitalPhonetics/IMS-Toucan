@@ -215,9 +215,11 @@ You can supply any of the following arguments to customize the evaluation proces
 Typical usage looks like this:
 
 ```
-python run_eval.py --model_dir ./checkpoints/my_model --version eval_v1 --gpu_id 0 --wandb --per_sample
-Evaluation results will be printed to the console, and if --wandb is used, they'll also be logged to your Weights & Biases dashboard. The evaluation can be run multiple times with different flags to test specific behaviors, e.g., comparing single- vs multi-speaker setups, or analyzing sample-wise performance.
+python run_eval.py --model_dir ./checkpoints/my_model --version eval_v1 --gpu_id 0 --wandb
 ```
+
+If --wandb is used, the results will be logged to your Weights & Biases dashboard.
+
 
 ---
 
