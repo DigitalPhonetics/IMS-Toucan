@@ -129,9 +129,8 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
                             inner_bar.set_description("Creating sample audios")
                             inner_bar.refresh()
                             with HiddenPrints():
-                                test.variance_test(f"{full_name}", dir=str(version), samples= audio_samples, model_id=full_model_path, exec_device=device, speaker_reference="audios/RAVDESS_one/Actor_19/03-01-01-01-01-01-19.wav", prosody_creativity=temp, architecture=architecture)
-                        # TODO: variance test good name?
-
+                                test.create_audio_samples(f"{full_name}", dir=str(version), samples= audio_samples, model_id=full_model_path, exec_device=device, speaker_reference="audios/RAVDESS_one/Actor_19/03-01-01-01-01-01-19.wav", prosody_creativity=temp, architecture=architecture)
+                       
                         # compute distance to speaker and overlap
                         inner_bar.set_description("Compare to speaker")
                         inner_bar.refresh()

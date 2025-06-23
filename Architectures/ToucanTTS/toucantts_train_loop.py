@@ -137,7 +137,6 @@ def train_loop(net,
                 print("gold gold_pitch ", torch.isnan(gold_pitch).any())
                 print("gold gold_energy ", torch.isnan(gold_energy).any())
                 print("gold text_tensors ", torch.isnan(text_tensors).any())
-                #print("sentence ", sentence)
                 continue
 
             speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.

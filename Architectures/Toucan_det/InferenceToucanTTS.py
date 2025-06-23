@@ -232,23 +232,20 @@ class ToucanTTS(torch.nn.Module):
             encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         # predicting pitch, energy and durations 
-        reduced_energy_space = self.energy_latent_reduction(encoded_texts)#.transpose(1,2)
-                
+        # energy
+        reduced_energy_space = self.energy_latent_reduction(encoded_texts)       
         energy_predictions = self.energy_predictor(reduced_energy_space, padding_mask=None, utt_embed=utterance_embedding)
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
         embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
         
-    
-        reduced_pitch_space = self.pitch_latent_reduction(encoded_texts+ embedded_energy_curve)#.transpose(1,2)
-        #print("encoded_texts ", encoded_texts.shape)
+        # pitch
+        reduced_pitch_space = self.pitch_latent_reduction(encoded_texts+ embedded_energy_curve)
         pitch_predictions = self.pitch_predictor(reduced_pitch_space, padding_mask=None, utt_embed=utterance_embedding)
-        #print("1pitch_predictions ", pitch_predictions.shape)
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
-        #print("2pitch_predictions ", pitch_predictions.shape)
         embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
         
-        reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)#.transpose(1,2)
-                
+        # duration
+        reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)#.transpose(1,2)      
         predicted_durations = self.duration_predictor.inference(reduced_duration_space, padding_mask=None, utt_embed=utterance_embedding)
             
         if self.duration_log_scale:
@@ -258,7 +255,6 @@ class ToucanTTS(torch.nn.Module):
         else:
             predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
 
-            
         # modifying the predictions with control parameters
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
@@ -266,8 +262,7 @@ class ToucanTTS(torch.nn.Module):
         if duration_scaling_factor != 1.0:
             assert duration_scaling_factor > 0.0
             predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
-        
-            
+             
         # enriching the text with pitch and energy info
         enriched_encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
 

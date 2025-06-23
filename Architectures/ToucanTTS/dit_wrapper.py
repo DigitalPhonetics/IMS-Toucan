@@ -169,12 +169,6 @@ class Decoder(nn.Module):
         Returns:
             _type_: _description_
         """
-        #print("-----")
-        #print("x ", x.shape)
-        #print("mask ", mask.shape)
-        #print("t ", t.shape)
-        #print("c ", c.shape)
-        #print("mu ", mu.shape)
         
         t = self.time_mlp(self.time_embeddings(t))
         

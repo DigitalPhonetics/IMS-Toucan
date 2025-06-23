@@ -23,11 +23,12 @@ class ToucanTTS(torch.nn.Module):
     ToucanTTS module, which is based on a FastSpeech 2 module,
     but with lots of designs from different architectures accumulated
     and some major components added to put a large focus on
-    multilinguality and controllability.
+    multilinguality and controllability
 
     Contributions inspired from elsewhere:
     - The Decoder is a flow matching network, like in Matcha-TTS and StableTTS
     - Pitch and energy values are averaged per-phone, as in FastPitch to enable great controllability
+    - Pitch, energy and duration are predicted with a probabilistic model, like in VarianceFlow, but with a CFM
     - The encoder and decoder are Conformers, like in ESPnet
 
     """
@@ -253,6 +254,7 @@ class ToucanTTS(torch.nn.Module):
         self.dropout = dropout
 
         # the following modules have their own init function, so they come AFTER the init.
+        # predict pitch, energy and duration all together
         if prosody_order != "all":
             self.duration_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                                 out_channels=1,
@@ -290,8 +292,6 @@ class ToucanTTS(torch.nn.Module):
                                             p_dropout=0.2,
                                             gin_channels=utt_embed_dim)
             
-
-
         self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels, # 128
                                                 out_channels=spec_channels, # 128
                                                 filter_channels=cfm_filter_channels, # 512
@@ -301,9 +301,8 @@ class ToucanTTS(torch.nn.Module):
                                                 p_dropout=cfm_p_dropout, # 0.1
                                                 gin_channels=utt_embed_dim)
         
-              
-
         self.criterion = StochasticToucanTTSLoss()
+
 
     def forward(self,
                 text_tensors,
@@ -362,6 +361,7 @@ class ToucanTTS(torch.nn.Module):
                 return regression_loss, stochastic_loss, duration_loss, outs
             return regression_loss, stochastic_loss, duration_loss
 
+
     def _forward(self,
                  text_tensors,
                  text_lengths,
@@ -402,8 +402,8 @@ class ToucanTTS(torch.nn.Module):
             if self.prosody_order != "all":
                 input_energy = encoded_texts
 
-                if self.prosody_order=="ped":
-                    
+                if self.prosody_order=="ped": 
+                    # pitch
                     reduced_pitch_space = self.pitch_latent_reduction(encoded_texts)
                     if self.dropout:
                         reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
@@ -413,7 +413,7 @@ class ToucanTTS(torch.nn.Module):
                     embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
                     input_energy= encoded_texts + embedded_pitch_curve
 
-                
+                # energy
                 reduced_energy_space = self.energy_latent_reduction(input_energy)
                 if self.dropout:
                     reduced_energy_space = torchfunc.dropout(reduced_energy_space, p=0.1)
@@ -423,6 +423,7 @@ class ToucanTTS(torch.nn.Module):
                 embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
                 if self.prosody_order=="epd":
+                    # pitch
                     reduced_pitch_space = self.pitch_latent_reduction(encoded_texts + embedded_energy_curve)
                     if self.dropout:
                         reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
@@ -430,15 +431,15 @@ class ToucanTTS(torch.nn.Module):
                     pitch_predictions, _ = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
                     embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
+                # energy
                 reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)
                 if self.dropout:
                     reduced_duration_space = torchfunc.dropout(reduced_duration_space, p=0.1)
                 reduced_duration_space = reduced_duration_space.transpose(1, 2)
                 predicted_durations, _ = self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
-                
-                
-            else:
-               
+                   
+            else:      
+                # all together      
                 reduced_prosody_space = self.prosody_latent_reduction(encoded_texts)
                 if self.dropout:
                     reduced_prosody_space = torchfunc.dropout(reduced_prosody_space, p=0.1)
@@ -450,11 +451,6 @@ class ToucanTTS(torch.nn.Module):
                 embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
                 energy_predictions = predicted_prosody[:, 2:3, :]
                 embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
-            
-            # change value range 
-            #print("predicted: ", predicted_durations)
-            #predicted_durations = predicted_durations * 50
-            #print("predicted2: ", predicted_durations)
 
             # convert from log
             if self.duration_log_scale:
@@ -477,8 +473,6 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            # changing value range
-            #shifted_gold = gold_durations / 50
             if self.duration_log_scale:
                 shifted_gold = gold_durations + 1
                 transformed_gold_durations = torch.log(shifted_gold)
@@ -486,14 +480,17 @@ class ToucanTTS(torch.nn.Module):
             else:
                 transformed_gold_durations = gold_durations.unsqueeze(-1).transpose(1, 2).float()
 
+            # predict pitch, energy and duration and compute loss
             if self.prosody_order != "all":
                 input_energy = encoded_texts
                 if self.prosody_order == "ped":
+                    # pitch
                     reduced_pitch_space = self.pitch_latent_reduction(encoded_texts)
                     if self.dropout:
                         reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
                     reduced_pitch_space = reduced_pitch_space.transpose(1, 2)
                     if self.reflow:
+                        # use frozen to get samples
                         x1, x0 = self.frozen_pitch_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
                     else:
                         x1=gold_pitch.transpose(1, 2)
@@ -506,12 +503,13 @@ class ToucanTTS(torch.nn.Module):
                     embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
                     input_energy = encoded_texts + embedded_pitch_curve
 
-            
+                # energy
                 reduced_energy_space = self.energy_latent_reduction(input_energy)
                 if self.dropout:
                     reduced_energy_space = torchfunc.dropout(reduced_energy_space, p=0.1)
                 reduced_energy_space = reduced_energy_space.transpose(1, 2)
                 if self.reflow:
+                        # use frozen to get samples
                         x1, x0 = self.frozen_energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
                 else:
                     x1 = gold_pitch.transpose(1,2)
@@ -524,11 +522,13 @@ class ToucanTTS(torch.nn.Module):
                 embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)  
                 
                 if self.prosody_order == "epd":
+                    # pitch
                     reduced_pitch_space = self.pitch_latent_reduction(encoded_texts+ embedded_energy_curve)
                     if self.dropout:
                         reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
                     reduced_pitch_space = reduced_pitch_space.transpose(1, 2)
                     if self.reflow:
+                        # use frozen to get samples
                         x1, x0 = self.frozen_pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
                     else:
                         x1 = gold_pitch.transpose(1,2)
@@ -540,6 +540,7 @@ class ToucanTTS(torch.nn.Module):
                                                                     x0=x0)
                     embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
                 
+                # duration
                 reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)
                 if self.dropout:
                     reduced_duration_space = torchfunc.dropout(reduced_duration_space, p=0.1)
@@ -557,11 +558,13 @@ class ToucanTTS(torch.nn.Module):
                                                                         x0=x0)
                 
             else:
+                # all together
                 reduced_prosody_space = self.prosody_latent_reduction(encoded_texts)
                 if self.dropout:
                     reduced_prosody_space = torchfunc.dropout(reduced_prosody_space, p=0.1)
                 reduced_prosody_space = reduced_prosody_space.transpose(1, 2)
                 if self.reflow:
+                        # use frozen to get samples
                         x1, x0 = self.frozen_prosody_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
                 else:
                     x1 = torch.cat((                                        transformed_gold_durations,
@@ -662,9 +665,12 @@ class ToucanTTS(torch.nn.Module):
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), duration_predictions, pitch_predictions, energy_predictions
         return outs.squeeze().transpose(0, 1)
-    def init_reflow(self, device):
-        # freeze models
-        
+    
+
+    def init_reflow(self):
+        """
+            Start reflow by freezing the models, so that we can sample from them
+        """
         if self.prosody_order != "all":
             self.frozen_energy_predictor = deepcopy(self.energy_predictor)
             
@@ -709,10 +715,13 @@ class ToucanTTS(torch.nn.Module):
           
         self.reflow = True
         print("REFLOW")
+
+
     def _reset_parameters(self, init_type="xavier_uniform"):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
+
 
     def reset_postnet(self, init_type="xavier_uniform"):
         # useful for after they explode

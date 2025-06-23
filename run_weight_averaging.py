@@ -9,7 +9,6 @@ import torch
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.ToucanTTS.InferenceToucanTTS_nf import ToucanTTS_nf
 from Architectures.Toucan_det.InferenceToucanTTS import ToucanTTS as ToucanTTS_det
-from Architectures.ToucanTTS_rf.InferenceToucanTTS import ToucanTTS as ToucanTTS_rf
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Utility.storage_config import MODELS_DIR
 
@@ -23,7 +22,7 @@ def load_net_toucan(path, architecture="CFM", start_reflow=False):
     elif architecture == "DET":
         net = ToucanTTS_det(weights=check_dict["model"], config=check_dict["config"])
     elif architecture == "RF":
-        net = ToucanTTS_rf(weights=check_dict["model"], config=check_dict["config"],reflow=start_reflow)
+        net = ToucanTTS(weights=check_dict["model"], config=check_dict["config"],reflow=start_reflow)
     return net, check_dict["default_emb"]
 
 

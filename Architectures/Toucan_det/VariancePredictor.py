@@ -82,23 +82,13 @@ class VariancePredictor(torch.nn.Module, ABC):
         return xs
 
     def compute_loss(self, predicted, gold, text_lengths):
-        #print("predicted ", predicted.shape)
-        #print("gold ", gold.shape)
-        #print("text_lengths ", text_lengths.shape)
         pitch_loss = self.mse_criterion(predicted, gold)
-        #print("c pitch_loss ", pitch_loss)
         
         duration_masks = make_non_pad_mask(text_lengths).to(predicted.device)
-        #print("duration_masks ", duration_masks.shape)
         duration_weights = (duration_masks.float() / duration_masks.sum(dim=1, keepdim=True).float())
-        #print("duration_weights ", duration_weights.shape)
         
         variance_masks = duration_masks.unsqueeze(-1)
-        #print("variance_masks ", variance_masks.shape)
         variance_weights = duration_weights.unsqueeze(-1)
-        #print("variance_weights ", variance_weights.shape)
         pitch_loss = pitch_loss.mul(variance_weights).masked_select(variance_masks).sum()
-        #print("c 2 pitch_loss ", pitch_loss)
         pitch_loss = pitch_loss.mul(variance_weights).masked_select(variance_masks).sum()
-        #print("c 3 pitch_loss ", pitch_loss)
         return pitch_loss

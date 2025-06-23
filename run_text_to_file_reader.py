@@ -85,7 +85,7 @@ def viet_poem(version, model_id="Meta", exec_device="cpu", speaker_reference=Non
                speaker_reference=speaker_reference,
                duration_scaling_factor=1.2)
 
-def variance_test(version, sentence, model_id="Meta", exec_device="cpu", speaker_reference=None, architecture="CFM", prosody_creativity=1.0):
+def create_multiple(version, sentence, model_id="Meta", exec_device="cpu", speaker_reference=None, architecture="CFM", prosody_creativity=1.0):
     os.makedirs("audios", exist_ok=True)
     # ["In restless dreams I walked alone, Narrow streets of cobblestone. Beneath the halo of a streetlamp, I turned my collar to the cold and damp,  When my eyes were stabbed, by the flash of a neon light, That split the night. And touched the sound, of silence."],
     file_name = f"audios/{version}_example.wav"
@@ -150,7 +150,7 @@ if __name__ == '__main__':
                     model_id = f"{model}/{model_id}"
                 for i, sentence in enumerate(sentences):
 
-                    variance_test(version=f"StudyCompletedet/{model}-speaker1-sentence{i}-temp{temp}_{sample}",
+                    create_multiple(version=f"StudyCompletedet/{model}-speaker1-sentence{i}-temp{temp}_{sample}",
                             sentence=sentence,
                             model_id=model_id,
                             exec_device=device,
@@ -161,7 +161,7 @@ if __name__ == '__main__':
                            "Michael drinks his tea with milk."]
                 sentences=["Michael drinks his tea with milk."]
                 for i, sentence in enumerate(sentences):
-                    variance_test(version=f"StudyCompletedet/{model}-speaker2-sentence{i}-temp{temp}_{sample}",
+                    create_multiple(version=f"StudyCompletedet/{model}-speaker2-sentence{i}-temp{temp}_{sample}",
                             sentence=sentence,
                             model_id=model_id,
                             exec_device=device,

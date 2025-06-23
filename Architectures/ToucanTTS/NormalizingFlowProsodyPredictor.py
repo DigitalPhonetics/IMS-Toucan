@@ -100,9 +100,7 @@ class NormalizingFlowProsodyPredictor(nn.Module):
             z0, logdet = self.log_flow(z0, x_mask)
             logdet_tot += logdet
             z = torch.cat([z0, z1], 1)
-            #print("############")
             for flow in flows:
-                #print("flow: ", z)
                 z, logdet = flow(z, x_mask, g=x, reverse=reverse)
                 logdet_tot = logdet_tot + logdet
             nll = torch.sum(0.5 * (math.log(2 * math.pi) + (z ** 2)) * x_mask, [1, 2]) - logdet_tot

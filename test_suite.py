@@ -3,45 +3,26 @@ import torch
 import wandb
 import pickle
 import librosa
-import json
 import seaborn as sns
 import numpy as np
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from wvmos import get_wvmos
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Ellipse
 from tqdm import tqdm
 from sklearn.neighbors import KernelDensity
 from sklearn.utils import resample
-from statsmodels.nonparametric.kde import KDEUnivariate
-from run_weight_averaging import load_net_toucan
 from scipy.spatial.distance import mahalanobis, jensenshannon
-from scipy.stats import wasserstein_distance, ttest_ind, f_oneway, energy_distance, gaussian_kde, t
+from scipy.stats import wasserstein_distance, energy_distance, gaussian_kde, t
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from sklearn.mixture import GaussianMixture
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_RAVDESS_one_speaker, build_path_to_transcript_dict_RAVDESS
-from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
-
-
-def read_texts_to_file(model_id, sentence, filename, device="cpu", language="eng", speaker_reference=None, duration_scaling_factor=1.0, prosody_creativity=0.4, architecture ="CFM"):
-    """
-        Save multiple audios to a file
-    """
-    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, architecture=architecture)
-    tts.set_language(language)
-    if speaker_reference is not None:
-        tts.set_utterance_embedding(speaker_reference)
-    if type(sentence) == str:
-        sentence = [sentence]
-    tts.read_to_file(text_list=sentence, file_location=filename, duration_scaling_factor=duration_scaling_factor, prosody_creativity=prosody_creativity)
-    del tts
+from run_text_to_file_reader import read_texts as read_texts_to_file
 
 
 def read_text(model_id, sentence, device="cpu", language="eng", speaker_reference=None, duration_scaling_factor=1.0, prosody_creativity=0.4, architecture="CFM"):
@@ -154,7 +135,7 @@ def plot_freq(version, path_to_data="samples/test_freq_pitch.csv"):
         plt.close()
 
 
-def variance_test(version, dir , model_id="Meta", exec_device="cpu", samples = 40, speaker_reference=None, prosody_creativity=0.4, architecture="CFM"):
+def create_audio_samples(version, dir , model_id="Meta", exec_device="cpu", samples = 40, speaker_reference=None, prosody_creativity=0.4, architecture="CFM"):
     """
         Create and save multiple samples of the same sentence
 

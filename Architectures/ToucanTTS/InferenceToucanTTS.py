@@ -281,12 +281,11 @@ class ToucanTTS(torch.nn.Module):
             encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         # predicting pitch, energy and durations 
-        
-
         if self.prosody_order != "all":
             input_energy=encoded_texts
 
-            if self.prosody_order == "ped":
+            if self.prosody_order == "ped":      
+                # pitch
                 reduced_pitch_space = self.pitch_latent_reduction(encoded_texts)
                 if self.dropout:
                     reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
@@ -297,6 +296,7 @@ class ToucanTTS(torch.nn.Module):
                 embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
                 input_energy = encoded_texts + embedded_pitch_curve
 
+            # energy
             reduced_energy_space = self.energy_latent_reduction(input_energy)
             if self.dropout:
                 torchfunc.dropout(reduced_energy_space, p=0.1)
@@ -308,6 +308,7 @@ class ToucanTTS(torch.nn.Module):
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
             
             if self.prosody_order == "epd":
+                # pitch
                 reduced_pitch_space = self.pitch_latent_reduction(encoded_texts + embedded_energy_curve)
                 if self.dropout:
                     reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
@@ -317,6 +318,7 @@ class ToucanTTS(torch.nn.Module):
                 pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
                 embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
+            # duration
             reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)
             if self.dropout:
                 reduced_duration_space = torchfunc.dropout(reduced_duration_space, p=0.1)
@@ -326,8 +328,8 @@ class ToucanTTS(torch.nn.Module):
                 1)
             predicted_durations =  predicted_durations if gold_durations is None else gold_durations
             
-
         else:
+            # predicting all together
             reduced_prosody_space = self.prosody_latent_reduction(encoded_texts)
             if self.dropout:
                 torchfunc.dropout(reduced_prosody_space, p=0.1)
@@ -337,27 +339,19 @@ class ToucanTTS(torch.nn.Module):
             predicted_durations = predicted_prosody[:, 0:1, :] 
             predicted_durations = torch.clamp(predicted_prosody[:, 0:1, :], min=0.0).squeeze(1) if gold_durations is None else gold_durations
                 
-
             pitch_predictions = predicted_prosody[:, 1:2, :] if gold_pitch is None else gold_pitch
 
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
             
-
             energy_predictions = predicted_prosody[:, 2:3, :] if gold_energy is None else gold_energy#
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
-
-                
-        # change value range
-        #predicted_durations = predicted_durations * 50 
-        
+   
         if self.duration_log_scale:
             predicted_durations = torch.clamp(predicted_durations, min=0.0).squeeze(1)
             predicted_durations = torch.exp(predicted_durations) - 1
             predicted_durations = predicted_durations.long()
         else:
             predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
-        
-
             
         # modifying the predictions with control parameters
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
@@ -368,8 +362,7 @@ class ToucanTTS(torch.nn.Module):
         if duration_scaling_factor != 1.0:
             assert duration_scaling_factor > 0.0
             predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
-        
-            
+             
         # enriching the text with pitch and energy info
         enriched_encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
 

@@ -13,7 +13,6 @@ from torchaudio.transforms import Resample
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.ToucanTTS.InferenceToucanTTS_nf import ToucanTTS_nf
 from Architectures.Toucan_det.InferenceToucanTTS import ToucanTTS as ToucanTTS_det
-from Architectures.ToucanTTS_rf.InferenceToucanTTS import ToucanTTS as ToucanTTS_rf
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
@@ -55,7 +54,6 @@ class ToucanTTSInterface(torch.nn.Module):
             self.phone2mel = ToucanTTS_det(weights=checkpoint["model"], config=checkpoint["config"])
         elif architecture == "RF":
             self.phone2mel = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"], reflow=True)
-            #self.phone2mel = ToucanTTS_rf(weights=checkpoint["model"], config=checkpoint["config"])
         
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
@@ -199,58 +197,6 @@ class ToucanTTSInterface(torch.nn.Module):
             # Completely remove axes and borders
             plt.axis('off')  # Removes axes, ticks, and spines
             plt.margins(0)   # Ensures no extra margins
-            #plt.gca().set_frame_on(False)  # Removes any remaining frame
-
-            # Save as SVG with transparent background
-            
-            #ax.yaxis.set_visible(False)
-            #ax.xaxis.set_visible(False)
-            #duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-            #ax.xaxis.grid(True, which='minor')
-            #ax.set_xticks(label_positions, minor=False)
-            #if input_is_phones:
-            #    phones = text.replace(" ", "|")
-            #else:
-            #    phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
-            #try:
-            #    ax.set_xticklabels(phones)
-            #except IndexError:
-            #    pass
-            #except ValueError:
-            #    pass
-            # word_boundaries = list()
-            # for label_index, phone in enumerate(phones):
-            #     if phone == "|":
-            #         word_boundaries.append(label_positions[label_index])
-
-            # try:
-            #     prev_word_boundary = 0
-            #     word_label_positions = list()
-            #     for word_boundary in word_boundaries:
-            #         word_label_positions.append((word_boundary + prev_word_boundary) / 2)
-            #         prev_word_boundary = word_boundary
-            #     word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
-
-            #     secondary_ax = ax.secondary_xaxis('bottom')
-            #     secondary_ax.tick_params(axis="x", direction="out", pad=24)
-            #     secondary_ax.set_xticks(word_label_positions, minor=False)
-            #     secondary_ax.set_xticklabels(text.split())
-            #     secondary_ax.tick_params(axis='x', colors='orange')
-            #     secondary_ax.xaxis.label.set_color('orange')
-            # except ValueError:
-            #     ax.set_title(text)
-            # except IndexError:
-            #     ax.set_title(text)
-
-            #ax.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=120, linewidth=0.5)
-            #ax.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=120, linewidth=1.0)
-            #plt.subplots_adjust(left=0.02, bottom=0.2, right=0.98, top=.9, wspace=0.0, hspace=0.0)
-            #ax.set_aspect("auto")
-
-            # Completely remove axes and space
-                        # Completely remove axes and borders
-            #plt.margins(0)   # Removes any margins
-            #plt.gca().set_frame_on(False)  # Ensures no figure frame
 
             if return_plot_as_filepath:
                 plt.savefig("audios/spectogram.svg", bbox_inches='tight', pad_inches=0, transparent=True, format="svg")

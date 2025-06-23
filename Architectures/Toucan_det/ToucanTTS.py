@@ -278,8 +278,6 @@ class ToucanTTS(torch.nn.Module):
                                                   dropout_rate=energy_predictor_dropout,
                                                   utt_embed_dim=utt_embed_dim)
             
-
-
         self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels, # 128
                                                 out_channels=spec_channels, # 128
                                                 filter_channels=cfm_filter_channels, # 512
@@ -289,9 +287,8 @@ class ToucanTTS(torch.nn.Module):
                                                 p_dropout=cfm_p_dropout, # 0.1
                                                 gin_channels=utt_embed_dim)
         
-              
-
         self.criterion = StochasticToucanTTSLoss()
+
 
     def forward(self,
                 text_tensors,
@@ -349,6 +346,7 @@ class ToucanTTS(torch.nn.Module):
                 return regression_loss, stochastic_loss, duration_loss, outs
             return regression_loss, stochastic_loss, duration_loss
 
+
     def _forward(self,
                  text_tensors,
                  text_lengths,
@@ -388,32 +386,22 @@ class ToucanTTS(torch.nn.Module):
         
         if is_inference:
             # predicting pitch, energy and durations
-            reduced_energy_space = self.energy_latent_reduction(encoded_texts)#.transpose(1, 2)
-                
-                
+            # energy
+            reduced_energy_space = self.energy_latent_reduction(encoded_texts) 
             energy_predictions = self.energy_predictor(reduced_energy_space, padding_mask=None, utt_embed=utterance_embedding)
             energy_predictions = energy_predictions.transpose(1,2)  
-            
-            #print("2 energy pred", energy_predictions.shape)
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
-            reduced_pitch_space = self.pitch_latent_reduction(encoded_texts+ embedded_energy_curve)#.transpose(1, 2)
-                    
+            # pitch
+            reduced_pitch_space = self.pitch_latent_reduction(encoded_texts+ embedded_energy_curve)        
             pitch_predictions = self.pitch_predictor(reduced_pitch_space, padding_mask=None, utt_embed=utterance_embedding)
-            pitch_predictions = pitch_predictions.transpose(1,2)  
-            
+            pitch_predictions = pitch_predictions.transpose(1,2)   
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
-            #print("encoded te ", encoded_texts.shape)
-            #print("embedded_pitch_curve  ", embedded_pitch_curve.shape)
             
-            #print("embedded_energy_curve  ", embedded_energy_curve.shape)
-            reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)#.transpose(1,2)
-            #print("utterance_embedding  ", utterance_embedding.shape)
-            predicted_durations = self.duration_predictor.inference(reduced_duration_space, padding_mask=None, utt_embed=utterance_embedding)#.transpose(1,2)
-            
-            
-            #print("predicted_durations  ", predicted_durations.shape)
-            
+            # duration
+            reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)
+            predicted_durations = self.duration_predictor.inference(reduced_duration_space, padding_mask=None, utt_embed=utterance_embedding)
+           
             # modifying the predictions with linguistic knowledge
             # convert from log
             if self.duration_log_scale:
@@ -433,45 +421,31 @@ class ToucanTTS(torch.nn.Module):
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations)
 
         else:
+            
             if self.duration_log_scale:
                 shifted_gold = gold_durations + 1
                 transformed_gold_durations = torch.log(shifted_gold)
-                #transformed_gold_durations = transformed_gold_durations.unsqueeze(-1).transpose(1, 2)
-                #print("transformed_gold_durations ", transformed_gold_durations.shape)
             else:
                 transformed_gold_durations = gold_durations.unsqueeze(-1).transpose(1, 2).float()
-            #print("encoded text ", encoded_texts.shape)
             
-            reduced_energy_space = self.energy_latent_reduction(encoded_texts)#.transpose(1,2)
-                       
+            # predict pitch, energy and duration and compute loss
+            # energy
+            reduced_energy_space = self.energy_latent_reduction(encoded_texts)      
             energy_predictions = self.energy_predictor(reduced_energy_space, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             energy_predictions = energy_predictions.transpose(1,2)
-            #print("energy pred", energy_predictions.shape)
-            
             energy_loss = self.energy_predictor.compute_loss(energy_predictions, gold_energy.transpose(1,2), text_lengths)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)  
-                
-            reduced_pitch_space = self.pitch_latent_reduction(encoded_texts+ embedded_energy_curve)#.transpose(1,2)
-                    
+
+            # pitch    
+            reduced_pitch_space = self.pitch_latent_reduction(encoded_texts+ embedded_energy_curve)
             pitch_predictions = self.pitch_predictor(reduced_pitch_space.detach(), padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
-            #print("pitch_predictions ", pitch_predictions.shape)
-            
             pitch_predictions = pitch_predictions.transpose(1,2)  
             pitch_loss = self.pitch_predictor.compute_loss(pitch_predictions, gold_pitch.transpose(1,2), text_lengths)
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
 
+            # duration
             reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)#.transpose(1,2)
-            #print("1 encoded te ", encoded_texts.shape)
-            #print("1 embedded_pitch_curve  ", embedded_pitch_curve.shape)
-            
-            #print("1 embedded_energy_curve  ", embedded_energy_curve.shape)
-            #print("1 red  ", reduced_duration_space.shape)
-            #print("1 utterance_embedding  ", utterance_embedding.shape)
-            #print("pitch_predictions ", pitch_predictions.shape)
             predicted_durations = self.duration_predictor(reduced_duration_space, padding_mask=padding_masks, utt_embed=utterance_embedding).unsqueeze(1)
-            #print("predicted_durations ", predicted_durations.shape)  
-            
-            #predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
             duration_loss = self.duration_predictor.compute_loss(predicted_durations, transformed_gold_durations, text_lengths)
 
             enriched_encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
@@ -481,7 +455,6 @@ class ToucanTTS(torch.nn.Module):
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         
-       
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
         
         preliminary_spectrogram = self.output_projection(decoded_speech)

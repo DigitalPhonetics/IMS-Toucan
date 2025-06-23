@@ -242,6 +242,7 @@ def build_path_to_transcript_tedlium():
                 path = os.path.join(root, speaker, file).replace(".txt", ".wav")
                 path_to_transcript[path] = transcript
     return path_to_transcript
+   
     
 def build_path_to_transcript_dict_gigaspeech(re_cache=False):
     root = "/mount/resources/speech/corpora/GigaSpeech/"
@@ -258,6 +259,7 @@ def build_path_to_transcript_dict_gigaspeech(re_cache=False):
                 path_to_transcript[wav_path] = norm_transcript
         torch.save(path_to_transcript, cache_path)
     return torch.load(cache_path)
+
 
 def build_path_to_transcript_dict_elizabeth(re_cache=False):
     root = "/mount/resources/speech/corpora/MAILabs_british_single_speaker_elizabeth"
@@ -384,6 +386,7 @@ def build_path_to_transcript_dict_RAVDESS(re_cache=False):
         torch.save(path_to_transcript_dict, cache_path)
     return torch.load(cache_path)
 
+
 def build_path_to_transcript_dict_RAVDESS_one_speaker(re_cache=False):
     root = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/RAVDESS_one"
     cache_path = os.path.join(root, "pttd_cache.pt")
@@ -397,7 +400,6 @@ def build_path_to_transcript_dict_RAVDESS_one_speaker(re_cache=False):
                     path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Dogs are sitting by the door."
         torch.save(path_to_transcript_dict, cache_path)
     return torch.load(cache_path)
-
 
 
 def build_path_to_transcript_dict_ESDS(re_cache=False):
@@ -501,6 +503,7 @@ def build_path_to_transcript_libritts_all_clean():
                         path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
     return path_to_transcript
 
+
 def build_path_to_transcript_dict_libritts_one_speaker():
     root =       "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/libritts_one"
     path_train = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/libritts_one"  # using all files from the "clean" subsets from LibriTTS-R https://arxiv.org/abs/2305.18802
@@ -515,7 +518,6 @@ def build_path_to_transcript_dict_libritts_one_speaker():
                     path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
     
     return path_to_transcript
-
 
 
 def build_path_to_transcript_dict_ears_one_speaker_regular(re_cache=False):
@@ -541,6 +543,7 @@ def build_path_to_transcript_dict_ears_one_speaker_regular(re_cache=False):
                     path_to_transcript[path] = transcript_for_ears[sentence_type]
         torch.save(path_to_transcript, cache_path)
     return torch.load(cache_path)
+
 
 def build_path_to_transcript_dict_libritts_other500(re_cache=False):
     root = "/mount/resources/asr-data/LibriTTS/train-other-500"
