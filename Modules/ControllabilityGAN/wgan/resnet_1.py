@@ -50,7 +50,6 @@ class ResNet_G(nn.Module):
         self.fc_out = nn.Linear(3 * size * size, data_dim)
 
     def forward(self, z, return_intermediate=False):
-        # print(z.shape)
         batch_size = z.size(0)
         # z = z.view(batch_size, -1)
         out = self.fc(z)
@@ -60,11 +59,9 @@ class ResNet_G(nn.Module):
         if return_intermediate:
             l_1 = out.detach().clone()
         out = out.view(batch_size, self.nf0, self.s0, self.s0)
-        # print(out.shape)
 
         out = self.resnet(out)
 
-        # print(out.shape)
         # out = out.view(batch_size, self.nf0*self.s0*self.s0*2)
 
         out = self.conv_img(out)

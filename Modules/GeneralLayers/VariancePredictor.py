@@ -11,7 +11,6 @@ from Modules.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Modules.GeneralLayers.LayerNorm import LayerNorm
 from Utility.utils import integrate_with_utt_embed
 
-
 class VariancePredictor(torch.nn.Module, ABC):
     """
     Variance predictor module.
@@ -96,3 +95,4 @@ class VariancePredictor(torch.nn.Module, ABC):
             xs = xs.masked_fill(padding_mask, 0.0)
 
         return xs
+    

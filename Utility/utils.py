@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.multiprocessing
+import torch.nn.functional as torchfunc
 from matplotlib.lines import Line2D
 
 import Modules.GeneralLayers.ConditionalLayerNorm
@@ -20,7 +21,7 @@ def integrate_with_utt_embed(hs, utt_embeddings, projection, embedding_training)
     if not embedding_training:
         # concat hidden states with spk embeds and then apply projection
         embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
+        hs = projection(hs, embeddings_expanded)# projection(torch.cat([hs, embeddings_expanded], dim=-1))
     else:
         # in this case we don't want to normalize the embeddings to not impair the gradient flow
         hs = projection(hs, utt_embeddings)
@@ -304,6 +305,26 @@ def make_non_pad_mask(lengths, xs=None, length_dim=-1, device=None):
     """
     return ~make_pad_mask(lengths, xs, length_dim, device=device)
 
+def dynamic_padding(x, downsample_width=8, downsample_heigth=8):
+    # Get the current height and width of the sample
+    height, width = x.shape[-2], x.shape[-1]
+    
+    # Calculate the padding needed to make height divisible by downsample_factor
+    pad_height = (downsample_heigth - height % downsample_heigth) % downsample_heigth
+    pad_width = (downsample_width - width % downsample_width) % downsample_width
+    # Padding format: (pad_left, pad_right, pad_top, pad_bottom)
+    padded_input = torchfunc.pad(x, (0, pad_width, 0, pad_height))
+    
+    return padded_input
+
+def undo_padding(padded_input, padding):
+    pad_height, pad_width = padding
+    
+    # Slice the padded input to remove the padding
+    # Remove padding from the bottom and right sides
+    original_output = padded_input[:, :padded_input.shape[-2] - pad_height, :padded_input.shape[-1] - pad_width]
+    
+    return original_output
 
 def initialize(model, init):
     """

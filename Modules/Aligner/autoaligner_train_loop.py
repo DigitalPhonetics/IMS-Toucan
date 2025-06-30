@@ -96,7 +96,7 @@ def train_loop(train_dataset,
         previous_checkpoint = os.path.join(save_directory, "aligner.pt")
         path_to_checkpoint = previous_checkpoint
         fine_tune = False
-
+    print("PATH ", path_to_checkpoint)
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         asr_model.load_state_dict(check_dict["asr_model"])

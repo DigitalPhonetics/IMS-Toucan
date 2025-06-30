@@ -7,6 +7,9 @@ import time
 import torch
 import wandb
 
+from Modules.ToucanTTS.ToucanTTS import ToucanTTS
+from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
 
 

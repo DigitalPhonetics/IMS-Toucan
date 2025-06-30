@@ -4,6 +4,10 @@ import soundfile as sf
 import torch
 import wandb
 
+from Modules.Vocoder.HiFiGAN_Dataset import HiFiGANDataset
+from Modules.Vocoder.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
+from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
+from Modules.Vocoder.HiFiGAN_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
 
 

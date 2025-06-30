@@ -2,6 +2,7 @@
 #   Licensed under the MIT license.
 
 # Adapted from https://github.com/jik876/hifi-gan under the MIT license.
+#   LICENSE is in incl_licenses directory.
 
 import torch
 from alias_free_torch import Activation1d
@@ -62,6 +63,10 @@ class BigVGAN(torch.nn.Module):
             self.ups[i].apply(init_weights)
         self.conv_post.apply(init_weights)
 
+        # for Avocodo discriminator
+        self.out_proj_x1 = torch.nn.Conv1d(upsample_initial_channel // 4, 1, 7, 1, padding=3)
+        self.out_proj_x2 = torch.nn.Conv1d(upsample_initial_channel // 8, 1, 7, 1, padding=3)
+
         if weights is not None:
             self.load_state_dict(weights)
 
@@ -81,13 +86,17 @@ class BigVGAN(torch.nn.Module):
                 else:
                     xs += self.resblocks[i * self.num_kernels + j](x)
             x = xs / self.num_kernels
+            if i == 1:
+                x1 = self.out_proj_x1(x)
+            elif i == 2:
+                x2 = self.out_proj_x2(x)
 
         # post conv
         x = self.activation_post(x)
         x = self.conv_post(x)
         x = torch.tanh(x)
 
-        return x
+        return x, x2, x1
 
     def remove_weight_norm(self):
         print('Removing weight norm...')
@@ -119,4 +128,4 @@ def get_padding(kernel_size, dilation=1):
 if __name__ == '__main__':
     vgan = BigVGAN()
     print(f"BigVGAN parameter count: {sum(p.numel() for p in vgan.parameters() if p.requires_grad)}")
-    print(BigVGAN()(torch.randn([1, 128, 100])).shape)
+    print(BigVGAN()(torch.randn([1, 128, 100]))[0].shape)

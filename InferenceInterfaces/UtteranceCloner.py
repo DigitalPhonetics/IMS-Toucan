@@ -4,6 +4,10 @@ import soundfile as sf
 import torch
 from huggingface_hub import hf_hub_download
 
+from Modules.Aligner.Aligner import Aligner
+from Modules.ToucanTTS.DurationCalculator import DurationCalculator
+from Modules.ToucanTTS.EnergyCalculator import EnergyCalculator
+from Modules.ToucanTTS.PitchCalculator import Parselmouth
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Modules.Aligner.Aligner import Aligner
 from Modules.ToucanTTS.DurationCalculator import DurationCalculator
@@ -24,7 +28,7 @@ class UtteranceCloner:
     """
 
     def __init__(self, model_id, device, language="eng"):
-        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
+        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id, architecture="CFM")
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language=language, device=device)
         self.device = device
@@ -150,7 +154,8 @@ class UtteranceCloner:
         self.tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio_for_voice)
         duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(transcription_of_intonation_reference,
                                                                                                  path_to_reference_audio_for_intonation,
-                                                                                                 lang=lang)
+                                                                                                 lang=lang,
+                                                                                                 on_line_fine_tune=False)
         self.tts.set_language(lang)
         start_sil = numpy.zeros([int(silence_frames_start * 1.5)])  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
         end_sil = numpy.zeros([int(silence_frames_end * 1.5)])  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required

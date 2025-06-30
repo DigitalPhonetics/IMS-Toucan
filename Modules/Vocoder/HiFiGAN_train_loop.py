@@ -10,9 +10,17 @@ from tqdm import tqdm
 
 from Modules.Vocoder.AdversarialLoss import discriminator_adv_loss
 from Modules.Vocoder.AdversarialLoss import generator_adv_loss
+from Modules.Vocoder.FeatureMatchingLoss import feature_loss
 from Modules.Vocoder.MelSpecLoss import MelSpectrogramLoss
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
+from Utility.weight_averaging import average_checkpoints
+from Utility.weight_averaging import get_n_recent_checkpoints_paths
+from Utility.weight_averaging import load_net_bigvgan
+
+
+def collate_fn(batch):
+    return torch.stack([x[0] for x in batch]), torch.stack([x[1] for x in batch])
 from Utility.weight_averaging import average_checkpoints
 from Utility.weight_averaging import get_n_recent_checkpoints_paths
 from Utility.weight_averaging import load_net_bigvgan
@@ -32,7 +40,7 @@ def train_loop(generator,
                batch_size=32,
                epochs=100,
                resume=False,
-               generator_steps_per_discriminator_step=1,
+               generator_steps_per_discriminator_step=2,
                generator_warmup=30000,
                use_wandb=False,
                finetune=False
@@ -56,9 +64,12 @@ def train_loop(generator,
                               batch_size=batch_size,
                               shuffle=True,
                               num_workers=16,
+                              num_workers=16,
                               pin_memory=True,
                               drop_last=True,
                               prefetch_factor=2,
+                              persistent_workers=True,
+                              collate_fn=collate_fn)
                               persistent_workers=True,
                               collate_fn=collate_fn)
 
@@ -97,14 +108,17 @@ def train_loop(generator,
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
+            pred_wave = g(melspec)
             if torch.any(torch.isnan(pred_wave)):
                 print("A NaN in the wave! Skipping...")
                 continue
 
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             generator_total_loss = mel_loss * 45.0
+            generator_total_loss = mel_loss * 45.0
 
             if step_counter > generator_warmup + 100:  # a bit of warmup helps, but it's not that important
+                d_outs, d_fmaps = d(wave=pred_wave)
                 d_outs, d_fmaps = d(wave=pred_wave)
                 adversarial_loss = generator_adv_loss(d_outs)
                 adversarial_losses.append(adversarial_loss.item())
@@ -162,6 +176,7 @@ def train_loop(generator,
             g.train()
             delete_old_checkpoints(model_save_dir, keep=5)
 
+            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=model_save_dir, n=1)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=model_save_dir, n=1)
             averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_bigvgan)
             torch.save(averaged_model.state_dict(), os.path.join(model_save_dir, "best.pt"))

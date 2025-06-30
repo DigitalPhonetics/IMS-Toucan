@@ -45,7 +45,7 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, conformer_type, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, lang_emb_size=16, use_output_norm=True, embedding_integration="AdaIN"):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, lang_emb_size=16, use_output_norm=True, embedding_integration="AdaIN", architecture=""):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -67,10 +67,15 @@ class Conformer(torch.nn.Module):
         self.utt_embed = utt_embed
         self.conformer_type = conformer_type
         self.use_conditional_layernorm_embedding_integration = embedding_integration in ["AdaIN", "ConditionalLayerNorm"]
+        if architecture == "DET":
+            self.use_conditional_layernorm_embedding_integration = False
         if utt_embed is not None:
             if conformer_type == "encoder":  # the encoder gets an additional conditioning signal added to its output
                 if embedding_integration == "AdaIN":
-                    self.encoder_embedding_projection = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
+                    if architecture == "DET":
+                        self.encoder_embedding_projection = AdaIN1d(style_dim=16, num_features=attention_dim)
+                    else:
+                        self.encoder_embedding_projection = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
                 elif embedding_integration == "ConditionalLayerNorm":
                     self.encoder_embedding_projection = ConditionalLayerNorm(speaker_embedding_dim=utt_embed, hidden_dim=attention_dim)
                 else:

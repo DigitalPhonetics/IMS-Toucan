@@ -32,21 +32,6 @@ anyone to use.
 
 ## Links 🦚
 
-### Interactive Demo
-
-[Check out our interactive massively-multi-lingual demo on Hugging Face🤗](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS)
-
-### Dataset
-
-[We have also published a massively multilingual TTS dataset on Hugging Face🤗](https://huggingface.co/datasets/Flux9665/BibleMMS)
-
-### Languages
-
-[A list of supported languages can be found here](https://github.com/DigitalPhonetics/IMS-Toucan/blob/MassiveScaleToucan/Utility/language_list.md)
-
---- 
-<br>
-
 ## Installation 🦉
 
 #### Basic Requirements
@@ -159,9 +144,6 @@ An *InferenceInterface* contains two methods to create audio from text. They are
   *view* to
   *True*, a visualization will pop up, that you need to close for the program to continue.
 
-Their use is demonstrated in
-*run_interactive_demo.py* and
-*run_text_to_file_reader.py*.
 
 There are simple scaling parameters to control the duration, the variance of the pitch curve and the variance of the
 energy curve. You can either change them in the code when using the interactive demo or the reader, or you can simply
@@ -173,45 +155,8 @@ To change the language of the model and see which languages are available in our
 --- 
 <br>
 
-## Creating a new Recipe (Training Pipeline) 🐣
-
-In the directory called
-*Utility* there is a file called
-`path_to_transcript_dicts.py`. In this file you should write a function that returns a dictionary that has all the
-absolute paths to each of the audio files in your dataset as strings as the keys and the textual transcriptions of the
-corresponding audios as the values.
-
-Then go to the directory
-*TrainingInterfaces/Recipes*. In there, make a copy of the `finetuning_example_simple.py` file if you just want to
-finetune on a single dataset or `finetuning_example_multilingual.py` if you want to finetune on multiple datasets,
-potentially even multiple languages. We will use this copy
-as reference and only make the necessary changes to use the new dataset. Find the call(s) to the *prepare_tts_corpus*
-function. Replace the path_to_transcript_dict used there with the one(s) you just created. Then change the name of the
-corresponding cache directory to something that makes sense for the dataset.
-Also look out for the variable *save_dir*, which is where the checkpoints will be saved to. This is a default value, you
-can overwrite it when calling
-the pipeline later using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a
-different directory. Finally, change the
-*lang* argument in the creation of the dataset and in the call to the train loop function to the ISO 639-3 language ID
-that
-matches your data.
-
-The arguments that are given to the train loop in the finetuning examples are meant for the case of finetuning from a
-pretrained model. If you want
-to train from scratch, have a look at a different pipeline that has ToucanTTS in its name and look at the arguments
-used there.
-
-Once this is complete, we are almost done, now we just need to make it available to the
-`run_training_pipeline.py` file in the top level. In said file, import the
-*run* function from the pipeline you just created and give it a meaningful name. Now in the
-*pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense.
-
---- 
-<br>
 
 ## Training a Model 🦜
-
-Once you have a recipe built, training is super easy:
 
 ```
 python run_training_pipeline.py <shorthand of the pipeline>
@@ -236,14 +181,6 @@ least a GPU ID).
 --wandb_resume_id <the id of the run you want to resume, if you are using weights&biases (you can find the id in the URL of the run)>
 ```
 
-For multi-GPU training, you have to supply multiple GPU ids (comma separated) and start the script with torchrun. You
-also have to specify the number of GPUs. This has to match the number of IDs that you supply. Careful: torchrun is
-incompatible with nohup! Use tmux instead to keep the script running after you log out of the shell.
-
-```
-torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py <shorthand of the pipeline> --gpu_id "0,1,2,3"
-```
-
 After every epoch (or alternatively after certain step counts), some logs will be written to the console and to the
 Weights and Biases website, if you are logged in and set the flag. If you get cuda out of memory errors, you need to
 decrease
@@ -265,36 +202,53 @@ fuser -v /dev/nvidia*
 Whenever a checkpoint is saved, a compressed version that can be used for inference is also created, which is named
 _best.py_
 
---- 
-<br>
+### Configuring the Prosody Modeling
+You can customize key parameters for the probabilistic prosody model directly in the `ToucanTTS_Prosody.py` file:
 
-## FAQ 🐓
+```
+# Prosody model configuration
+order = "ped"  # Order of prosodic features: pitch, energy, duration. Options: "ped", "epd", or "all"
+prosody_channels = 8  # Number of channels for the prosody predictor
+predictor_layers = 3  # Number of layers in the prosody predictor
+predictor_kernel_size = 5  # Kernel size for convolutional layers
+predictor_dropout_rate = 0.2  # Dropout rate within the predictor
+architecture = "CFM"  # Architecture type: "CFM", "NF", "RF" or "DET"
+start_reflow = 91000  # Step count to start reflow; if set higher than current step count, reflow is skipped
+dropout = False  # Apply dropout in the model
+log = False  # Enable logging within this component
+```
+Modify these values to experiment with different architectures.
 
-Here are a few points that were brought up by users:
+---
 
-- How can I figure out if my data has outliers or similar problems? -- There is a scorer that can find and even remove
-  samples from your dataset cache that have extraordinarily high loss values, have a look at `run_scorer.py`.
-- My error message shows GPU0, even though I specified a different GPU -- The way GPU selection works is that the
-  specified GPU is set as the only visible device, in order to avoid backend stuff running accidentally on different
-  GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. It is actually
-  running on the GPU you specified.
-- read_to_file produces strange outputs -- Check if you're passing a list to the method or a string. Since strings can
-  be
-  iterated over, it might not throw an error, but a list of strings is expected.
-- `UserWarning: Detected call of lr_scheduler.step() before optimizer.step().` -- We use a custom scheduler, and torch
-  incorrectly thinks that we call the scheduler and the optimizer in the wrong order. Just ignore this warning, it is
-  completely meaningless.
-- `WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. [...]` -- Another meaningless warning. We actually don't
-  use xFormers ourselves, it is just part of the dependencies of one of our dependencies, but it is not used at any
-  place.
-- `The torchaudio backend is switched to 'soundfile'. Note that 'sox_io' is not supported on Windows. [...]` -- Just
-  happens under Windows and doesn't affect anything.
-- `WARNING:phonemizer:words count mismatch on 200.0% of the lines (2/1) [...]` -- We have no idea why espeak started
-  giving out this warning, however it doesn't seem to affect anything, so it seems safe to ignore.
-- Loss turns to `NaN` -- The default learning rates work on clean data. If your data is less clean, try using the scorer
-  to find problematic samples, or reduce the learning rate. The most common problem is there being pauses in the speech,
-  but nothing that hints at them in the text. That's why ASR corpora, which leave out punctuation, are usually difficult
-  to use for TTS.
+## Evaluation 🐤
+To run evaluation on a trained model, use the following command:
+
+```
+python run_evaluation.py
+```
+You can supply any of the following arguments to customize the evaluation process:
+
+```
+--model_dir <Path to the parent directory of all models to evaluate. This should contain the checkpoints and metadata.>
+
+--version <Identifier for the run, useful for distinguishing between different evaluation sets or experiments.>
+
+--gpu_id <Which GPU(s) to use, e.g. 0 or 0,1. If not specified or set to "cpu", evaluation will run on CPU (which is generally only suitable for quick tests or debugging).>
+
+--wandb (if this is present, the results will be tracked on your Weights & Biases account. Make sure you're logged in with `wandb login` beforehand.)
+
+--multi_speaker (if this is present, evaluation will account for multiple speaker identities — useful if your model was trained with multiple voices.)
+```
+
+Typical usage looks like this:
+
+```
+python run_eval.py --model_dir ./checkpoints/my_model --version eval_v1 --gpu_id 0 --wandb
+```
+
+If --wandb is used, the results will be logged to your Weights & Biases dashboard.
+
 
 --- 
 <br>

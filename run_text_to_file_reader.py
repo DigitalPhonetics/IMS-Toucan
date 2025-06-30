@@ -1,18 +1,19 @@
 import os
+import sys
 
 import torch
 
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 
-def read_texts(sentence, filename, model_id=None, device="cpu", language="eng", speaker_reference=None, duration_scaling_factor=1.0):
-    tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
+def read_texts(model_id, sentence, filename, device="cpu", language="eng", speaker_reference=None, duration_scaling_factor=1.0, architecture="CFM", prosody_creativity=1.0):
+    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, architecture=architecture)
     tts.set_language(language)
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
     if type(sentence) == str:
         sentence = [sentence]
-    tts.read_to_file(text_list=sentence, file_location=filename, duration_scaling_factor=duration_scaling_factor, prosody_creativity=0.0)
+    tts.read_to_file(text_list=sentence, file_location=filename, duration_scaling_factor=duration_scaling_factor,prosody_creativity=prosody_creativity)
     del tts
 
 
@@ -86,42 +87,86 @@ def vietnamese_test(version, model_id=None, exec_device="cpu", speaker_reference
                filename=f"audios/{model_id}_vietnamese_test_{version}.wav",
                device=exec_device,
                language="vie",
-               speaker_reference=speaker_reference)
+               speaker_reference=speaker_reference,
+               duration_scaling_factor=1.2)
 
-
-def french_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
+def create_multiple(version, sentence, model_id="Meta", exec_device="cpu", speaker_reference=None, architecture="CFM", prosody_creativity=1.0):
     os.makedirs("audios", exist_ok=True)
-
+    # ["In restless dreams I walked alone, Narrow streets of cobblestone. Beneath the halo of a streetlamp, I turned my collar to the cold and damp,  When my eyes were stabbed, by the flash of a neon light, That split the night. And touched the sound, of silence."],
+    file_name = f"audios/{version}_example.wav"
+    os.makedirs(os.path.dirname(file_name), exist_ok=True)          
     read_texts(model_id=model_id,
-               sentence=["""Maître corbeau, sur un arbre perché,
-                            Tenait en son bec un fromage.
-                            Maître renard par l'odeur alléché ,
-                            Lui tint à peu près ce langage :
-                            «Et bonjour Monsieur du Corbeau.
-                            Que vous êtes joli! que vous me semblez beau!"""],
-               filename=f"audios/{model_id}_french_test_{version}.wav",
+               sentence=sentence,
+               filename=file_name,
                device=exec_device,
-               language="fra",
-               speaker_reference=speaker_reference)
-
-
-def all_test(version, model_id=None, exec_device="cpu", speaker_reference=None):
-    english_test(version, model_id, exec_device, speaker_reference)
-    german_test(version, model_id, exec_device, speaker_reference)
-    french_test(version, model_id, exec_device, speaker_reference)
-    vietnamese_test(version, model_id, exec_device, speaker_reference)
-    japanese_test(version, model_id, exec_device, speaker_reference)
-    chinese_test(version, model_id, exec_device, speaker_reference)
+               language="eng",
+               speaker_reference=speaker_reference,
+               architecture=architecture,
+               duration_scaling_factor=1.1,
+               prosody_creativity=prosody_creativity)
 
 
 if __name__ == '__main__':
-    exec_device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"running on {exec_device}")
+    gpu_id = 7
+    torch.cuda.set_device(gpu_id)
+    device = torch.device(f"cuda:{gpu_id}" if torch.cuda.is_available() else "cpu")
+    # merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
+    """
+    sound_of_silence_single_utt(version="CFM_PED",
+                                model_id="Libri_Prosody/CFM/pitch_energy_duration",
+                                exec_device=exec_device)
 
-    os.makedirs("audios/speaker_references/", exist_ok=True)
-    merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
+    die_glocke(version="CFM_PED",
+               model_id="Libri_Prosody/CFM/pitch_energy_duration",
+               exec_device=exec_device)
 
-    all_test(version="version_11",
-             model_id=None,  # will use the default
-             exec_device=exec_device,
-             speaker_reference=merged_speaker_references if merged_speaker_references != [] else None)
+    the_raven(version="CFM_PED",
+              model_id="Libri_Prosody/CFM/pitch_energy_duration",
+              exec_device=exec_device)
+    """
+    models = ["DET"]
+    temps = [0.4]
+
+    for model in models:
+        for temp in temps:
+            if model == "DET":
+                samples = 1
+            else:
+                samples = 1
+            for sample in range(samples):
+                if model == "DET":
+                    model_id ="studyDET_epd_c8_l6_k5_d0.2"
+                if model == "CFM":
+                    model_id ="epd_c8" 
+                if model == "NF":
+                    model_id = "studyNF_epd_c8_l6_k5_d0.2"
+                if model == "RF":
+                    model_id = "epd_c8_reflow2"
+                    
+                #sentences = ["Galleries are free on thursdays,",
+                #              "Jessie dunked the basketball in the hoop,"]
+                sentences = []
+                
+                model_id = f"{model}/{model_id}"
+                for i, sentence in enumerate(sentences):
+
+                    create_multiple(version=f"StudyCompletedet/{model}-speaker1-sentence{i}-temp{temp}_{sample}",
+                            sentence=sentence,
+                            model_id=model_id,
+                            exec_device=device,
+                            architecture=model,
+                            speaker_reference="audios/Study/Human/male.wav",
+                            prosody_creativity=temp)
+                sentences=["Builders put scaffolding around the windows,",
+                           "Michael drinks his tea with milk."]
+                sentences=["Michael drinks his tea with milk."]
+                for i, sentence in enumerate(sentences):
+                    create_multiple(version=f"StudyCompletedet/{model}-speaker2-sentence{i}-temp{temp}_{sample}",
+                            sentence=sentence,
+                            model_id=model_id,
+                            exec_device=device,
+                            architecture=model,
+                            speaker_reference="audios/Study/Human/female.wav",
+                            prosody_creativity=temp)
+
+                    

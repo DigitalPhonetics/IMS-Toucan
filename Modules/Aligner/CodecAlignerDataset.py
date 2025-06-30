@@ -170,6 +170,7 @@ class CodecAlignerDataset(Dataset):
                                device,
                                phone_input,
                                allow_unknown_symbols):
+        torch.use_deterministic_algorithms(False)
         process_internal_dataset_chunk = list()
         torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
         # careful: assumes 16kHz or 8kHz audio
@@ -185,6 +186,8 @@ class CodecAlignerDataset(Dataset):
          collect_chunks) = utils
         torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
         # this to false globally during model loading rather than using inference mode or no_grad
+        
+        
         silero_model = silero_model.to(device)
         silence = torch.zeros([16000 // 8]).to(device)
         tf = ArticulatoryCombinedTextFrontend(language=lang, device=device)
@@ -206,13 +209,11 @@ class CodecAlignerDataset(Dataset):
                 if len(wave[0]) == 2:  # let's figure out whether we need to switch the axes
                     wave = wave.transpose()  # if yes, we switch the axes.
             wave = librosa.to_mono(wave)
-
             if sr != assumed_sr:
                 assumed_sr = sr
                 ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
                 resample = Resample(orig_freq=assumed_sr, new_freq=16000).to(device)
                 print(f"{path} has a different sampling rate --> adapting the codec processor")
-
             try:
                 norm_wave = resample(torch.tensor(wave).float().to(device))
             except ValueError:
@@ -223,6 +224,7 @@ class CodecAlignerDataset(Dataset):
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             with torch.inference_mode():
+                
                 speech_timestamps = get_speech_timestamps(norm_wave, silero_model, sampling_rate=16000)
             try:
                 silence_timestamps = invert_segments(speech_timestamps, len(norm_wave))
@@ -252,7 +254,7 @@ class CodecAlignerDataset(Dataset):
             except KeyError:
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
-
+            
             cached_speech = ap.audio_to_codebook_indexes(audio=norm_wave, current_sampling_rate=16000).transpose(0, 1).cpu().numpy()
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_speech,

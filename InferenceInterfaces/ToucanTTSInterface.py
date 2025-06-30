@@ -12,6 +12,8 @@ from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
 from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Modules.ToucanTTS.InferenceToucanTTS_nf import ToucanTTS_nf
+from Modules.Toucan_det.InferenceToucanTTS import ToucanTTS as ToucanTTS_det
 from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
@@ -28,6 +30,7 @@ class ToucanTTSInterface(torch.nn.Module):
                  tts_model_path=None,  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=None,  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
+                 architecture = "CFM"
                  ):
         super().__init__()
         self.device = device
@@ -35,10 +38,10 @@ class ToucanTTSInterface(torch.nn.Module):
             tts_model_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt")
         elif not tts_model_path.endswith(".pt"):
             # default to shorthand system
-            tts_model_path = os.path.join(MODEL_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
+            tts_model_path = os.path.join(MODEL_DIR, f"{tts_model_path}", "best.pt")
         if vocoder_model_path is None:
             vocoder_model_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="Vocoder.pt")
-
+        
         ################################
         #   build text to phone        #
         ################################
@@ -48,7 +51,15 @@ class ToucanTTSInterface(torch.nn.Module):
         #   load phone to features model    #
         #####################################
         checkpoint = torch.load(tts_model_path, map_location='cpu')
-        self.phone2mel = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])
+        if architecture == "CFM":
+            self.phone2mel = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])
+        elif architecture == "NF":
+            self.phone2mel = ToucanTTS_nf(weights=checkpoint["model"], config=checkpoint["config"])
+        elif architecture == "DET":
+            self.phone2mel = ToucanTTS_det(weights=checkpoint["model"], config=checkpoint["config"])
+        elif architecture == "RF":
+            self.phone2mel = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"], reflow=True)
+        
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -147,9 +158,8 @@ class ToucanTTSInterface(torch.nn.Module):
                 energy=None,
                 input_is_phones=False,
                 return_plot_as_filepath=False,
-                loudness_in_db=-29.0,
-                prosody_creativity=0.1,
-                return_everything=False):
+                loudness_in_db=-24.0,
+                prosody_creativity=0.7):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -177,6 +187,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                                            prosody_creativity=prosody_creativity)
 
             wave = self.vocoder(mel.unsqueeze(0))
+            wave = self.vocoder(mel.unsqueeze(0))
             wave = wave.squeeze().cpu()
         wave = wave.numpy()
         sr = 24000
@@ -188,54 +199,17 @@ class ToucanTTSInterface(torch.nn.Module):
             pass
 
         if view or return_plot_as_filepath:
-            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 5))
+            fig = plt.figure(figsize=(9, 5))
 
-            ax.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
-            ax.yaxis.set_visible(False)
-            duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-            ax.xaxis.grid(True, which='minor')
-            ax.set_xticks(label_positions, minor=False)
-            if input_is_phones:
-                phones = text.replace(" ", "|")
-            else:
-                phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
-            try:
-                ax.set_xticklabels(phones)
-            except IndexError:
-                pass
-            except ValueError:
-                pass
-            word_boundaries = list()
-            for label_index, phone in enumerate(phones):
-                if phone == "|":
-                    word_boundaries.append(label_positions[label_index])
-
-            try:
-                prev_word_boundary = 0
-                word_label_positions = list()
-                for word_boundary in word_boundaries:
-                    word_label_positions.append((word_boundary + prev_word_boundary) / 2)
-                    prev_word_boundary = word_boundary
-                word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
-
-                secondary_ax = ax.secondary_xaxis('bottom')
-                secondary_ax.tick_params(axis="x", direction="out", pad=24)
-                secondary_ax.set_xticks(word_label_positions, minor=False)
-                secondary_ax.set_xticklabels(text.split())
-                secondary_ax.tick_params(axis='x', colors='orange')
-                secondary_ax.xaxis.label.set_color('orange')
-            except ValueError:
-                ax.set_title(text)
-            except IndexError:
-                ax.set_title(text)
-
-            ax.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=120, linewidth=0.5)
-            ax.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=120, linewidth=1.0)
-            plt.subplots_adjust(left=0.02, bottom=0.2, right=0.98, top=.9, wspace=0.0, hspace=0.0)
+            plt.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
+            ax = plt.gca()
             ax.set_aspect("auto")
+            # Completely remove axes and borders
+            plt.axis('off')  # Removes axes, ticks, and spines
+            plt.margins(0)   # Ensures no extra margins
 
             if return_plot_as_filepath:
-                plt.savefig("tmp.png")
+                plt.savefig("audios/spectogram.svg", bbox_inches='tight', pad_inches=0, transparent=True, format="svg")
                 plt.close()
                 return wave, sr, "tmp.png"
         if return_everything:
@@ -253,7 +227,7 @@ class ToucanTTSInterface(torch.nn.Module):
                      dur_list=None,
                      pitch_list=None,
                      energy_list=None,
-                     prosody_creativity=0.1):
+                     prosody_creativity=0.7):
         """
         Args:
             silent: Whether to be verbose about the process
@@ -291,7 +265,7 @@ class ToucanTTSInterface(torch.nn.Module):
             if text.strip() != "":
                 if not silent:
                     print("Now synthesizing: {}".format(text))
-                spoken_sentence, sr = self(text,
+                spoken_sentence, sr, _ = self(text,
                                            durations=durations.to(self.device) if durations is not None else None,
                                            pitch=pitch.to(self.device) if pitch is not None else None,
                                            energy=energy.to(self.device) if energy is not None else None,
@@ -299,7 +273,9 @@ class ToucanTTSInterface(torch.nn.Module):
                                            pitch_variance_scale=pitch_variance_scale,
                                            energy_variance_scale=energy_variance_scale,
                                            pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                           prosody_creativity=prosody_creativity)
+                                           prosody_creativity=prosody_creativity,
+                                           return_plot_as_filepath = True
+                                        )
                 spoken_sentence = torch.tensor(spoken_sentence).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
         soundfile.write(file=file_location, data=float2pcm(wav), samplerate=sr, subtype="PCM_16")
@@ -311,7 +287,7 @@ class ToucanTTSInterface(torch.nn.Module):
                    pitch_variance_scale=1.0,
                    energy_variance_scale=1.0,
                    blocking=False,
-                   prosody_creativity=0.1):
+                   prosody_creativity=0.7):
         if text.strip() == "":
             return
         wav, sr = self(text,
@@ -327,3 +303,52 @@ class ToucanTTSInterface(torch.nn.Module):
             plt.show()
         if blocking:
             sounddevice.wait()
+
+    def get_wave(self,
+                   text,
+                   view=False,
+                   duration_scaling_factor=1.0,
+                   pitch_variance_scale=1.0,
+                   energy_variance_scale=1.0,
+                   blocking=False,
+                   prosody_creativity=0.7):
+        if text.strip() == "":
+            return
+        wav, sr = self(text,
+                       view,
+                       duration_scaling_factor=duration_scaling_factor,
+                       pitch_variance_scale=pitch_variance_scale,
+                       energy_variance_scale=energy_variance_scale,
+                       prosody_creativity=prosody_creativity)
+        silence = torch.zeros([sr // 2])
+        wav = torch.cat((silence, torch.tensor(wav), silence), 0).numpy()
+        return wav, sr
+
+    def get_prosody_values(self,
+                text,
+                duration_scaling_factor=1.0,
+                pitch_variance_scale=1.0,
+                energy_variance_scale=1.0,
+                pause_duration_scaling_factor=1.0,
+                durations=None,
+                pitch=None,
+                energy=None,
+                input_is_phones=False,
+                prosody_creativity=0.7):
+        if text.strip() == "":
+            return
+        with torch.inference_mode():
+            phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
+            _ , durations, pitch, energy = self.phone2mel(phones,
+                                                           return_duration_pitch_energy=True,
+                                                           utterance_embedding=self.default_utterance_embedding,
+                                                           durations=durations,
+                                                           pitch=pitch,
+                                                           energy=energy,
+                                                           lang_id=self.lang_id,
+                                                           duration_scaling_factor=duration_scaling_factor,
+                                                           pitch_variance_scale=pitch_variance_scale,
+                                                           energy_variance_scale=energy_variance_scale,
+                                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                                           prosody_creativity=prosody_creativity)
+            return self.text2phone.get_phone_string(text, for_plot_labels=True), durations, pitch, energy

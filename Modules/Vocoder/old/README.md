@@ -1,0 +1,1 @@
+This directory contains the code needed to train a HiFiGAN vocoder on the spectrogram representation that we use.

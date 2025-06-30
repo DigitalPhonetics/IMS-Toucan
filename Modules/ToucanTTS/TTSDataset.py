@@ -97,6 +97,7 @@ class TTSDataset(Dataset):
         # we use the aligner dataset as basis and augment it to contain the additional information we need for tts.
         self.dataset, _, speaker_embeddings, filepaths = datapoints
 
+
         print("... building dataset cache ...")
         self.codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
         self.spec_extractor_for_features = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
@@ -210,15 +211,16 @@ class TTSDataset(Dataset):
 
     def __getitem__(self, index):
         return self.datapoints[index][0], \
-            self.datapoints[index][1], \
-            self.datapoints[index][2], \
-            self.datapoints[index][3], \
-            self.datapoints[index][4], \
-            self.datapoints[index][5], \
-            self.datapoints[index][6], \
-            None, \
-            self.language_id, \
-            self.datapoints[index][7]
+               self.datapoints[index][1], \
+               self.datapoints[index][2], \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               None, \
+               self.language_id, \
+               self.datapoints[index][7], \
+               self.datapoints[index][8]
 
     def __len__(self):
         return len(self.datapoints)

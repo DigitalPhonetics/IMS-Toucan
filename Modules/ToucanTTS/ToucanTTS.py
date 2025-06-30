@@ -3,13 +3,18 @@ import torch.nn.functional as torchfunc
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
+from copy import deepcopy
 
+from Modules.GeneralLayers.ConditionalLayerNorm import AdaIN1d
+from Modules.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Modules.GeneralLayers.Conformer import Conformer
+from Modules.GeneralLayers.LayerNorm import LayerNorm
 from Modules.GeneralLayers.LengthRegulator import LengthRegulator
 from Modules.ToucanTTS.StochasticToucanTTSLoss import StochasticToucanTTSLoss
 from Modules.ToucanTTS.flow_matching import CFMDecoder
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import initialize
+from Utility.utils import integrate_with_utt_embed
 from Utility.utils import make_non_pad_mask
 
 
@@ -18,11 +23,12 @@ class ToucanTTS(torch.nn.Module):
     ToucanTTS module, which is based on a FastSpeech 2 module,
     but with lots of designs from different architectures accumulated
     and some major components added to put a large focus on
-    multilinguality and controllability.
+    multilinguality and controllability
 
     Contributions inspired from elsewhere:
     - The Decoder is a flow matching network, like in Matcha-TTS and StableTTS
     - Pitch and energy values are averaged per-phone, as in FastPitch to enable great controllability
+    - Pitch, energy and duration are predicted with a probabilistic model, like in VarianceFlow, but with a CFM
     - The encoder and decoder are Conformers, like in ESPnet
 
     """
@@ -59,6 +65,11 @@ class ToucanTTS(torch.nn.Module):
                  transformer_dec_positional_dropout_rate=0.1,
                  transformer_dec_attn_dropout_rate=0.1,
 
+                 duration_log_scale = True,
+                 dropout = True,
+                 # order of pitch, energy, duration
+                 prosody_order="ped",
+                
                  # duration predictor
                  prosody_channels=8,
                  duration_predictor_layers=3,
@@ -80,7 +91,7 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # cfm decoder
-                 cfm_filter_channels=256,
+                 cfm_filter_channels=512,
                  cfm_heads=4,
                  cfm_layers=3,
                  cfm_kernel_size=5,
@@ -89,8 +100,8 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
-                 lang_emb_size=32,  # lower dimensions seem to work better
-                 integrate_language_embedding_into_encoder_out=True,
+                 lang_emb_size=16,  # lower dimensions seem to work better
+                 integrate_language_embedding_into_encoder_out=False,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
         super().__init__()
@@ -120,6 +131,9 @@ class ToucanTTS(torch.nn.Module):
             "transformer_dec_dropout_rate"                 : transformer_dec_dropout_rate,
             "transformer_dec_positional_dropout_rate"      : transformer_dec_positional_dropout_rate,
             "transformer_dec_attn_dropout_rate"            : transformer_dec_attn_dropout_rate,
+            "duration_log_scale"                           : duration_log_scale,
+            "prosody_order"                                : prosody_order,
+            "dropout"                                      : dropout,                 
             "duration_predictor_layers"                    : duration_predictor_layers,
             "duration_predictor_kernel_size"               : duration_predictor_kernel_size,
             "duration_predictor_dropout_rate"              : duration_predictor_dropout_rate,
@@ -147,12 +161,7 @@ class ToucanTTS(torch.nn.Module):
             "integrate_language_embedding_into_encoder_out": integrate_language_embedding_into_encoder_out
         }
 
-        if lang_embs is None or lang_embs == 0:
-            lang_embs = None
-            integrate_language_embedding_into_encoder_out = False
-        if integrate_language_embedding_into_encoder_out:
-            utt_embed_dim = utt_embed_dim + lang_emb_size
-
+        self.reflow = False
         self.input_feature_dimensions = input_feature_dimensions
         self.attention_dimension = attention_dimension
         self.use_scaled_pos_enc = use_scaled_positional_encoding
@@ -184,15 +193,25 @@ class ToucanTTS(torch.nn.Module):
                                  use_output_norm=True,
                                  embedding_integration=embedding_integration)
 
+        if self.integrate_language_embedding_into_encoder_out:
+            self.language_embedding_projection = torch.nn.Linear(lang_emb_size, attention_dimension)
+            self.language_emb_norm = LayerNorm(attention_dimension)
+            if embedding_integration == "AdaIN":
+                self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
+            elif embedding_integration == "ConditionalLayerNorm":
+                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
+            else:
+                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
+
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
-                                                      out_channels=attention_dimension,
-                                                      kernel_size=pitch_embed_kernel_size,
-                                                      padding=(pitch_embed_kernel_size - 1) // 2),
-                                      torch.nn.Dropout(pitch_embed_dropout))
+                                                    out_channels=attention_dimension,
+                                                    kernel_size=pitch_embed_kernel_size,
+                                                    padding=(pitch_embed_kernel_size - 1) // 2),
+                                    torch.nn.Dropout(pitch_embed_dropout))
 
         self.energy_embed = Sequential(torch.nn.Conv1d(in_channels=1, out_channels=attention_dimension, kernel_size=energy_embed_kernel_size,
-                                                       padding=(energy_embed_kernel_size - 1) // 2),
-                                       torch.nn.Dropout(energy_embed_dropout))
+                                                    padding=(energy_embed_kernel_size - 1) // 2),
+                                    torch.nn.Dropout(energy_embed_dropout))
 
         self.length_regulator = LengthRegulator()
 
@@ -216,54 +235,74 @@ class ToucanTTS(torch.nn.Module):
                                  embedding_integration=embedding_integration)
 
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
-        self.pitch_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
-        self.energy_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
-        self.duration_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
+        self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
+        if prosody_order != "all":
+            self.pitch_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
+            self.energy_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
+            self.duration_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
+        else:
+            self.prosody_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type)
         if lang_embs is not None:
             torch.nn.init.normal_(self.encoder.language_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
+
+        self.duration_log_scale = duration_log_scale
+        self.prosody_order = prosody_order
+        self.dropout = dropout
+
         # the following modules have their own init function, so they come AFTER the init.
-
-        self.duration_predictor = CFMDecoder(hidden_channels=prosody_channels,
-                                             out_channels=1,
-                                             filter_channels=prosody_channels,
-                                             n_heads=1,
-                                             n_layers=duration_predictor_layers,
-                                             kernel_size=duration_predictor_kernel_size,
-                                             p_dropout=duration_predictor_dropout_rate,
-                                             gin_channels=utt_embed_dim)
-
-        self.pitch_predictor = CFMDecoder(hidden_channels=prosody_channels,
-                                          out_channels=1,
-                                          filter_channels=prosody_channels,
-                                          n_heads=1,
-                                          n_layers=pitch_predictor_layers,
-                                          kernel_size=pitch_predictor_kernel_size,
-                                          p_dropout=pitch_predictor_dropout,
-                                          gin_channels=utt_embed_dim)
-
-        self.energy_predictor = CFMDecoder(hidden_channels=prosody_channels,
-                                           out_channels=1,
-                                           filter_channels=prosody_channels,
-                                           n_heads=1,
-                                           n_layers=energy_predictor_layers,
-                                           kernel_size=energy_predictor_kernel_size,
-                                           p_dropout=energy_predictor_dropout,
-                                           gin_channels=utt_embed_dim)
-
-        self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels,
-                                                out_channels=spec_channels,
-                                                filter_channels=cfm_filter_channels,
-                                                n_heads=cfm_heads,
-                                                n_layers=cfm_layers,
-                                                kernel_size=cfm_kernel_size,
-                                                p_dropout=cfm_p_dropout,
+        # predict pitch, energy and duration all together
+        if prosody_order != "all":
+            self.duration_predictor = CFMDecoder(hidden_channels=prosody_channels,
+                                                out_channels=1,
+                                                filter_channels=prosody_channels,
+                                                n_heads=1,
+                                                n_layers=duration_predictor_layers,
+                                                kernel_size=duration_predictor_kernel_size,
+                                                p_dropout=duration_predictor_dropout_rate,
                                                 gin_channels=utt_embed_dim)
 
+            self.pitch_predictor = CFMDecoder(hidden_channels=prosody_channels,
+                                            out_channels=1,
+                                            filter_channels=prosody_channels,
+                                            n_heads=1,
+                                            n_layers=pitch_predictor_layers,
+                                            kernel_size=pitch_predictor_kernel_size,
+                                            p_dropout=pitch_predictor_dropout,
+                                            gin_channels=utt_embed_dim)
+
+            self.energy_predictor = CFMDecoder(hidden_channels=prosody_channels,
+                                            out_channels=1,
+                                            filter_channels=prosody_channels,
+                                            n_heads=1,
+                                            n_layers=2,#energy_predictor_layers,
+                                            kernel_size=3,#energy_predictor_kernel_size,
+                                            p_dropout=energy_predictor_dropout,
+                                            gin_channels=utt_embed_dim)
+        else:
+            self.prosody_predictor = CFMDecoder(hidden_channels=prosody_channels,
+                                            out_channels=4,
+                                            filter_channels=prosody_channels,
+                                            n_heads=1,
+                                            n_layers=8,
+                                            kernel_size=5,
+                                            p_dropout=0.2,
+                                            gin_channels=utt_embed_dim)
+            
+        self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels, # 128
+                                                out_channels=spec_channels, # 128
+                                                filter_channels=cfm_filter_channels, # 512
+                                                n_heads=cfm_heads, # 4
+                                                n_layers=cfm_layers, # 4
+                                                kernel_size=cfm_kernel_size, # 5
+                                                p_dropout=cfm_p_dropout, # 0.1
+                                                gin_channels=utt_embed_dim)
+        
         self.criterion = StochasticToucanTTSLoss()
+
 
     def forward(self,
                 text_tensors,
@@ -313,9 +352,15 @@ class ToucanTTS(torch.nn.Module):
                                          gold_features=gold_speech,
                                          features_lengths=speech_lengths)
 
-        if return_feats:
-            return regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss, outs
-        return regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss
+        if pitch_loss != None: # if pitch is None only duration loss is whole prosody loss
+            if return_feats:
+                return regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss, outs
+            return regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss
+        else:    
+            if return_feats:
+                return regression_loss, stochastic_loss, duration_loss, outs
+            return regression_loss, stochastic_loss, duration_loss
+
 
     def _forward(self,
                  text_tensors,
@@ -333,38 +378,89 @@ class ToucanTTS(torch.nn.Module):
         text_tensors = torch.clamp(text_tensors, max=1.0)
         # this is necessary, because of the way we represent modifiers to keep them identifiable.
 
+        utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
+
         if not self.multilingual_model:
             lang_ids = None
 
         if not self.multispeaker_model:
             utterance_embedding = None
 
-        if utterance_embedding is not None:
-            utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
-            if self.integrate_language_embedding_into_encoder_out and lang_ids is not None:
-                lang_embs = self.encoder.language_embedding(lang_ids)
-                lang_embs = torch.nn.functional.normalize(lang_embs)
-                utterance_embedding = torch.cat([lang_embs, utterance_embedding], dim=1).detach()
-
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
+        if self.integrate_language_embedding_into_encoder_out:
+            lang_embs = self.encoder.language_embedding(lang_ids)
+            lang_embs = self.language_embedding_projection(lang_embs)
+            lang_embs = self.language_emb_norm(lang_embs)
+            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
+
+        
         if is_inference:
             # predicting pitch, energy and durations
-            reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
-            pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
-            embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
+            if self.prosody_order != "all":
+                input_energy = encoded_texts
 
-            reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.1).transpose(1, 2)
-            energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
-            embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
+                if self.prosody_order=="ped": 
+                    # pitch
+                    reduced_pitch_space = self.pitch_latent_reduction(encoded_texts)
+                    if self.dropout:
+                        reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
+                    reduced_pitch_space = reduced_pitch_space.transpose(1, 2)
+                    
+                    pitch_predictions, _ = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
+                    embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
+                    input_energy= encoded_texts + embedded_pitch_curve
 
-            reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.1).transpose(1, 2)
-            predicted_durations = self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
-            predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
+                # energy
+                reduced_energy_space = self.energy_latent_reduction(input_energy)
+                if self.dropout:
+                    reduced_energy_space = torchfunc.dropout(reduced_energy_space, p=0.1)
+                reduced_energy_space = reduced_energy_space.transpose(1, 2)
+                
+                energy_predictions, _ = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
+                embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
-            # modifying the predictions
+                if self.prosody_order=="epd":
+                    # pitch
+                    reduced_pitch_space = self.pitch_latent_reduction(encoded_texts + embedded_energy_curve)
+                    if self.dropout:
+                        reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
+                    reduced_pitch_space = reduced_pitch_space.transpose(1, 2)
+                    pitch_predictions, _ = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
+                    embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
+
+                # energy
+                reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)
+                if self.dropout:
+                    reduced_duration_space = torchfunc.dropout(reduced_duration_space, p=0.1)
+                reduced_duration_space = reduced_duration_space.transpose(1, 2)
+                predicted_durations, _ = self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
+                   
+            else:      
+                # all together      
+                reduced_prosody_space = self.prosody_latent_reduction(encoded_texts)
+                if self.dropout:
+                    reduced_prosody_space = torchfunc.dropout(reduced_prosody_space, p=0.1)
+                reduced_prosody_space = reduced_prosody_space.transpose(1, 2)
+                predicted_prosody = self.prosody_predictor(mu=reduced_prosody_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
+                
+                predicted_durations = predicted_prosody[:, 0:1, :]
+                pitch_predictions = predicted_prosody[:, 1:2, :]
+                embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
+                energy_predictions = predicted_prosody[:, 2:3, :]
+                embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
+
+            # convert from log
+            if self.duration_log_scale:
+                predicted_durations = torch.clamp(predicted_durations, min=0.0).squeeze(1)
+                predicted_durations = torch.exp(predicted_durations) - 1
+                predicted_durations = predicted_durations.int()
+            else:
+                predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
+
+
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                     predicted_durations[0][phoneme_index] = 0
@@ -377,43 +473,137 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
-            pitch_loss, _ = self.pitch_predictor.compute_loss(mu=reduced_pitch_space,
-                                                              x1=gold_pitch.transpose(1, 2),
-                                                              mask=text_masks.float(),
-                                                              c=utterance_embedding)
-            embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+            if self.duration_log_scale:
+                shifted_gold = gold_durations + 1
+                transformed_gold_durations = torch.log(shifted_gold)
+                transformed_gold_durations = transformed_gold_durations.unsqueeze(-1).transpose(1, 2)
+            else:
+                transformed_gold_durations = gold_durations.unsqueeze(-1).transpose(1, 2).float()
 
-            reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.1).transpose(1, 2)
-            energy_loss, _ = self.energy_predictor.compute_loss(mu=reduced_energy_space,
-                                                                x1=gold_energy.transpose(1, 2),
-                                                                mask=text_masks.float(),
-                                                                c=utterance_embedding)
-            embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-
-            reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.1).transpose(1, 2)
-            duration_loss, _ = self.duration_predictor.compute_loss(mu=reduced_duration_space,
-                                                                    x1=gold_durations.unsqueeze(-1).transpose(1, 2).float(),
+            # predict pitch, energy and duration and compute loss
+            if self.prosody_order != "all":
+                input_energy = encoded_texts
+                if self.prosody_order == "ped":
+                    # pitch
+                    reduced_pitch_space = self.pitch_latent_reduction(encoded_texts)
+                    if self.dropout:
+                        reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
+                    reduced_pitch_space = reduced_pitch_space.transpose(1, 2)
+                    if self.reflow:
+                        # use frozen to get samples
+                        x1, x0 = self.frozen_pitch_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
+                    else:
+                        x1=gold_pitch.transpose(1, 2)
+                        x0 = None
+                    pitch_loss, _ = self.pitch_predictor.compute_loss(mu=reduced_pitch_space,
+                                                                    x1=x1,
                                                                     mask=text_masks.float(),
-                                                                    c=utterance_embedding)
+                                                                    c=utterance_embedding,
+                                                                    x0=x0)
+                    embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+                    input_energy = encoded_texts + embedded_pitch_curve
 
-            enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+                # energy
+                reduced_energy_space = self.energy_latent_reduction(input_energy)
+                if self.dropout:
+                    reduced_energy_space = torchfunc.dropout(reduced_energy_space, p=0.1)
+                reduced_energy_space = reduced_energy_space.transpose(1, 2)
+                if self.reflow:
+                        # use frozen to get samples
+                        x1, x0 = self.frozen_energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
+                else:
+                    x1 = gold_pitch.transpose(1,2)
+                    x0 = None
+                energy_loss, _ = self.energy_predictor.compute_loss(mu=reduced_energy_space,
+                                                                    x1=x1,
+                                                                    mask=text_masks.float(),
+                                                                    c=utterance_embedding,
+                                                                    x0=x0)
+                embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)  
+                
+                if self.prosody_order == "epd":
+                    # pitch
+                    reduced_pitch_space = self.pitch_latent_reduction(encoded_texts+ embedded_energy_curve)
+                    if self.dropout:
+                        reduced_pitch_space = torchfunc.dropout(reduced_pitch_space, p=0.1)
+                    reduced_pitch_space = reduced_pitch_space.transpose(1, 2)
+                    if self.reflow:
+                        # use frozen to get samples
+                        x1, x0 = self.frozen_pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
+                    else:
+                        x1 = gold_pitch.transpose(1,2)
+                        x0 = None
+                    pitch_loss, _ = self.pitch_predictor.compute_loss(mu=reduced_pitch_space,
+                                                                    x1=x1,
+                                                                    mask=text_masks.float(),
+                                                                    c=utterance_embedding,
+                                                                    x0=x0)
+                    embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+                
+                # duration
+                reduced_duration_space = self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve)
+                if self.dropout:
+                    reduced_duration_space = torchfunc.dropout(reduced_duration_space, p=0.1)
+                reduced_duration_space = reduced_duration_space.transpose(1, 2)
+                if self.reflow:
+                        x1, x0 = self.frozen_duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
+                else:
+                    x1 = transformed_gold_durations
+                    x0 = None
+                 
+                duration_loss, _ = self.duration_predictor.compute_loss(mu=reduced_duration_space,
+                                                                        x1=x1,
+                                                                        mask=text_masks.float(),
+                                                                        c=utterance_embedding,
+                                                                        x0=x0)
+                
+            else:
+                # all together
+                reduced_prosody_space = self.prosody_latent_reduction(encoded_texts)
+                if self.dropout:
+                    reduced_prosody_space = torchfunc.dropout(reduced_prosody_space, p=0.1)
+                reduced_prosody_space = reduced_prosody_space.transpose(1, 2)
+                if self.reflow:
+                        # use frozen to get samples
+                        x1, x0 = self.frozen_prosody_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=30, temperature=1.0, c=utterance_embedding)
+                else:
+                    x1 = torch.cat((                                        transformed_gold_durations,
+                                                           gold_pitch.transpose(1, 2),
+                                                           gold_energy.transpose(1, 2),
+                                                           torch.zeros_like(gold_energy.transpose(1, 2))
+                                                       ), dim=1)
+                    x0 = None
 
+                prosody_loss, _ = self.prosody_predictor.compute_loss(mu=reduced_prosody_space,
+                                                       x1=x1,
+                                                       mask=text_masks.float(),
+                                                       c=utterance_embedding,
+                                                       x0=x0)
+                
+                embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)  
+                embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+                duration_loss = prosody_loss # setting duration loss as whole prosody loss
+                pitch_loss = None
+                energy_loss = None
+
+            enriched_encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
+            
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations)
 
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
+        
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
-
         preliminary_spectrogram = self.output_projection(decoded_speech)
 
         if is_inference:
             if run_stochastic:
-                refined_codec_frames = self.flow_matching_decoder(mu=preliminary_spectrogram.transpose(1, 2),
+                refined_codec_frames, _ = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
                                                                   mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2).float(),
                                                                   n_timesteps=15,
                                                                   temperature=0.2,
-                                                                  c=None).transpose(1, 2)
+                                                                  c=utterance_embedding)
+                refined_codec_frames = refined_codec_frames.transpose(1, 2)
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
@@ -424,8 +614,8 @@ class ToucanTTS(torch.nn.Module):
             if run_stochastic:
                 stochastic_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2),
                                                                              mask=decoder_masks.float(),
-                                                                             mu=preliminary_spectrogram.transpose(1, 2).detach(),
-                                                                             c=None)
+                                                                             mu=self.cfm_projection(decoded_speech).transpose(1, 2),
+                                                                             c=utterance_embedding)
             else:
                 stochastic_loss = None
             return preliminary_spectrogram, \
@@ -475,11 +665,63 @@ class ToucanTTS(torch.nn.Module):
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), duration_predictions, pitch_predictions, energy_predictions
         return outs.squeeze().transpose(0, 1)
+    
+
+    def init_reflow(self):
+        """
+            Start reflow by freezing the models, so that we can sample from them
+        """
+        if self.prosody_order != "all":
+            self.frozen_energy_predictor = deepcopy(self.energy_predictor)
+            
+            self.frozen_pitch_predictor = deepcopy(self.pitch_predictor)
+            
+            self.frozen_duration_predictor = deepcopy(self.duration_predictor)
+            
+            # set grad True only for prosody predictors
+            self.requires_grad_(False)
+            self.duration_predictor.requires_grad_(True)
+            self.energy_predictor.requires_grad_(True)
+            self.pitch_predictor.requires_grad_(True)
+
+            # detach parameter from copy
+            for p in self.frozen_energy_predictor.parameters():
+                p.detach_() 
+            for p in self.frozen_pitch_predictor.parameters():
+                p.detach_() 
+            for p in self.frozen_duration_predictor.parameters():
+                p.detach_() 
+            self.frozen_duration_predictor.eval()
+            self.frozen_pitch_predictor.eval()
+            self.frozen_energy_predictor.eval()
+            self.frozen_duration_predictor.requires_grad_(False)
+            self.frozen_pitch_predictor.requires_grad_(False)
+            self.frozen_energy_predictor.requires_grad_(False)
+        else:
+            self.frozen_prosody_predictor = deepcopy(self.prosody_predictor)
+            
+            # set grad True only for prosody predictors
+            self.requires_grad_(False)
+            self.prosody_predictor.requires_grad_(True)
+           
+
+            # detach parameter from copy
+            for p in self.frozen_prosody_predictor.parameters():
+                p.detach_() 
+           
+            self.frozen_prosody_predictor.eval()
+            
+            self.frozen_prosody_predictor.requires_grad_(False)
+          
+        self.reflow = True
+        print("REFLOW")
+
 
     def _reset_parameters(self, init_type="xavier_uniform"):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
+
 
     def reset_postnet(self, init_type="xavier_uniform"):
         # useful for after they explode
@@ -488,7 +730,6 @@ class ToucanTTS(torch.nn.Module):
 
 if __name__ == '__main__':
     model = ToucanTTS()
-    print(sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     print(" TESTING TRAINING ")
 

@@ -14,7 +14,7 @@ def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, phone_inpu
     return CodecAlignerDataset(transcript_dict,
                                cache_dir=corpus_dir,
                                lang=lang,
-                               loading_processes=5,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
+                               loading_processes=1,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
                                device=device,
                                phone_input=phone_input,
                                gpu_count=gpu_count,
@@ -46,7 +46,6 @@ def prepare_tts_corpus(transcript_dict,
 
             if not os.path.exists(os.path.join(corpus_dir, "aligner_train_cache.pt")):
                 prepare_aligner_corpus(transcript_dict, corpus_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
-
             if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
                 aligner_datapoints = prepare_aligner_corpus(transcript_dict, corpus_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
                 train_aligner(train_dataset=aligner_datapoints,

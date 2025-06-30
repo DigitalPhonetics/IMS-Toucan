@@ -24,7 +24,7 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODEL_DIR
+from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 from Utility.utils import float2pcm
 
@@ -33,14 +33,14 @@ class ToucanTTSInterface(torch.nn.Module):
 
     def __init__(self,
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
-                 tts_model_path=os.path.join(MODEL_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
-                 vocoder_model_path=os.path.join(MODEL_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
+                 tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
+                 vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
                  ):
         super().__init__()
         self.device = device
         if not tts_model_path.endswith(".pt"):
-            tts_model_path = os.path.join(MODEL_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
+            tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
 
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True, device=device)
         checkpoint = torch.load(tts_model_path, map_location='cpu')
@@ -50,7 +50,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.phone2mel = self.phone2mel.to(torch.device(device))
         self.speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                            run_opts={"device": str(device)},
-                                                                           savedir=os.path.join(MODEL_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
+                                                                           savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, device=device)
         self.phone2mel.eval()

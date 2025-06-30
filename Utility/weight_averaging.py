@@ -7,12 +7,22 @@ import os
 import torch
 
 from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Modules.ToucanTTS.InferenceToucanTTS_nf import ToucanTTS_nf
+from Modules.Toucan_det.InferenceToucanTTS import ToucanTTS as ToucanTTS_det
 from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
+from Utility.storage_config import MODELS_DIR
 
 
-def load_net_toucan(path):
+def load_net_toucan(path, architecture="CFM", start_reflow=False):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = ToucanTTS(weights=check_dict["model"], config=check_dict["config"])
+    if architecture == "CFM":
+        net = ToucanTTS(weights=check_dict["model"], config=check_dict["config"],reflow=start_reflow)
+    elif architecture == "NF":
+        net = ToucanTTS_nf(weights=check_dict["model"], config=check_dict["config"])
+    elif architecture == "DET":
+        net = ToucanTTS_det(weights=check_dict["model"], config=check_dict["config"])
+    elif architecture == "RF":
+        net = ToucanTTS(weights=check_dict["model"], config=check_dict["config"],reflow=start_reflow)
     return net, check_dict["default_emb"]
 
 
@@ -39,7 +49,7 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
     return [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in checkpoint_list[:n]]
 
 
-def average_checkpoints(list_of_checkpoint_paths, load_func):
+def average_checkpoints(list_of_checkpoint_paths, load_func, architecture="CFM", start_reflow=False):
     # COLLECT CHECKPOINTS
     if list_of_checkpoint_paths is None or len(list_of_checkpoint_paths) == 0:
         return None
@@ -50,7 +60,7 @@ def average_checkpoints(list_of_checkpoint_paths, load_func):
     # LOAD CHECKPOINTS
     for path_to_checkpoint in list_of_checkpoint_paths:
         print("loading model {}".format(path_to_checkpoint))
-        model, default_embed = load_func(path=path_to_checkpoint)
+        model, default_embed = load_func(path=path_to_checkpoint, architecture=architecture, start_reflow=start_reflow)
         checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
 
     # AVERAGE CHECKPOINTS
@@ -79,5 +89,20 @@ def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
     print("...done!")
 
 
+def make_best_in_all():
+    for model_dir in os.listdir(MODELS_DIR):
+        if os.path.isdir(os.path.join(MODELS_DIR, model_dir)):
+            if "ToucanTTS" in model_dir:
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
+                if checkpoint_paths is None:
+                    continue
+                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+                save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(MODELS_DIR, model_dir, "best.pt"))
+
+
 def count_parameters(net):
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
+
+
+if __name__ == '__main__':
+    make_best_in_all()

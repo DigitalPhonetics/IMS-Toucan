@@ -6,18 +6,19 @@ import sys
 import torch
 
 from Recipes.AlignerPipeline import run as aligner
-from Recipes.BigVGAN_e2e import run as be2e
 from Recipes.HiFiGAN_combined import run as HiFiGAN
+from Recipes.BigVGAN_e2e import run as be2e
 from Recipes.HiFiGAN_e2e import run as e2e
-from Recipes.ToucanTTS_IntegrationTest import run as tt_integration_test
 from Recipes.ToucanTTS_Massive_Asian import run as asian
+from Recipes.ToucanTTS_Massive_German import run as deu
+from Recipes.ToucanTTS_IntegrationTest import run as tt_integration_test
 from Recipes.ToucanTTS_Massive_English_stage1 import run as eng1
 from Recipes.ToucanTTS_Massive_English_stage2 import run as eng2
-from Recipes.ToucanTTS_Massive_German import run as deu
 from Recipes.ToucanTTS_Massive_stage1 import run as stage1
 from Recipes.ToucanTTS_Massive_stage2 import run as stage2
 from Recipes.ToucanTTS_Massive_stage3 import run as stage3
 from Recipes.ToucanTTS_Nancy import run as nancy
+from Recipes.ToucanTTS_Prosody import run as prosody
 from Recipes.finetuning_example_multilingual import run as fine_tuning_example_multilingual
 from Recipes.finetuning_example_simple import run as fine_tuning_example_simple
 
@@ -36,6 +37,7 @@ pipeline_dict = {
     "stage1"                         : stage1,
     "stage2"                         : stage2,
     "stage3"                         : stage3,
+    "prosody"                         : prosody,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"                        : aligner,
     # vocoder training (not recommended, best to use provided checkpoint)
@@ -107,11 +109,13 @@ if __name__ == '__main__':
         # example call for gpu_count training:
         # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py nancy --gpu_id "1,2,3"
 
+    torch.use_deterministic_algorithms(False)
     torch.manual_seed(9665)
     random.seed(9665)
     torch.random.manual_seed(9665)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
+
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,
                                  resume_checkpoint=args.resume_checkpoint,
@@ -121,3 +125,4 @@ if __name__ == '__main__':
                                  use_wandb=args.wandb,
                                  wandb_resume_id=args.wandb_resume_id,
                                  gpu_count=gpu_count)
+

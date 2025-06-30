@@ -222,6 +222,20 @@ def build_path_to_transcript_mls_english():
     return path_to_transcript
 
 
+def build_path_to_transcript_tedlium():
+    root = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/tedlium/output"
+    path_to_transcript = dict()
+    for speaker in os.listdir(root):
+        for file in os.listdir(os.path.join(root, speaker)):
+            if file.endswith(".txt"):
+                full_path = os.path.join(root, speaker, file)
+                with open(full_path, 'r') as text_file:
+                    transcript = text_file.read()
+                path = os.path.join(root, speaker, file).replace(".txt", ".wav")
+                path_to_transcript[path] = transcript
+    return path_to_transcript
+   
+    
 def build_path_to_transcript_gigaspeech():
     root = "/mount/resources/speech/corpora/GigaSpeech/"
     path_to_transcript = dict()
@@ -330,17 +344,49 @@ def build_path_to_transcript_ryanspeech():
     return path_to_transcript
 
 
-def build_path_to_transcript_RAVDESS():
+def build_path_to_transcript_dict_RAVDESS(re_cache=False):
     root = "/mount/resources/speech/corpora/RAVDESS"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript_dict = dict()
+        for speaker_dir in os.listdir(root):
+            for audio_file in os.listdir(os.path.join(root, speaker_dir)):
+                if audio_file.split("-")[4] == "01":
+                    path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Kids are talking by the door."
+                else:
+                    path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Dogs are sitting by the door."
+        torch.save(path_to_transcript_dict, cache_path)
+    return torch.load(cache_path)
 
-    path_to_transcript = dict()
-    for speaker_dir in os.listdir(root):
-        for audio_file in os.listdir(os.path.join(root, speaker_dir)):
-            if audio_file.split("-")[4] == "01":
-                path_to_transcript[os.path.join(root, speaker_dir, audio_file)] = "Kids are talking by the door."
-            else:
-                path_to_transcript[os.path.join(root, speaker_dir, audio_file)] = "Dogs are sitting by the door."
-    return path_to_transcript
+
+def build_path_to_transcript_dict_RAVDESS_one_speaker(re_cache=False):
+    root = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/RAVDESS_one"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript_dict = dict()
+        for speaker_dir in os.listdir(root):
+            for audio_file in os.listdir(os.path.join(root, speaker_dir)):
+                if audio_file.split("-")[4] == "01":
+                    path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Kids are talking by the door."
+                else:
+                    path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Dogs are sitting by the door."
+        torch.save(path_to_transcript_dict, cache_path)
+    return torch.load(cache_path)
+
+
+def build_path_to_transcript_dict_RAVDESS_one_speaker(re_cache=False):
+    root = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/RAVDESS_one"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript_dict = dict()
+        for speaker_dir in os.listdir(root):
+            for audio_file in os.listdir(os.path.join(root, speaker_dir)):
+                if audio_file.split("-")[4] == "01":
+                    path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Kids are talking by the door."
+                else:
+                    path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Dogs are sitting by the door."
+        torch.save(path_to_transcript_dict, cache_path)
+    return torch.load(cache_path)
 
 
 def build_path_to_transcript_ESDS():
@@ -420,8 +466,25 @@ def build_path_to_transcript_vctk():
 
 
 def build_path_to_transcript_libritts_all_clean():
+def build_path_to_transcript_libritts_all_clean():
     root = "/mount/resources/speech/corpora/LibriTTS_R/"
     path_train = "/mount/resources/speech/corpora/LibriTTS_R/"  # using all files from the "clean" subsets from LibriTTS-R https://arxiv.org/abs/2305.18802
+    path_to_transcript = dict()
+    for speaker in os.listdir(path_train):
+        if not speaker.endswith(".pt"):
+            for chapter in os.listdir(os.path.join(path_train, speaker)):
+                for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                    if file.endswith("normalized.txt"):
+                        with open(os.path.join(path_train, speaker, chapter, file), 'r', encoding='utf8') as tf:
+                            transcript = tf.read()
+                        wav_file = file.split(".")[0] + ".wav"
+                        path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_libritts_one_speaker():
+    root =       "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/libritts_one"
+    path_train = "/mount/arbeitsdaten/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/libritts_one"  # using all files from the "clean" subsets from LibriTTS-R https://arxiv.org/abs/2305.18802
     path_to_transcript = dict()
     for speaker in os.listdir(path_train):
         for chapter in os.listdir(os.path.join(path_train, speaker)):
@@ -431,7 +494,33 @@ def build_path_to_transcript_libritts_all_clean():
                         transcript = tf.read()
                     wav_file = file.split(".")[0] + ".wav"
                     path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
+    
     return path_to_transcript
+
+
+def build_path_to_transcript_dict_ears_one_speaker_regular(re_cache=False):
+    transcript_for_ears = {
+        "sentences_15_regular"        : "They were all sitting in her room. So that's how it stands. He did not know why he embraced it. Why don't you speak, cousin? I didn't tell a tale.",
+        "sentences_16_regular"        : "My head aches dreadfully now. Not to say every word. I have only found out. He is trying to discover something. I have done my duty.",
+        "sentences_17_regular"        : "I always had a value for him. He is a deceiver and a villain. But those tears were pleasant to them both. She conquered her fears, and spoke. Oh, he couldn't overhear me at the door.",
+        "sentences_18_regular"        : "How could I have said it more directly? She remembered her oath. My kingdom for a drink! Have they caught the little girl and the boy? Then she gave him the dry bread.",
+        "sentences_19_regular"        : "Your sister is given to government. Water was being sprinkled on his face. The clumsy things are dear. He jumped up and sat on the sofa. How do you know her?",
+        "sentences_20_regular"        : "I never could guess a riddle in my life. The expression of her face was cold. Besides, what on earth could happen to you? Allow me to give you a piece of advice. This must be stopped at once.",
+        "sentences_21_regular"        : "The lawyer was right about that. You are fond of fighting. Every word is so deep. So you were never in London before? Death is now, perhaps, striking a fourth blow.",
+        "sentences_22_regular"        : "It seemed that sleep and night had resumed their empire. The snowstorm was still raging. But we'll talk later on. Take the baby, Mum, and give me your book. The doctor gave him his hand.",
+        "sentences_23_regular"        : "It is, nevertheless, conclusive to my mind. Give this to the countess. It is only a question of a few hours. No, we don't keep a cat. The cool evening air refreshed him.",
+       }
+    root = "/mount/arbeitsdaten56/projekte/synthesis/mayerpl/IMS-Toucan-Prosody-Variance/audios/ears_one"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = dict()
+        for speaker in os.listdir(root):
+            if os.path.isdir(os.path.join(root, speaker)):
+                for sentence_type in transcript_for_ears:
+                    path = os.path.join(root, speaker, sentence_type + ".wav")
+                    path_to_transcript[path] = transcript_for_ears[sentence_type]
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
 
 
 def build_path_to_transcript_libritts_other500():

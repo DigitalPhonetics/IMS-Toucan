@@ -31,7 +31,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             None,
             torch.stack([datapoint[8] for datapoint in batch]),
-            torch.stack([datapoint[9] for datapoint in batch]))
+            torch.stack([datapoint[9] for datapoint in batch]),
+            [datapoint[10] for datapoint in batch])
 
 
 def train_loop(net,
@@ -49,7 +50,9 @@ def train_loop(net,
                use_wandb,
                train_sampler,
                gpu_count,
-               steps_per_checkpoint
+               steps_per_checkpoint,
+               architecture="CFM",
+               start_reflow = 40000
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -65,7 +68,7 @@ def train_loop(net,
     if steps < warmup_steps * 5:
         print(f"too much warmup given the amount of steps, reducing warmup to {warmup_steps} steps")
         warmup_steps = steps // 5
-
+        
     torch.multiprocessing.set_sharing_strategy('file_system')
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
     train_loader = DataLoader(dataset=train_dataset,
@@ -92,22 +95,30 @@ def train_loop(net,
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
-        model.load_state_dict(check_dict["model"])
+        
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
             step_counter = check_dict["step_counter"]
+        
+        if architecture == "RF" or architecture=="CFM":
+            if step_counter >= start_reflow:
+                net.init_reflow(device=device)
+        
+        model.load_state_dict(check_dict["model"])
     start_time = time.time()
     regression_losses_total = list()
     stochastic_losses_total = list()
     duration_losses_total = list()
     pitch_losses_total = list()
     energy_losses_total = list()
+    prosody_losses_total = list()
     while True:
+        
         net.train()
         epoch += 1
         for batch in tqdm(train_loader):
-
+            
             text_tensors = batch[0].to(device)
             text_lengths = batch[1].squeeze().to(device)
             speech_indexes = batch[2]
@@ -116,6 +127,17 @@ def train_loop(net,
             gold_pitch = batch[6].to(device)  # mind the switched order
             gold_energy = batch[5].to(device)  # mind the switched order
             lang_ids = batch[8].squeeze(1).to(device)
+            path = batch[10][0]
+            #sentence = train_dataset.pttd[path]
+
+            # check if any tensor is nan
+            if torch.isnan(gold_durations).any() or torch.isnan(gold_pitch).any() or torch.isnan(gold_energy).any() or torch.isnan(text_tensors).any():
+                print("Nan in gold truth. Skipping this batch ...")
+                print("gold durations ", torch.isnan(gold_durations).any())
+                print("gold gold_pitch ", torch.isnan(gold_pitch).any())
+                print("gold gold_energy ", torch.isnan(gold_energy).any())
+                print("gold text_tensors ", torch.isnan(text_tensors).any())
+                continue
 
             speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
             for speech_sample in speech_indexes:
@@ -130,33 +152,81 @@ def train_loop(net,
 
             train_loss = 0.0
             utterance_embedding = batch[9].to(device)
-            regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss = net(
-                text_tensors=text_tensors,
-                text_lengths=text_lengths,
-                gold_speech=gold_speech,
-                speech_lengths=speech_lengths,
-                gold_durations=gold_durations,
-                gold_pitch=gold_pitch,
-                gold_energy=gold_energy,
-                utterance_embedding=utterance_embedding,
-                lang_ids=lang_ids,
-                return_feats=False,
-                run_stochastic=run_stochastic
-            )
+            config = getattr(net, "config", None)
+            if config is not None:
+                if net.config["prosody_order"] != "all":
+                    regression_loss, stochastic_loss, duration_loss, pitch_loss, energy_loss = net(
+                        text_tensors=text_tensors,
+                        text_lengths=text_lengths,
+                        gold_speech=gold_speech,
+                        speech_lengths=speech_lengths,
+                        gold_durations=gold_durations,
+                        gold_pitch=gold_pitch,
+                        gold_energy=gold_energy,
+                        utterance_embedding=utterance_embedding,
+                        lang_ids=lang_ids,
+                        return_feats=False,
+                        run_stochastic=run_stochastic
+                    )
+                    if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss):
+                        print("One of the losses turned to NaN! Skipping this batch ...")
+                       
+                        continue
 
-            if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss):
-                print("One of the losses turned to NaN! Skipping this batch ...")
-                continue
+                    train_loss = train_loss + duration_loss
+                    train_loss = train_loss + pitch_loss
+                    train_loss = train_loss + energy_loss
 
-            train_loss = train_loss + duration_loss
-            train_loss = train_loss + pitch_loss
-            train_loss = train_loss + energy_loss
-            train_loss = train_loss + regression_loss
+                    duration_losses_total.append(duration_loss.item())
+                    pitch_losses_total.append(pitch_loss.item())
+                    energy_losses_total.append(energy_loss.item())
+                else:
+                    
+                    regression_loss, stochastic_loss, prosody_loss = net(
+                        text_tensors=text_tensors,
+                        text_lengths=text_lengths,
+                        gold_speech=gold_speech,
+                        speech_lengths=speech_lengths,
+                        gold_durations=gold_durations,
+                        gold_pitch=gold_pitch,
+                        gold_energy=gold_energy,
+                        utterance_embedding=utterance_embedding,
+                        lang_ids=lang_ids,
+                        return_feats=False,
+                        run_stochastic=run_stochastic
+                        )
+                    if torch.isnan(regression_loss) or torch.isnan(prosody_loss):
+                        print("One of the losses turned to NaN! Skipping this batch ...")
+                        continue
+            
+                    train_loss = train_loss + prosody_loss
+                    prosody_losses_total.append(prosody_loss.item())
+            else:
+                
+                loss = net(
+                            text_tensors=text_tensors,
+                            text_lengths=text_lengths,
+                            gold_speech=gold_speech,
+                            speech_lengths=speech_lengths,
+                            gold_durations=gold_durations,
+                            gold_pitch=gold_pitch,
+                            gold_energy=gold_energy,
+                            utterance_embedding=utterance_embedding
+                        )
+                if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss):
+                    print("One of the losses turned to NaN! Skipping this batch ...")
+                    continue
+
+                train_loss = train_loss + duration_loss
+                train_loss = train_loss + pitch_loss
+                train_loss = train_loss + energy_loss
+
+                duration_losses_total.append(duration_loss.item())
+                pitch_losses_total.append(pitch_loss.item())
+                energy_losses_total.append(energy_loss.item())
 
             regression_losses_total.append(regression_loss.item())
-            duration_losses_total.append(duration_loss.item())
-            pitch_losses_total.append(pitch_loss.item())
-            energy_losses_total.append(energy_loss.item())
+            train_loss = train_loss + regression_loss
 
             if stochastic_loss is not None:
 
@@ -178,9 +248,14 @@ def train_loop(net,
             optimizer.step()
             scheduler.step()
             step_counter += 1
+
+            if architecture == "RF" or architecture == "CFM":
+                if step_counter == start_reflow:
+                    net.init_reflow(device=device)
             if step_counter % steps_per_checkpoint == 0:
                 # evaluation interval is happening
                 if rank == 0:
+                    
                     net.eval()
                     default_embedding = train_dataset[0][9].to(device)
                     torch.save({
@@ -200,20 +275,29 @@ def train_loop(net,
                     print(f"Steps:                  {step_counter}\n")
 
                     if use_wandb:
-                        wandb.log({
-                            "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
-                            "stochastic_loss": round(sum(stochastic_losses_total) / len(stochastic_losses_total), 5),
-                            "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                            "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                            "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                            "learning_rate"  : optimizer.param_groups[0]['lr']
-                        }, step=step_counter)
-                    regression_losses_total = list()
-                    stochastic_losses_total = list()
-                    duration_losses_total = list()
-                    pitch_losses_total = list()
-                    energy_losses_total = list()
-
+                        if net.config["prosody_order"] != "all":
+                            wandb.log({
+                                "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
+                                "stochastic_loss"      : round(sum(stochastic_losses_total) / len(stochastic_losses_total), 5),
+                                "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                                "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                                "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
+                                "learning_rate"  : optimizer.param_groups[0]['lr']
+                            }, step=step_counter)
+                            duration_losses_total = list()
+                            pitch_losses_total = list()
+                            energy_losses_total = list()
+                        else:
+                            wandb.log({
+                                    "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
+                                    "stochastic_loss"      : round(sum(stochastic_losses_total) / len(stochastic_losses_total), 5),
+                                    "prosody_loss"  : round(sum(prosody_losses_total) / len(prosody_losses_total), 5),
+                                    "learning_rate"  : optimizer.param_groups[0]['lr']
+                                }, step=step_counter)
+                            prosody_losses_total = list()
+                        
+                        regression_losses_total = list()
+                        stochastic_losses_total = list()
                     path_to_most_recent_plot = plot_progress_spec_toucantts(model,
                                                                             device,
                                                                             save_dir=save_directory,
@@ -227,12 +311,13 @@ def train_loop(net,
                         }, step=step_counter)
 
                     checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=1)
-                    averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+                   
+                    averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan, architecture=architecture, start_reflow=(start_reflow <= step_counter))
                     save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
 
                     if step_counter > steps:
                         return  # DONE
-
+        	        
                     net.train()
                 if gpu_count > 1:
                     # just to be extra sure tht all models are synchronous

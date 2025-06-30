@@ -132,7 +132,7 @@ class TimestepEmbedding(nn.Module):
 
 # reference: https://github.com/shivammehta25/Matcha-TTS/blob/main/matcha/models/components/decoder.py
 class Decoder(nn.Module):
-    def __init__(self, hidden_channels, out_channels, filter_channels, dropout=0.05, n_layers=1, n_heads=4, kernel_size=3, gin_channels=0):
+    def __init__(self, hidden_channels, out_channels, filter_channels, dropout=0.05, n_layers=1, n_heads=4, kernel_size=3, gin_channels=0, with_noise =True):
         super().__init__()
         self.hidden_channels = hidden_channels
         self.out_channels = out_channels
@@ -140,9 +140,10 @@ class Decoder(nn.Module):
 
         self.time_embeddings = SinusoidalPosEmb(hidden_channels)
         self.time_mlp = TimestepEmbedding(hidden_channels, hidden_channels, filter_channels)
-
+        if not with_noise:
+            out_channels = 0
         self.blocks = nn.ModuleList([DitWrapper(hidden_channels, out_channels, filter_channels, n_heads, kernel_size, dropout, gin_channels, hidden_channels) for _ in range(n_layers)])
-        self.final_proj = nn.Conv1d(hidden_channels + out_channels, out_channels, 1)
+        self.final_proj = nn.Conv1d(hidden_channels + out_channels, self.out_channels, 1)
 
         self.initialize_weights()
 
@@ -167,9 +168,14 @@ class Decoder(nn.Module):
         Returns:
             _type_: _description_
         """
+        
         t = self.time_mlp(self.time_embeddings(t))
-
-        x = torch.cat((x, mu), dim=1)
+        
+        if x is None:
+            x = mu
+        else:
+            x = torch.cat((x, mu), dim=1)
+            #x = x + mu
 
         for block in self.blocks:
             x = block(x, c, t, mask)
