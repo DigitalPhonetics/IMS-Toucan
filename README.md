@@ -7,30 +7,12 @@
 
 ---
 
-# Text-to-Speech for over 7000 Languages
+This branch contains the associated code for our paper **Investigating Stochastic Methods for Prosody Modeling in Speech Synthesis**. It will be published in **Interspeech 2025**. It is a collaboration between scientists from **AppTek** and the **University of Stuttgart**.
 
-IMS Toucan is a toolkit for training, using, and teaching state-of-the-art Text-to-Speech Synthesis, developed at the
-**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**, official home of the massively
-multilingual ToucanTTS system. Our system is fast, controllable, and doesn't require a ton of compute.
-
-<br>
-
-![image](Utility/toucan.png)
-
-<br>
-
-If you find this repo useful, consider giving it a star. ⭐ Large numbers make me happy, and they are very motivating. If
-you want to motivate me even more, you can even
-consider [sponsoring this toolkit](https://github.com/sponsors/Flux9665). We only use GitHub Sponsors for this, there
-are scammers on other platforms that pretend to be the creator. Don't let them fool you. The code and the models are
-absolutely free, and thanks to the generous support of Hugging Face🤗, we even have
-an [instance of the model running on GPU](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS) free for
-anyone to use.
+Author List: **Paul Mayer, Florian Lux, Alejandro Pérez-González-de-Martos, Angelina Elizarova, Lindsey Vanderlyn, Dirk Väth, Ngoc Thang Vu**
 
 --- 
 <br>
-
-## Links 🦚
 
 ## Installation 🦉
 
@@ -73,18 +55,6 @@ logged out in the meantime. To make use of a GPU, you don't need to do anything 
 machine, have a look at [the official PyTorch website](https://pytorch.org/) for the install-command that enables GPU
 support.
 
-#### Storage configuration
-
-If you don't want the pretrained and trained models as well as the cache files resulting from preprocessing your
-datasets to be stored in the default subfolders, you can set corresponding directories globally by
-editing `Utility/storage_config.py` to suit your needs (the path can be relative to the repository root directory or
-absolute).
-
-#### Pretrained Models
-
-You don't need to use pretrained models, but it can speed things up tremendously. They will be downloaded on the fly
-automatically when they are needed, thanks to Hugging Face🤗 and [VB](https://github.com/Vaibhavs10) in particular.
-
 #### \[optional] eSpeak-NG
 
 eSpeak-NG is an optional requirement, that handles lots of special cases in many languages, so it's good to have.
@@ -102,55 +72,17 @@ systems, you'll also need to tell the phonemizer library where to find your espe
 `PHONEMIZER_ESPEAK_LIBRARY` environment variable, which is discussed in
 [this issue](https://github.com/bootphon/phonemizer/issues/44#issuecomment-1008449718).
 
-For **Mac** it's unfortunately a lot more complicated. Thanks to Sang Hyun Park, here is a guide for installing it on
-Mac:
-For M1 Macs, the most convenient method to install espeak-ng onto your system is via a
-[MacPorts port of espeak-ng](https://ports.macports.org/port/espeak-ng/). MacPorts itself can be installed from the
-[MacPorts website](https://www.macports.org/install.php), which also requires Apple's
-[XCode](https://developer.apple.com/xcode/). Once XCode and MacPorts have been installed, you can install the port of
-espeak-ng via
+For **Mac** you can use homebrew
 
 ```
-sudo port install espeak-ng
+brew install espeak-ng
 ```
 
 As stated in the Windows install instructions, the espeak-ng installation will need to be set as a variable for the
 phonemizer library. The environment variable is `PHONEMIZER_ESPEAK_LIBRARY` as given in the
 [GitHub thread](https://github.com/bootphon/phonemizer/issues/44#issuecomment-1008449718) linked above.
 However, the espeak-ng installation file you need to set this variable to is a .dylib file rather than a .dll file on
-Mac. In order to locate the espeak-ng library file, you can run `port contents espeak-ng`. The specific file you are
-looking for is named `libespeak-ng.dylib`.
-
---- 
-<br>
-
-## Inference 🦢
-
-You can load your trained models, or the pretrained provided one, using the `InferenceInterfaces/ToucanTTSInterface.py`.
-Simply create an object from it with the proper directory handle
-identifying the model you want to use. The rest should work out in the background. You might want to set a language
-embedding or a speaker embedding using the *set_language* and *set_speaker_embedding* functions. Most things should be
-self-explanatory.
-
-An *InferenceInterface* contains two methods to create audio from text. They are
-*read_to_file* and
-*read_aloud*.
-
-- *read_to_file* takes as input a list of strings and a filename. It will synthesize the sentences in the list and
-  concatenate them with a short pause inbetween and write them to the filepath you supply as the other argument.
-
-- *read_aloud* takes just a string, which it will then convert to speech and immediately play using the system's
-  speakers. If you set the optional argument
-  *view* to
-  *True*, a visualization will pop up, that you need to close for the program to continue.
-
-
-There are simple scaling parameters to control the duration, the variance of the pitch curve and the variance of the
-energy curve. You can either change them in the code when using the interactive demo or the reader, or you can simply
-pass them to the interface when you use it in your own code.
-
-To change the language of the model and see which languages are available in our pretrained model,
-[have a look at the list linked here](https://github.com/DigitalPhonetics/IMS-Toucan/blob/feb573ca630823974e6ced22591ab41cdfb93674/Utility/language_list.md)
+Mac. Locate the espeak-ng library file; it is named `libespeak-ng.dylib`.
 
 --- 
 <br>
@@ -203,10 +135,10 @@ Whenever a checkpoint is saved, a compressed version that can be used for infere
 _best.py_
 
 ### Configuring the Prosody Modeling
+
 You can customize key parameters for the probabilistic prosody model directly in the `ToucanTTS_Prosody.py` file:
 
 ```
-# Prosody model configuration
 order = "ped"  # Order of prosodic features: pitch, energy, duration. Options: "ped", "epd", or "all"
 prosody_channels = 8  # Number of channels for the prosody predictor
 predictor_layers = 3  # Number of layers in the prosody predictor
@@ -214,14 +146,17 @@ predictor_kernel_size = 5  # Kernel size for convolutional layers
 predictor_dropout_rate = 0.2  # Dropout rate within the predictor
 architecture = "CFM"  # Architecture type: "CFM", "NF", "RF" or "DET"
 start_reflow = 91000  # Step count to start reflow; if set higher than current step count, reflow is skipped
-dropout = False  # Apply dropout in the model
+dropout = False  # Apply inference-dropout on the encoder outputs in the model
 log = False  # Enable logging within this component
 ```
-Modify these values to experiment with different architectures.
+
+You can modify these values to experiment with different architectures.
 
 ---
+<br> 
 
 ## Evaluation 🐤
+
 To run evaluation on a trained model, use the following command:
 
 ```
@@ -253,106 +188,45 @@ If --wandb is used, the results will be logged to your Weights & Biases dashboar
 --- 
 <br>
 
-## Acknowledgements 🦆
 
-The basic PyTorch modules of FastSpeech 2 and GST are taken from
-[ESPnet](https://github.com/espnet/espnet), the PyTorch modules of
-HiFi-GAN are taken from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN).
-Some modules related to the ConditionalFlowMatching based PostNet as outlined in MatchaTTS are taken
-from the [official MatchaTTS codebase](https://github.com/shivammehta25/Matcha-TTS) and some are taken
-from [the StableTTS codebase](https://github.com/KdaiP/StableTTS).
-For grapheme-to-phoneme conversion, we rely on the aforementioned eSpeak-NG as
-well as [transphone](https://github.com/xinjli/transphone). We
-use [encodec, a neural audio codec](https://github.com/yangdongchao/AcademiCodec) as intermediate representation
-for caching the train data to save space.
+## Inference 🦢
+
+You can load your trained models, or the pretrained provided one, using the `InferenceInterfaces/ToucanTTSInterface.py`.
+Simply create an object from it with the proper directory handle
+identifying the model you want to use. The rest should work out in the background. You might want to set a language
+embedding or a speaker embedding using the *set_language* and *set_speaker_embedding* functions. Most things should be
+self-explanatory.
+
+An *InferenceInterface* contains two methods to create audio from text. They are
+*read_to_file* and
+*read_aloud*.
+
+- *read_to_file* takes as input a list of strings and a filename. It will synthesize the sentences in the list and
+  concatenate them with a short pause inbetween and write them to the filepath you supply as the other argument.
+
+- *read_aloud* takes just a string, which it will then convert to speech and immediately play using the system's
+  speakers. If you set the optional argument
+  *view* to
+  *True*, a visualization will pop up, that you need to close for the program to continue.
+
+
+There are simple scaling parameters to control the duration, the variance of the pitch curve and the variance of the
+energy curve. You can either change them in the code when using the interactive demo or the reader, or you can simply
+pass them to the interface when you use it in your own code.
+
+To change the language of the model and see which languages are available in our pretrained model,
+[have a look at the list linked here](https://github.com/DigitalPhonetics/IMS-Toucan/blob/feb573ca630823974e6ced22591ab41cdfb93674/Utility/language_list.md)
+
+--- 
+<br>
 
 ## Citation 🐧
 
-<a href="https://star-history.com/#DigitalPhonetics/IMS-Toucan&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=DigitalPhonetics/IMS-Toucan&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=DigitalPhonetics/IMS-Toucan&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=DigitalPhonetics/IMS-Toucan&type=Date" />
- </picture>
-</a>
-
-### Introduction of the Toolkit [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v1.0)
-
 ```
-@inproceedings{lux2021toucan,
-  year         = 2021,
-  title        = {{The IMS Toucan system for the Blizzard Challenge 2021}},
-  author       = {Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
-  booktitle    = {Blizzard Challenge Workshop},
-  publisher    = {ISCA Speech Synthesis SIG}
-}
-```
-
-### Adding Articulatory Features and Meta-Learning Pretraining [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v1.1)
-
-```
-@inproceedings{lux2022laml,
-  year         = 2022,
-  title        = {{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
-  author       = {Florian Lux and Ngoc Thang Vu},
-  booktitle    = {ACL}
-}
-```
-
-### Adding Exact Prosody-Cloning Capabilities [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.2)
-
-```
-@inproceedings{lux2022cloning,
-  year         = 2022,
-  title        = {{Exact Prosody Cloning in Zero-Shot Multispeaker Text-to-Speech}},
-  author       = {Lux, Florian and Koch, Julia and Vu, Ngoc Thang},
-  booktitle    = {SLT},
-  publisher    = {IEEE}
-}
-```
-
-### Adding Language Embeddings and Word Boundaries [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.2)
-
-```
-@inproceedings{lux2022lrms,
-  year         = 2022,
-  title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
-  author       = {Florian Lux and Julia Koch and Ngoc Thang Vu},
-  booktitle    = {AACL}
-}
-```
-
-### Adding Controllable Speaker Embedding Generation [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.3)
-
-```
-@inproceedings{lux2023controllable,
-  year         = 2023,
-  title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
-  author       = {Florian Lux and Pascal Tilli and Sarina Meyer and Ngoc Thang Vu},
-  booktitle    = {Interspeech}
-  publisher    = {ISCA}
-}
-```
-
-### Our Contribution to the Blizzard Challenge 2023 [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.b)
-
-```
-@inproceedings{lux2023blizzard,
-  year         = 2023,
-  title        = {{The IMS Toucan System for the Blizzard Challenge 2023}},
-  author       = {Florian Lux and Julia Koch and Sarina Meyer and Thomas Bott and Nadja Schauffler and Pavel Denisov and Antje Schweitzer and Ngoc Thang Vu},
-  booktitle    = {Blizzard Challenge Workshop},
-  publisher    = {ISCA Speech Synthesis SIG}
-}
-```
-
-### Introducing the first TTS System in over 7000 languages [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v3.0)
-
-```
-@inproceedings{lux2024massive,
-  year         = 2024,
-  title        = {{Meta Learning Text-to-Speech Synthesis in over 7000 Languages}},
-  author       = {Florian Lux and Sarina Meyer and Lyonel Behringer and Frank Zalkow and Phat Do and Matt Coler and  Emanuël A. P. Habets and Ngoc Thang Vu},
+@inproceedings{mayer2025stochastic,
+  year         = 2025,
+  title        = {{Investigating Stochastic Methods for Prosody Modeling in Speech Synthesis}},
+  author       = {Paul Mayer and Florian Lux and Alejandro P\'erez-Gonz\'alez-de-Martos and Angelina Elizarova and Lindsey Vanderlyn and Dirk V\"ath and Ngoc Thang Vu},
   booktitle    = {Interspeech}
   publisher    = {ISCA}
 }
