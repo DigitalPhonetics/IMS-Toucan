@@ -403,3 +403,27 @@ for caching the train data to save space.
   publisher    = {ISCA}
 }
 ```
+
+### Introducing Text based in-context-Prompting to NAR TTS [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/2.p)
+
+```
+@inproceedings{bott2024prompting,
+  year         = 2024,
+  title        = {{Controlling Emotion in Text-to-Speech with Natural Language Prompts}},
+  author       = {Thomas Bott and Florian Lux and Ngoc Thang Vu},
+  booktitle    = {Interspeech}
+  publisher    = {ISCA}
+}
+```
+
+### Investigating Stochastic Prosody Modeling [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/tree/StochasticProsodyModeling)
+
+```
+@inproceedings{mayer2025stochastic,
+  year         = 2025,
+  title        = {{Investigating Stochastic Methods for Prosody Modeling in Speech Synthesis}},
+  author       = {Paul Mayer and Florian Lux and Alejandro P\'erez-Gonz\'alez-de-Martos and Angelina Elizarova and Lindsey Vanderlyn and Dirk V\"ath and Ngoc Thang Vu},
+  booktitle    = {Interspeech}
+  publisher    = {ISCA}
+}
+```
