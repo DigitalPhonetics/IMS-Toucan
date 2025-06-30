@@ -73,7 +73,7 @@ class ResNet_G(nn.Module):
             return out, l_1
         return out
 
-    def sample_latent(self, n_samples, z_size, temperature=0.7):
+    def sample_latent(self, n_samples, z_size, temperature):
         return torch.randn((n_samples, z_size)) * temperature
 
 

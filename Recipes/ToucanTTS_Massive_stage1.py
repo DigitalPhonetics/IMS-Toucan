@@ -6,26 +6,32 @@ STAGE 2: Introduce multilinguality, on a small and clean scale first
 
 import time
 
+import torch
 import torch.multiprocessing
 import wandb
-from torch.utils.data import ConcatDataset
 
 from Modules.ToucanTTS.ToucanTTS import ToucanTTS
 from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
-from Utility.storage_config import PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
+    from torch.utils.data import ConcatDataset
+
+    from Modules.ToucanTTS.ToucanTTS import ToucanTTS
+    from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+    from Utility.corpus_preparation import prepare_tts_corpus
+    from Utility.storage_config import MODEL_DIR
+    from Utility.storage_config import PREPROCESSING_DIR
+
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the GitHub release
     # page and finetune to your desired data
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_reworked_v4")
+    base_dir = os.path.join(MODEL_DIR, "ToucanTTS_MassiveDataBigModel_stage1_reworked_v10")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
@@ -43,19 +49,52 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets = dict()
 
+    # ENGLISH
+
+    lang_to_datasets["eng"] = list()
+
+    chunk_count = 100
+    chunks = split_dictionary_into_chunks(build_path_to_transcript_mls_english(), split_n=chunk_count)
+    for index in range(chunk_count):
+        if index > 2:
+            break
+        lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=chunks[index],
+                                                          corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_english_chunk_{index}"),
+                                                          lang="eng",
+                                                          gpu_count=gpu_count,
+                                                          rank=rank))
+
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_libritts_all_clean,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
+                                                      lang="eng",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_RAVDESS,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
+                                                      lang="eng",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ears,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "ears"),
+                                                      lang="eng",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
     # GERMAN
     lang_to_datasets["deu"] = list()
 
-    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hui_others,
+    lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_hui_others,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "hui_others"),
                                                       lang="deu",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
     chunk_count = 20
-    chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_german(), split_n=chunk_count)
+    chunks = split_dictionary_into_chunks(build_path_to_transcript_mls_german(), split_n=chunk_count)
     for index in range(chunk_count):
-        if index > 10:
+        if index > 3:
             break
         lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=chunks[index],
                                                           corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_german_chunk_{index}"),
@@ -67,9 +106,19 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["fra"] = list()
 
-    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_french,
+    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_mls_french,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_french"),
                                                       lang="fra",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    # SPANISH
+
+    lang_to_datasets["spa"] = list()
+
+    lang_to_datasets["spa"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_mls_spanish,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_spanish"),
+                                                      lang="spa",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
@@ -77,7 +126,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["cmn"] = list()
 
-    lang_to_datasets["cmn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_aishell3,
+    lang_to_datasets["cmn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_aishell3,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "aishell3"),
                                                       lang="cmn",
                                                       gpu_count=gpu_count,
@@ -87,7 +136,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["pol"] = list()
 
-    lang_to_datasets["pol"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish,
+    lang_to_datasets["pol"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_mls_polish,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_polish"),
                                                       lang="pol",
                                                       gpu_count=gpu_count,
@@ -97,7 +146,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["por"] = list()
 
-    lang_to_datasets["por"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese,
+    lang_to_datasets["por"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_mls_portuguese,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_porto"),
                                                       lang="por",
                                                       gpu_count=gpu_count,
@@ -107,9 +156,19 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["ita"] = list()
 
-    lang_to_datasets["ita"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian,
+    lang_to_datasets["ita"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_mls_italian,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_italian"),
                                                       lang="ita",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    # DUTCH
+
+    lang_to_datasets["nld"] = list()
+
+    lang_to_datasets["nld"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_mls_dutch,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_dutch"),
+                                                      lang="nld",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
@@ -117,7 +176,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["vie"] = list()
 
-    lang_to_datasets["vie"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_VIVOS_viet,
+    lang_to_datasets["vie"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_VIVOS_viet,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "VIVOS_viet"),
                                                       lang="vie",
                                                       gpu_count=gpu_count,
@@ -127,7 +186,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["jpn"] = list()
 
-    lang_to_datasets["jpn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_jvs,
+    lang_to_datasets["jpn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_jvs,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "jvs"),
                                                       lang="jpn",
                                                       gpu_count=gpu_count,
@@ -170,7 +229,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
-               batch_size=16,
+               batch_size=12,
                warmup_steps=8000,
                device=torch.device("cuda"),
                datasets=re_ordered_datasets,
@@ -184,6 +243,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                use_wandb=use_wandb,
                train_samplers=train_samplers,
                gpu_count=gpu_count,
-               use_less_loss=False)
+               use_less_loss=True)
     if use_wandb:
         wandb.finish()

@@ -60,4 +60,5 @@ class LengthRegulator(torch.nn.Module, ABC):
         """
         Repeat each frame according to duration
         """
+        d = torch.clamp(d, min=0)
         return torch.repeat_interleave(x, d, dim=0)

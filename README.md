@@ -1,20 +1,42 @@
-![image](Utility/toucan.png)
-
-IMS Toucan is a toolkit for teaching, training and using state-of-the-art Speech Synthesis models, developed at the
-**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
-PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
+<p align="right">
+<img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/DigitalPhonetics/IMS-Toucan">
+<img alt="GitHub Repo Downloads" src="https://img.shields.io/github/downloads/DigitalPhonetics/IMS-Toucan/total">
+<img alt="GitHub Release" src="https://img.shields.io/github/v/release/DigitalPhonetics/IMS-Toucan">
+<a href=https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS><img alt="Demo Link" src="https://img.shields.io/badge/DEMO-<COLOR>.svg"></a>
+</p>
 
 ---
+
+# Text-to-Speech for over 7000 Languages
+
+IMS Toucan is a toolkit for training, using, and teaching state-of-the-art Text-to-Speech Synthesis, developed at the
+**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**, official home of the massively
+multilingual ToucanTTS system. Our system is fast, controllable, and doesn't require a ton of compute.
+
+<br>
+
+![image](Utility/toucan.png)
+
+<br>
+
+If you find this repo useful, consider giving it a star. ⭐ Large numbers make me happy, and they are very motivating. If
+you want to motivate me even more, you can even
+consider [sponsoring this toolkit](https://github.com/sponsors/Flux9665). We only use GitHub Sponsors for this, there
+are scammers on other platforms that pretend to be the creator. Don't let them fool you. The code and the models are
+absolutely free, and thanks to the generous support of Hugging Face🤗, we even have
+an [instance of the model running on GPU](https://huggingface.co/spaces/Flux9665/MassivelyMultilingualTTS) free for
+anyone to use.
+
+--- 
+<br>
 
 ## Links 🦚
 
 ## Installation 🦉
 
-These instructions should work for most cases, but I heard of some instances where espeak behaves weird, which are
-sometimes resolved after a re-install and sometimes not. Also, M1 and M2 MacBooks require a very different installation
-process, with which I am unfortunately not familiar.
-
 #### Basic Requirements
+
+Python 3.10 is the recommended version.
 
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one cuda enabled GPU if you intend to train models on that machine. For inference, you don't need
@@ -60,9 +82,8 @@ absolute).
 
 #### Pretrained Models
 
-You don't need to use pretrained models, but it can speed things up tremendously. Run the `run_model_downloader.py`
-script to automatically download them from the release page and put them into their appropriate locations with
-appropriate names.
+You don't need to use pretrained models, but it can speed things up tremendously. They will be downloaded on the fly
+automatically when they are needed, thanks to Hugging Face🤗 and [VB](https://github.com/Vaibhavs10) in particular.
 
 #### \[optional] eSpeak-NG
 
@@ -100,7 +121,8 @@ However, the espeak-ng installation file you need to set this variable to is a .
 Mac. In order to locate the espeak-ng library file, you can run `port contents espeak-ng`. The specific file you are
 looking for is named `libespeak-ng.dylib`.
 
----
+--- 
+<br>
 
 ## Inference 🦢
 
@@ -127,7 +149,11 @@ There are simple scaling parameters to control the duration, the variance of the
 energy curve. You can either change them in the code when using the interactive demo or the reader, or you can simply
 pass them to the interface when you use it in your own code.
 
----
+To change the language of the model and see which languages are available in our pretrained model,
+[have a look at the list linked here](https://github.com/DigitalPhonetics/IMS-Toucan/blob/feb573ca630823974e6ced22591ab41cdfb93674/Utility/language_list.md)
+
+--- 
+<br>
 
 
 ## Training a Model 🦜
@@ -155,7 +181,9 @@ least a GPU ID).
 --wandb_resume_id <the id of the run you want to resume, if you are using weights&biases (you can find the id in the URL of the run)>
 ```
 
-After every epoch (or alternatively after certain step counts), some logs will be written to the console and to the Weights and Biases website, if you are logged in and set the flag. If you get cuda out of memory errors, you need to decrease
+After every epoch (or alternatively after certain step counts), some logs will be written to the console and to the
+Weights and Biases website, if you are logged in and set the flag. If you get cuda out of memory errors, you need to
+decrease
 the batchsize in the arguments of the call to the training_loop in the pipeline you are running. Try decreasing the
 batchsize in small steps until you get no more out of cuda memory errors.
 
@@ -171,7 +199,8 @@ manually.
 fuser -v /dev/nvidia*
 ```
 
-Whenever a checkpoint is saved, a compressed version that can be used for inference is also created, which is named _best.py_
+Whenever a checkpoint is saved, a compressed version that can be used for inference is also created, which is named
+_best.py_
 
 ### Configuring the Prosody Modeling
 You can customize key parameters for the probabilistic prosody model directly in the `ToucanTTS_Prosody.py` file:
@@ -221,9 +250,10 @@ python run_eval.py --model_dir ./checkpoints/my_model --version eval_v1 --gpu_id
 If --wandb is used, the results will be logged to your Weights & Biases dashboard.
 
 
----
+--- 
+<br>
 
-## Disclaimer 🦆
+## Acknowledgements 🦆
 
 The basic PyTorch modules of FastSpeech 2 and GST are taken from
 [ESPnet](https://github.com/espnet/espnet), the PyTorch modules of
@@ -237,8 +267,6 @@ use [encodec, a neural audio codec](https://github.com/yangdongchao/AcademiCodec
 for caching the train data to save space.
 
 ## Citation 🐧
-
-If you find this repo useful, consider giving it a star. Large numbers make me happy, and they are quite motivating :)
 
 <a href="https://star-history.com/#DigitalPhonetics/IMS-Toucan&Date">
  <picture>
@@ -309,7 +337,7 @@ If you find this repo useful, consider giving it a star. Large numbers make me h
 ### Our Contribution to the Blizzard Challenge 2023 [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.b)
 
 ```
-@inproceedings{lux2023controllable,
+@inproceedings{lux2023blizzard,
   year         = 2023,
   title        = {{The IMS Toucan System for the Blizzard Challenge 2023}},
   author       = {Florian Lux and Julia Koch and Sarina Meyer and Thomas Bott and Nadja Schauffler and Pavel Denisov and Antje Schweitzer and Ngoc Thang Vu},

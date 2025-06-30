@@ -3,9 +3,6 @@ import time
 import torch
 import wandb
 
-from Modules.ToucanTTS.ToucanTTS import ToucanTTS
-from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
-from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
 
 
@@ -28,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODEL_DIR, "ToucanTTS_English_v4")
+        save_dir = os.path.join(MODEL_DIR, "ToucanTTS_German_refined")
     os.makedirs(save_dir, exist_ok=True)
 
     if gpu_count > 1:
@@ -40,9 +37,39 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_libritts_all_clean,
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
-                                       lang="eng",
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_karlsson,
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
+                                       lang="deu",
+                                       gpu_count=gpu_count,
+                                       rank=rank))
+
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_eva,
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
+                                       lang="deu",
+                                       gpu_count=gpu_count,
+                                       rank=rank))
+
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_hokus,
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Hokus"),
+                                       lang="deu",
+                                       gpu_count=gpu_count,
+                                       rank=rank))
+
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_bernd,
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Bernd"),
+                                       lang="deu",
+                                       gpu_count=gpu_count,
+                                       rank=rank))
+
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_friedrich,
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Friedrich"),
+                                       lang="deu",
+                                       gpu_count=gpu_count,
+                                       rank=rank))
+
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_hui_others,
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "hui_others"),
+                                       lang="deu",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
@@ -70,11 +97,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     print("Training model")
     train_loop(net=model,
                datasets=[train_set],
-               device=device,
                batch_size=12,
                steps_per_checkpoint=1000,
+               device=device,
                save_directory=save_dir,
-               eval_lang="eng",
+               eval_lang="deu",
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume,

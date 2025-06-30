@@ -1,17 +1,23 @@
 import time
 
+import torch
 import wandb
-from torch.utils.data import ConcatDataset
 
 from Modules.ToucanTTS.ToucanTTS import ToucanTTS
 from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
-from Utility.storage_config import PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
+    from torch.utils.data import ConcatDataset
+
+    from Modules.ToucanTTS.ToucanTTS import ToucanTTS
+    from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+    from Utility.corpus_preparation import prepare_tts_corpus
+    from Utility.storage_config import MODEL_DIR
+    from Utility.storage_config import PREPROCESSING_DIR
+
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:
@@ -22,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_English_v2")
+        save_dir = os.path.join(MODEL_DIR, "ToucanTTS_English_v4")
     os.makedirs(save_dir, exist_ok=True)
 
     if gpu_count > 1:
@@ -34,13 +40,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_nancy,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
     chunk_count = 100
-    chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
+    chunks = split_dictionary_into_chunks(build_path_to_transcript_mls_english(), split_n=chunk_count)
     for index in range(chunk_count):
         datasets.append(prepare_tts_corpus(transcript_dict=chunks[index],
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_english_chunk_{index}"),
@@ -48,73 +54,73 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            gpu_count=gpu_count,
                                            rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ryanspeech,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ryanspeech,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "Ryan"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ljspeech,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_libritts_all_clean,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_vctk,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_vctk,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "vctk"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_nvidia_hifitts,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "hifi"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_CREMA_D,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "cremad"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_EmoV_DB,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_RAVDESS,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ESDS,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ESDS,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_blizzard_2013,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_jenny,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_jenny,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "jenny"),
                                        lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ears,
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ears,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "ears"),
                                        lang="eng",
                                        gpu_count=gpu_count,
@@ -144,7 +150,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     print("Training model")
     train_loop(net=model,
                datasets=[train_set],
-               batch_size=16,
+               batch_size=12,
                steps_per_checkpoint=1000,
                device=device,
                save_directory=save_dir,

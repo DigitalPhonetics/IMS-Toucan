@@ -112,7 +112,7 @@ def train_loop(net,
         train_iters.append(iter(train_loaders[-1]))
 
     # embedding training is not supported here
-    optimizer = torch.optim.RAdam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
 
@@ -173,7 +173,7 @@ def train_loop(net,
             param_group['lr'] = original_lr
 
     for step_counter in tqdm(range(steps_run_previously, steps)):
-        run_stochastic = step_counter > warmup_steps
+        run_stochastic = step_counter > warmup_steps * 2
 
         batches = []
         while len(batches) < batch_size:

@@ -21,6 +21,13 @@ from Utility.weight_averaging import load_net_bigvgan
 
 def collate_fn(batch):
     return torch.stack([x[0] for x in batch]), torch.stack([x[1] for x in batch])
+from Utility.weight_averaging import average_checkpoints
+from Utility.weight_averaging import get_n_recent_checkpoints_paths
+from Utility.weight_averaging import load_net_bigvgan
+
+
+def collate_fn(batch):
+    return torch.stack([x[0] for x in batch]), torch.stack([x[1] for x in batch])
 
 
 def train_loop(generator,
@@ -57,9 +64,12 @@ def train_loop(generator,
                               batch_size=batch_size,
                               shuffle=True,
                               num_workers=16,
+                              num_workers=16,
                               pin_memory=True,
                               drop_last=True,
                               prefetch_factor=2,
+                              persistent_workers=True,
+                              collate_fn=collate_fn)
                               persistent_workers=True,
                               collate_fn=collate_fn)
 
@@ -85,7 +95,6 @@ def train_loop(generator,
         discriminator_losses = list()
         generator_losses = list()
         mel_losses = list()
-        feat_match_losses = list()
         adversarial_losses = list()
 
         optimizer_g.zero_grad()
@@ -99,23 +108,21 @@ def train_loop(generator,
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
+            pred_wave = g(melspec)
             if torch.any(torch.isnan(pred_wave)):
                 print("A NaN in the wave! Skipping...")
                 continue
 
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             generator_total_loss = mel_loss * 45.0
+            generator_total_loss = mel_loss * 45.0
 
             if step_counter > generator_warmup + 100:  # a bit of warmup helps, but it's not that important
+                d_outs, d_fmaps = d(wave=pred_wave)
                 d_outs, d_fmaps = d(wave=pred_wave)
                 adversarial_loss = generator_adv_loss(d_outs)
                 adversarial_losses.append(adversarial_loss.item())
                 generator_total_loss = generator_total_loss + adversarial_loss * 2  # based on own experience
-
-                d_gold_outs, d_gold_fmaps = d(gold_wave)
-                feature_matching_loss = feature_loss(d_gold_fmaps, d_fmaps)
-                feat_match_losses.append(feature_matching_loss.item())
-                generator_total_loss = generator_total_loss + feature_matching_loss
 
             if torch.isnan(generator_total_loss):
                 print("Loss turned to NaN, skipping. The GAN possibly collapsed.")
@@ -170,6 +177,7 @@ def train_loop(generator,
             delete_old_checkpoints(model_save_dir, keep=5)
 
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=model_save_dir, n=1)
+            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=model_save_dir, n=1)
             averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_bigvgan)
             torch.save(averaged_model.state_dict(), os.path.join(model_save_dir, "best.pt"))
 
@@ -177,8 +185,6 @@ def train_loop(generator,
         log_dict = dict()
         log_dict["Generator Loss"] = round(sum(generator_losses) / len(generator_losses), 3)
         log_dict["Mel Loss"] = round(sum(mel_losses) / len(mel_losses), 3)
-        if len(feat_match_losses) > 0:
-            log_dict["Feature Matching Loss"] = round(sum(feat_match_losses) / len(feat_match_losses), 3)
         if len(adversarial_losses) > 0:
             log_dict["Adversarial Loss"] = round(sum(adversarial_losses) / len(adversarial_losses), 3)
         if len(discriminator_losses) > 0:

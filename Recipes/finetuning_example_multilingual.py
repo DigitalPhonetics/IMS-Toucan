@@ -6,18 +6,25 @@ Comments in ALL CAPS are instructions
 
 import time
 
+import torch
 import wandb
-from torch.utils.data import ConcatDataset
 
 from Modules.ToucanTTS.ToucanTTS import ToucanTTS
 from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
-from Utility.storage_config import PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
+    from huggingface_hub import hf_hub_download
+    from torch.utils.data import ConcatDataset
+
+    from Modules.ToucanTTS.ToucanTTS import ToucanTTS
+    from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+    from Utility.corpus_preparation import prepare_tts_corpus
+    from Utility.storage_config import MODEL_DIR
+    from Utility.storage_config import PREPROCESSING_DIR
+
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:
@@ -31,7 +38,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_German_and_English")  # RENAME TO SOMETHING MEANINGFUL FOR YOUR DATA
+        save_dir = os.path.join(MODEL_DIR, "ToucanTTS_German_and_English")  # RENAME TO SOMETHING MEANINGFUL FOR YOUR DATA
     os.makedirs(save_dir, exist_ok=True)
 
     all_train_sets = list()  # YOU CAN HAVE MULTIPLE LANGUAGES, OR JUST ONE. JUST MAKE ONE ConcatDataset PER LANGUAGE AND ADD IT TO THE LIST.
@@ -41,11 +48,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # =    German Data      =
     # =======================
     german_datasets = list()
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_karlsson(),
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
                                               lang="deu"))  # CHANGE THE TRANSCRIPT DICT, THE NAME OF THE CACHE DIRECTORY AND THE LANGUAGE TO YOUR NEEDS
 
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_eva(),
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
                                               lang="deu"))  # YOU CAN SIMPLY ADD MODE CORPORA AND DO THE SAME, BUT YOU DON'T HAVE TO, ONE IS ENOUGH
 
@@ -55,11 +62,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # =    English Data      =
     # ========================
     english_datasets = list()
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_nancy(),
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                                lang="eng"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_ljspeech(),
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                                lang="eng"))
 
@@ -86,7 +93,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                warmup_steps=500,
                lr=1e-5,  # if you have enough data (over ~1000 datapoints) you can increase this up to 1e-4 and it will still be stable, but learn quicker.
                # DOWNLOAD THESE INITIALIZATION MODELS FROM THE RELEASE PAGE OF THE GITHUB OR RUN THE DOWNLOADER SCRIPT TO GET THEM AUTOMATICALLY
-               path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") if resume_checkpoint is None else resume_checkpoint,
+               path_to_checkpoint=hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt") if resume_checkpoint is None else resume_checkpoint,
                fine_tune=True if resume_checkpoint is None and not resume else finetune,
                resume=resume,
                steps=5000,

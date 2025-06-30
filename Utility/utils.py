@@ -433,6 +433,7 @@ def load_json_from_path(path):
 
     return obj
 
+
 if __name__ == '__main__':
     data = np.random.randn(50)
     plt.plot(data, color="b")

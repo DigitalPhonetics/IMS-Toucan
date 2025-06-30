@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
-from Utility.storage_config import MODELS_DIR
+from Utility.storage_config import MODEL_DIR
 
 
 class CodecAlignerDataset(Dataset):
@@ -150,7 +150,7 @@ class CodecAlignerDataset(Dataset):
         self.speaker_embeddings = list()
         speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                       run_opts={"device": str(device)},
-                                                                      savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
+                                                                      savedir=os.path.join(MODEL_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
         with torch.inference_mode():
             for wave in tqdm(norm_waves):
                 self.speaker_embeddings.append(speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())

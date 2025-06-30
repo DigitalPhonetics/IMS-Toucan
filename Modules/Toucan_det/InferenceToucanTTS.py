@@ -14,7 +14,6 @@ from Modules.ToucanTTS.flow_matching import CFMDecoder
 from Modules.Toucan_det.DurationPredictor import DurationPredictor
 from Modules.Toucan_det.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from Utility.utils import integrate_with_utt_embed
 from Utility.utils import make_non_pad_mask
 
 
@@ -82,6 +81,7 @@ class ToucanTTS(torch.nn.Module):
         self.duration_log_scale = getattr(config, 'duration_log_scale', False)
         self.dropout = getattr(config, 'dropout', True)
         self.prosody_order = getattr(config, 'prosody_order', 'epd')
+
         self.input_feature_dimensions = input_feature_dimensions
         self.attention_dimension = attention_dimension
         self.use_scaled_pos_enc = use_scaled_positional_encoding
@@ -128,6 +128,7 @@ class ToucanTTS(torch.nn.Module):
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate,
                                                     utt_embed_dim=utt_embed_dim)
+
 
         self.pitch_predictor = VariancePredictor(idim=prosody_channels, n_layers=pitch_predictor_layers,
                                                  n_chans=pitch_predictor_chans,
@@ -185,6 +186,7 @@ class ToucanTTS(torch.nn.Module):
         else:
             self.prosody_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
 
+
         self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels,
                                                 out_channels=spec_channels,
                                                 filter_channels=cfm_filter_channels,
@@ -210,16 +212,22 @@ class ToucanTTS(torch.nn.Module):
                  pause_duration_scaling_factor=1.0,
                  prosody_creativity=0.7):
 
+
         text_tensors = torch.clamp(text_tensors, max=1.0)
         # this is necessary, because of the way we represent modifiers to keep them identifiable.
-
-        utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
 
         if not self.multilingual_model:
             lang_ids = None
 
         if not self.multispeaker_model:
             utterance_embedding = None
+
+        if utterance_embedding is not None:
+            utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
+            if self.integrate_language_embedding_into_encoder_out and lang_ids is not None:
+                lang_embs = self.encoder.language_embedding(lang_ids)
+                lang_embs = torch.nn.functional.normalize(lang_embs)
+                utterance_embedding = torch.cat([lang_embs, utterance_embedding], dim=1).detach()
 
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
@@ -255,7 +263,9 @@ class ToucanTTS(torch.nn.Module):
         else:
             predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
 
+
         # modifying the predictions with control parameters
+        predicted_durations[0][0] = 1 # if the initial pause is too long, we get artifacts. This is once more a dirty hack.
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                     predicted_durations[0][phoneme_index] = 0
@@ -272,7 +282,7 @@ class ToucanTTS(torch.nn.Module):
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
 
-        # frames = self.output_projection(decoded_speech) # this is only needed for training
+        preliminary_spectrogram = self.output_projection(decoded_speech)
 
         refined_codec_frames, _ = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
                                                           mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2),
@@ -280,6 +290,7 @@ class ToucanTTS(torch.nn.Module):
                                                           temperature=0.05,  # low temperature, so the model follows the specified prosody curves better.
                                                           c=utterance_embedding)
         refined_codec_frames = refined_codec_frames.transpose(1, 2)
+
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
     @torch.inference_mode()
@@ -296,6 +307,7 @@ class ToucanTTS(torch.nn.Module):
                 energy_variance_scale=1.0,
                 pause_duration_scaling_factor=1.0,
                 prosody_creativity=0.7):
+
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
 
@@ -335,19 +347,19 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.to(text.device)
 
         outs, \
-        predicted_durations, \
-        pitch_predictions, \
-        energy_predictions = self._forward(text.unsqueeze(0),
-                                           text_length,
-                                           gold_durations=durations,
-                                           gold_pitch=pitch,
-                                           gold_energy=energy,
-                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                           duration_scaling_factor=duration_scaling_factor,
-                                           pitch_variance_scale=pitch_variance_scale,
-                                           energy_variance_scale=energy_variance_scale,
-                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                           prosody_creativity=prosody_creativity)
+            predicted_durations, \
+            pitch_predictions, \
+            energy_predictions = self._forward(text.unsqueeze(0),
+                                               text_length,
+                                               gold_durations=durations,
+                                               gold_pitch=pitch,
+                                               gold_energy=energy,
+                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                               duration_scaling_factor=duration_scaling_factor,
+                                               pitch_variance_scale=pitch_variance_scale,
+                                               energy_variance_scale=energy_variance_scale,
+                                               pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                               prosody_creativity=prosody_creativity)
 
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions

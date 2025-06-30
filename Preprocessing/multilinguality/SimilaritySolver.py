@@ -1,11 +1,11 @@
 import json
-import os
 import pickle
 import random
 
 import numpy as np
+from huggingface_hub import hf_hub_download
 
-from Preprocessing.multilinguality.create_distance_lookups import CacheCreator
+from Utility.storage_config import MODEL_DIR
 from Utility.utils import load_json_from_path
 
 
@@ -32,26 +32,25 @@ class SimilaritySolver:
         self.lang_1_to_lang_2_to_learned_dist = learned_dist
         self.lang_1_to_lang_2_to_oracle_dist = oracle_dist
         self.iso_to_fullname = iso_to_fullname
-        iso_to_fullname_path = "iso_to_fullname.json" if not iso_to_fullname_path else iso_to_fullname_path
+        iso_to_fullname_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="iso_to_fullname.json") if not iso_to_fullname_path else iso_to_fullname_path
 
         if force_reload:
-            tree_dist_path = 'lang_1_to_lang_2_to_tree_dist.json' if not tree_dist_path else tree_dist_path
+            tree_dist_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_tree_dist.json") if not tree_dist_path else tree_dist_path
             self.lang_1_to_lang_2_to_tree_dist = load_json_from_path(tree_dist_path)
-            map_dist_path = 'lang_1_to_lang_2_to_map_dist.json' if not map_dist_path else map_dist_path
+            map_dist_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_map_dist.json") if not map_dist_path else map_dist_path
             self.lang_1_to_lang_2_to_map_dist = load_json_from_path(map_dist_path)
             self.largest_value_map_dist = 0.0
             for _, values in self.lang_1_to_lang_2_to_map_dist.items():
                 for _, value in values.items():
-                    self.largest_value_map_dist = max(self.largest_value_map_dist, value)            
-            learned_dist_path = 'lang_1_to_lang_2_to_learned_dist.json' if not learned_dist_path else tree_dist_path
+                    self.largest_value_map_dist = max(self.largest_value_map_dist, value)
+            learned_dist_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="lang_1_to_lang_2_to_learned_dist.json") if not learned_dist_path else tree_dist_path
             self.lang_1_to_lang_2_to_learned_dist = load_json_from_path(learned_dist_path)
             oracle_dist_path = 'lang_1_to_lang_2_to_oracle_dist.json' if not oracle_dist_path else oracle_dist_path
             self.lang_1_to_lang_2_to_oracle_dist = load_json_from_path(oracle_dist_path)
-            asp_dict_path = "asp_dict.pkl" if not asp_dict_path else asp_dict_path
+            asp_dict_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="asp_dict.pkl") if not asp_dict_path else asp_dict_path
             with open(asp_dict_path, "rb") as f:
                 self.asp_dict = pickle.load(f)
             self.iso_to_fullname = load_json_from_path(iso_to_fullname_path)
-
 
         pop_keys = list()
         for el in self.iso_to_fullname:
@@ -61,21 +60,21 @@ class SimilaritySolver:
             self.iso_to_fullname.pop(pop_key)
         with open(iso_to_fullname_path, 'w', encoding='utf-8') as f:
             json.dump(self.iso_to_fullname, f, ensure_ascii=False, indent=4)
-  
-    def find_closest_combined_distance(self, 
-                              lang, 
-                              supervised_langs, 
-                              combined_distance="average", 
-                              k=50, 
-                              individual_distances=False, 
-                              verbose=False, 
-                              excluded_features=[],
-                              find_furthest=False):
+
+    def find_closest_combined_distance(self,
+                                       lang,
+                                       supervised_langs,
+                                       combined_distance="average",
+                                       k=50,
+                                       individual_distances=False,
+                                       verbose=False,
+                                       excluded_features=[],
+                                       find_furthest=False):
         """Find the k closest languages according to a combination of map distance, tree distance, and ASP distance.
         Returns a dict of dicts (`individual_distances` optional) of the format {"supervised_lang_1": 
                                                 {"euclidean_distance": 5.39, "individual_distances": [<map_dist>, <tree_dist>, <asp_dist>]},
                                               "supervised_lang_2":
-                                                {...}, ...}"""         
+                                                {...}, ...}"""
 
         if combined_distance not in ["average", "euclidean"]:
             raise ValueError("distance needs to be `average` or `euclidean`")
@@ -92,10 +91,10 @@ class SimilaritySolver:
             asp_score = self.get_asp(lang, sup_lang, self.asp_dict)
             # if getting one of the scores failed, ignore this language
             if None in {map_dist, tree_dist, asp_score}:
-                continue           
-            
+                continue
+
             combined_dict[sup_lang] = {}
-            asp_dist = 1 - asp_score # turn into dist since other 2 are also dists
+            asp_dist = 1 - asp_score  # turn into dist since other 2 are also dists
             dist_list = []
             if "map" not in excluded_features:
                 dist_list.append(map_dist)
@@ -105,7 +104,7 @@ class SimilaritySolver:
                 dist_list.append(tree_dist)
             dist_array = np.array(dist_list)
             if combined_distance == "euclidean":
-                euclidean_dist = np.sqrt(np.sum(dist_array**2)) # no subtraction since lang has dist [0,0,0]
+                euclidean_dist = np.sqrt(np.sum(dist_array ** 2))  # no subtraction since lang has dist [0,0,0]
                 combined_dict[sup_lang]["combined_distance"] = euclidean_dist
             elif combined_distance == "average":
                 avg_dist = np.mean(dist_array)
@@ -131,7 +130,7 @@ class SimilaritySolver:
         Returns a dict {language: distance} sorted by distance."""
         distance_types = ["learned", "map", "tree", "asp", "random", "oracle"]
         if distance_type not in distance_types:
-            raise ValueError(f"Invalid distance type '{distance_type}'. Expected one of {distance_types}")        
+            raise ValueError(f"Invalid distance type '{distance_type}'. Expected one of {distance_types}")
         langs_to_dist = dict()
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
         # avoid error with `urk`
@@ -146,17 +145,17 @@ class SimilaritySolver:
                 if dist is not None:
                     langs_to_dist[sup_lang] = dist
         elif distance_type == "map":
-            for sup_lang in supervised_langs:                
+            for sup_lang in supervised_langs:
                 dist = self.get_map_distance(lang, sup_lang)
                 if dist is not None:
                     langs_to_dist[sup_lang] = dist
         elif distance_type == "tree":
-            for sup_lang in supervised_langs:                                
+            for sup_lang in supervised_langs:
                 dist = self.get_tree_distance(lang, sup_lang)
                 if dist is not None:
                     langs_to_dist[sup_lang] = dist
         elif distance_type == "asp":
-            for sup_lang in supervised_langs:                                
+            for sup_lang in supervised_langs:
                 asp_score = self.get_asp(lang, sup_lang, self.asp_dict)
                 if asp_score is not None:
                     asp_dist = 1 - asp_score
@@ -176,7 +175,7 @@ class SimilaritySolver:
         # sort results by distance and only keep the first k entries
         results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=find_furthest)[:k])
         if verbose:
-            sorted_by = "closest" if not find_furthest else "furthest"            
+            sorted_by = "closest" if not find_furthest else "furthest"
             print(f"{k} {sorted_by} languages to {self.iso_to_fullname[lang]} w.r.t. {distance_type} are:")
             for result in results:
                 try:
@@ -196,9 +195,9 @@ class SimilaritySolver:
                 dist = self.lang_1_to_lang_2_to_map_dist[lang_2][lang_1]
             except KeyError:
                 return None
-        dist = dist / self.largest_value_map_dist # normalize
+        dist = dist / self.largest_value_map_dist  # normalize
         return dist
-    
+
     def get_tree_distance(self, lang_1, lang_2):
         """Returns normalized tree distance between two languages.
         If no value can be retrieved, returns None."""
@@ -222,7 +221,7 @@ class SimilaritySolver:
             except KeyError:
                 return None
         return dist
-    
+
     def get_oracle_distance(self, lang_1, lang_2):
         """Returns oracle language embedding distance (MSE) between two languages.
         If no value can be retrieved, returns None."""
@@ -233,16 +232,16 @@ class SimilaritySolver:
                 dist = self.lang_1_to_lang_2_to_oracle_dist[lang_2][lang_1]
             except KeyError:
                 return None
-        return dist    
+        return dist
 
     def get_asp(self, lang_a, lang_b, path_to_dict):
         """Look up and return the ASP between lang_a and lang_b from (pre-calculated) dictionary at path_to_dict.
         Note: This is a SIMILARITY measure, NOT a distance!"""
         asp_dict = load_asp_dict(path_to_dict)
-        lang_list = list(asp_dict) # list of all languages, to get lang_b's index
-        lang_b_idx = lang_list.index(lang_b) # lang_b's index
+        lang_list = list(asp_dict)  # list of all languages, to get lang_b's index
+        lang_b_idx = lang_list.index(lang_b)  # lang_b's index
         try:
-            asp = asp_dict[lang_a][lang_b_idx] # asp_dict's structure: {lang: numpy array of all corresponding ASPs}
+            asp = asp_dict[lang_a][lang_b_idx]  # asp_dict's structure: {lang: numpy array of all corresponding ASPs}
         except KeyError:
             return None
         return asp
@@ -256,77 +255,3 @@ def load_asp_dict(path_to_dict):
         with open(path_to_dict, 'rb') as dictfile:
             asp_dict = pickle.load(dictfile)
         return asp_dict
-
-
-
-
-if __name__ == '__main__':
-    if not (os.path.exists("lang_1_to_lang_2_to_map_dist.json") and \
-            os.path.exists("lang_1_to_lang_2_to_tree_dist.json") and \
-            os.path.exists("lang_1_to_lang_2_to_oracle_dist.json") and \
-            os.path.exists("lang_1_to_lang_2_to_learned_dist.json") and \
-            os.path.exists("asp_dict.pkl")):
-        CacheCreator()
-
-    ss = SimilaritySolver()
-
-    ss.find_closest("asp", 
-                    "aym", 
-                    ['eng', 'deu', 'fra', 'spa', 'cmn', 'por', 'pol', 'ita', 'nld', 'ell', 'fin', 'vie', 'rus', 'hun', 'bem', 'swh', 'amh', 'wol', 'mal', 'chv', 'iba', 'jav', 'fon', 'hau', 'lbb', 'kik', 'lin', 'lug', 'luo', 'sxb', 'yor', 'nya', 'loz', 'toi', 'afr', 'arb', 'asm', 'ast', 'azj', 'bel', 'bul', 'ben', 'bos', 'cat',
-                    'ceb', 'sdh', 'ces', 'cym', 'dan', 'ekk', 'pes', 'fil', 'gle', 'glg', 'guj', 'heb', 'hin', 'hrv', 'hye', 'ind', 'ibo', 'isl', 'kat', 'kam', 'kea', 'kaz', 'khm', 'kan', 'kor', 'ltz', 'lao', 'lit', 'lvs', 'mri', 'mkd', 'xng', 'mar', 'zsm', 'mlt', 'oci', 'ory', 'pan', 'pst', 'ron', 'snd', 'slk', 'slv', 'sna',
-                    'som', 'srp', 'swe', 'tam', 'tel', 'tgk', 'tur', 'ukr', 'umb', 'urd', 'uzn', 'bhd', 'kfs', 'dgo', 'gbk', 'bgc', 'xnr', 'kfx', 'mjl', 'bfz', 'acf', 'bss', 'inb', 'nca', 'quh', 'wap', 'acr', 'bus', 'dgr', 'maz', 'nch', 'qul', 'tav', 'wmw', 'acu', 'byr', 'dik', 'iou', 'mbb', 'ncj', 'qvc', 'tbc', 'xed', 'agd',
-                    'bzh', 'djk', 'ipi', 'mbc', 'ncl', 'qve', 'tbg', 'xon', 'agg', 'bzj', 'dop', 'jac', 'mbh', 'ncu', 'qvh', 'tbl', 'xtd', 'agn', 'caa', 'jic', 'mbj', 'ndj', 'qvm', 'tbz', 'xtm', 'agr', 'cab', 'emp', 'jiv', 'mbt', 'nfa', 'qvn', 'tca', 'yaa', 'agu', 'cap', 'jvn', 'mca', 'ngp', 'qvs', 'tcs', 'yad', 'aia', 'car',
-                    'ese', 'mcb', 'ngu', 'qvw', 'yal', 'cax', 'kaq', 'mcd', 'nhe', 'qvz', 'tee', 'ycn', 'ake', 'cbc', 'far', 'mco', 'qwh', 'yka', 'alp', 'cbi', 'kdc', 'mcp', 'nhu', 'qxh', 'ame', 'cbr', 'gai', 'kde', 'mcq', 'nhw', 'qxn', 'tew', 'yre', 'amf', 'cbs', 'gam', 'kdl', 'mdy', 'nhy', 'qxo', 'tfr', 'yva', 'amk', 'cbt',
-                    'geb', 'kek', 'med', 'nin', 'rai', 'zaa', 'apb', 'cbu', 'glk', 'ken', 'mee', 'nko', 'rgu', 'zab', 'apr', 'cbv', 'meq', 'tgo', 'zac', 'arl', 'cco', 'gng', 'kje', 'met', 'nlg', 'rop', 'tgp', 'zad', 'grc', 'klv', 'mgh', 'nnq', 'rro', 'zai', 'ata', 'cek', 'gub', 'kmu', 'mib', 'noa', 'ruf', 'tna', 'zam', 'atb',
-                    'cgc', 'guh', 'kne', 'mie', 'not', 'rug', 'tnk', 'zao', 'atg', 'chf', 'knf', 'mih', 'npl', 'tnn', 'zar', 'awb', 'chz', 'gum', 'knj', 'mil', 'sab', 'tnp', 'zas', 'cjo', 'guo', 'ksr', 'mio', 'obo', 'seh', 'toc', 'zav', 'azg', 'cle', 'gux', 'kue', 'mit', 'omw', 'sey', 'tos', 'zaw', 'azz', 'cme', 'gvc', 'kvn',
-                    'miz', 'ood', 'sgb', 'tpi', 'zca', 'bao', 'cni', 'gwi', 'kwd', 'mkl', 'shp', 'tpt', 'zga', 'bba', 'cnl', 'gym', 'kwf', 'mkn', 'ote', 'sja', 'trc', 'ziw', 'bbb', 'cnt', 'gyr', 'kwi', 'mop', 'otq', 'snn', 'ttc', 'zlm', 'cof', 'hat', 'kyc', 'mox', 'pab', 'snp', 'tte', 'zos', 'bgt', 'con', 'kyf', 'mpm', 'pad',
-                    'tue', 'zpc', 'bjr', 'cot', 'kyg', 'mpp', 'soy', 'tuf', 'zpl', 'bjv', 'cpa', 'kyq', 'mpx', 'pao', 'tuo', 'zpm', 'bjz', 'cpb', 'hlt', 'kyz', 'mqb', 'pib', 'spp', 'zpo', 'bkd', 'cpu', 'hns', 'lac', 'mqj', 'pir', 'spy', 'txq', 'zpu', 'blz', 'crn', 'hto', 'lat', 'msy', 'pjt', 'sri', 'txu', 'zpz', 'bmr', 'cso',
-                    'hub', 'lex', 'mto', 'pls', 'srm', 'udu', 'ztq', 'bmu', 'ctu', 'lgl', 'muy', 'poi', 'srn', 'zty', 'bnp', 'cuc', 'lid', 'mxb', 'stp', 'upv', 'zyp', 'boa', 'cui', 'huu', 'mxq', 'sus', 'ura', 'boj', 'cuk', 'huv', 'llg', 'mxt', 'poy', 'suz', 'urb', 'box', 'cwe', 'hvn', 'prf', 'urt', 'bpr', 'cya', 'ign', 'lww',
-                    'myk', 'ptu', 'usp', 'bps', 'daa', 'ikk', 'maj', 'myy', 'vid', 'bqc', 'dah', 'nab', 'qub', 'tac', 'bqp', 'ded', 'imo', 'maq', 'nas', 'quf', 'taj', 'vmy'],
-                    k=5, verbose=True)
-    
-    ss.find_closest_combined_distance("aym",
-                                      ['eng', 'deu', 'fra', 'spa', 'cmn', 'por', 'pol', 'ita', 'nld', 'ell', 'fin', 'vie', 'rus', 'hun', 'bem', 'swh', 'amh', 'wol', 'mal', 'chv', 'iba', 'jav', 'fon', 'hau', 'lbb', 'kik', 'lin', 'lug', 'luo', 'sxb', 'yor', 'nya', 'loz', 'toi', 'afr', 'arb', 'asm', 'ast', 'azj', 'bel', 'bul', 'ben', 'bos', 'cat',
-                                        'ceb', 'sdh', 'ces', 'cym', 'dan', 'ekk', 'pes', 'fil', 'gle', 'glg', 'guj', 'heb', 'hin', 'hrv', 'hye', 'ind', 'ibo', 'isl', 'kat', 'kam', 'kea', 'kaz', 'khm', 'kan', 'kor', 'ltz', 'lao', 'lit', 'lvs', 'mri', 'mkd', 'xng', 'mar', 'zsm', 'mlt', 'oci', 'ory', 'pan', 'pst', 'ron', 'snd', 'slk', 'slv', 'sna',
-                                        'som', 'srp', 'swe', 'tam', 'tel', 'tgk', 'tur', 'ukr', 'umb', 'urd', 'uzn', 'bhd', 'kfs', 'dgo', 'gbk', 'bgc', 'xnr', 'kfx', 'mjl', 'bfz', 'acf', 'bss', 'inb', 'nca', 'quh', 'wap', 'acr', 'bus', 'dgr', 'maz', 'nch', 'qul', 'tav', 'wmw', 'acu', 'byr', 'dik', 'iou', 'mbb', 'ncj', 'qvc', 'tbc', 'xed', 'agd',
-                                        'bzh', 'djk', 'ipi', 'mbc', 'ncl', 'qve', 'tbg', 'xon', 'agg', 'bzj', 'dop', 'jac', 'mbh', 'ncu', 'qvh', 'tbl', 'xtd', 'agn', 'caa', 'jic', 'mbj', 'ndj', 'qvm', 'tbz', 'xtm', 'agr', 'cab', 'emp', 'jiv', 'mbt', 'nfa', 'qvn', 'tca', 'yaa', 'agu', 'cap', 'jvn', 'mca', 'ngp', 'qvs', 'tcs', 'yad', 'aia', 'car',
-                                        'ese', 'mcb', 'ngu', 'qvw', 'yal', 'cax', 'kaq', 'mcd', 'nhe', 'qvz', 'tee', 'ycn', 'ake', 'cbc', 'far', 'mco', 'qwh', 'yka', 'alp', 'cbi', 'kdc', 'mcp', 'nhu', 'qxh', 'ame', 'cbr', 'gai', 'kde', 'mcq', 'nhw', 'qxn', 'tew', 'yre', 'amf', 'cbs', 'gam', 'kdl', 'mdy', 'nhy', 'qxo', 'tfr', 'yva', 'amk', 'cbt',
-                                        'geb', 'kek', 'med', 'nin', 'rai', 'zaa', 'apb', 'cbu', 'glk', 'ken', 'mee', 'nko', 'rgu', 'zab', 'apr', 'cbv', 'meq', 'tgo', 'zac', 'arl', 'cco', 'gng', 'kje', 'met', 'nlg', 'rop', 'tgp', 'zad', 'grc', 'klv', 'mgh', 'nnq', 'rro', 'zai', 'ata', 'cek', 'gub', 'kmu', 'mib', 'noa', 'ruf', 'tna', 'zam', 'atb',
-                                        'cgc', 'guh', 'kne', 'mie', 'not', 'rug', 'tnk', 'zao', 'atg', 'chf', 'knf', 'mih', 'npl', 'tnn', 'zar', 'awb', 'chz', 'gum', 'knj', 'mil', 'sab', 'tnp', 'zas', 'cjo', 'guo', 'ksr', 'mio', 'obo', 'seh', 'toc', 'zav', 'azg', 'cle', 'gux', 'kue', 'mit', 'omw', 'sey', 'tos', 'zaw', 'azz', 'cme', 'gvc', 'kvn',
-                                        'miz', 'ood', 'sgb', 'tpi', 'zca', 'bao', 'cni', 'gwi', 'kwd', 'mkl', 'shp', 'tpt', 'zga', 'bba', 'cnl', 'gym', 'kwf', 'mkn', 'ote', 'sja', 'trc', 'ziw', 'bbb', 'cnt', 'gyr', 'kwi', 'mop', 'otq', 'snn', 'ttc', 'zlm', 'cof', 'hat', 'kyc', 'mox', 'pab', 'snp', 'tte', 'zos', 'bgt', 'con', 'kyf', 'mpm', 'pad',
-                                        'tue', 'zpc', 'bjr', 'cot', 'kyg', 'mpp', 'soy', 'tuf', 'zpl', 'bjv', 'cpa', 'kyq', 'mpx', 'pao', 'tuo', 'zpm', 'bjz', 'cpb', 'hlt', 'kyz', 'mqb', 'pib', 'spp', 'zpo', 'bkd', 'cpu', 'hns', 'lac', 'mqj', 'pir', 'spy', 'txq', 'zpu', 'blz', 'crn', 'hto', 'lat', 'msy', 'pjt', 'sri', 'txu', 'zpz', 'bmr', 'cso',
-                                        'hub', 'lex', 'mto', 'pls', 'srm', 'udu', 'ztq', 'bmu', 'ctu', 'lgl', 'muy', 'poi', 'srn', 'zty', 'bnp', 'cuc', 'lid', 'mxb', 'stp', 'upv', 'zyp', 'boa', 'cui', 'huu', 'mxq', 'sus', 'ura', 'boj', 'cuk', 'huv', 'llg', 'mxt', 'poy', 'suz', 'urb', 'box', 'cwe', 'hvn', 'prf', 'urt', 'bpr', 'cya', 'ign', 'lww',
-                                        'myk', 'ptu', 'usp', 'bps', 'daa', 'ikk', 'maj', 'myy', 'vid', 'bqc', 'dah', 'nab', 'qub', 'tac', 'bqp', 'ded', 'imo', 'maq', 'nas', 'quf', 'taj', 'vmy'], 
-                                      distance="average", 
-                                      k=5, 
-                                      verbose=True)
-
-    ss.find_closest("map", 
-                    "aym", 
-                    ['eng', 'deu', 'fra', 'spa', 'cmn', 'por', 'pol', 'ita', 'nld', 'ell', 'fin', 'vie', 'rus', 'hun', 'bem', 'swh', 'amh', 'wol', 'mal', 'chv', 'iba', 'jav', 'fon', 'hau', 'lbb', 'kik', 'lin', 'lug', 'luo', 'sxb', 'yor', 'nya', 'loz', 'toi', 'afr', 'arb', 'asm', 'ast', 'azj', 'bel', 'bul', 'ben', 'bos', 'cat',
-                    'ceb', 'sdh', 'ces', 'cym', 'dan', 'ekk', 'pes', 'fil', 'gle', 'glg', 'guj', 'heb', 'hin', 'hrv', 'hye', 'ind', 'ibo', 'isl', 'kat', 'kam', 'kea', 'kaz', 'khm', 'kan', 'kor', 'ltz', 'lao', 'lit', 'lvs', 'mri', 'mkd', 'xng', 'mar', 'zsm', 'mlt', 'oci', 'ory', 'pan', 'pst', 'ron', 'snd', 'slk', 'slv', 'sna',
-                    'som', 'srp', 'swe', 'tam', 'tel', 'tgk', 'tur', 'ukr', 'umb', 'urd', 'uzn', 'bhd', 'kfs', 'dgo', 'gbk', 'bgc', 'xnr', 'kfx', 'mjl', 'bfz', 'acf', 'bss', 'inb', 'nca', 'quh', 'wap', 'acr', 'bus', 'dgr', 'maz', 'nch', 'qul', 'tav', 'wmw', 'acu', 'byr', 'dik', 'iou', 'mbb', 'ncj', 'qvc', 'tbc', 'xed', 'agd',
-                    'bzh', 'djk', 'ipi', 'mbc', 'ncl', 'qve', 'tbg', 'xon', 'agg', 'bzj', 'dop', 'jac', 'mbh', 'ncu', 'qvh', 'tbl', 'xtd', 'agn', 'caa', 'jic', 'mbj', 'ndj', 'qvm', 'tbz', 'xtm', 'agr', 'cab', 'emp', 'jiv', 'mbt', 'nfa', 'qvn', 'tca', 'yaa', 'agu', 'cap', 'jvn', 'mca', 'ngp', 'qvs', 'tcs', 'yad', 'aia', 'car',
-                    'ese', 'mcb', 'ngu', 'qvw', 'yal', 'cax', 'kaq', 'mcd', 'nhe', 'qvz', 'tee', 'ycn', 'ake', 'cbc', 'far', 'mco', 'qwh', 'yka', 'alp', 'cbi', 'kdc', 'mcp', 'nhu', 'qxh', 'ame', 'cbr', 'gai', 'kde', 'mcq', 'nhw', 'qxn', 'tew', 'yre', 'amf', 'cbs', 'gam', 'kdl', 'mdy', 'nhy', 'qxo', 'tfr', 'yva', 'amk', 'cbt',
-                    'geb', 'kek', 'med', 'nin', 'rai', 'zaa', 'apb', 'cbu', 'glk', 'ken', 'mee', 'nko', 'rgu', 'zab', 'apr', 'cbv', 'meq', 'tgo', 'zac', 'arl', 'cco', 'gng', 'kje', 'met', 'nlg', 'rop', 'tgp', 'zad', 'grc', 'klv', 'mgh', 'nnq', 'rro', 'zai', 'ata', 'cek', 'gub', 'kmu', 'mib', 'noa', 'ruf', 'tna', 'zam', 'atb',
-                    'cgc', 'guh', 'kne', 'mie', 'not', 'rug', 'tnk', 'zao', 'atg', 'chf', 'knf', 'mih', 'npl', 'tnn', 'zar', 'awb', 'chz', 'gum', 'knj', 'mil', 'sab', 'tnp', 'zas', 'cjo', 'guo', 'ksr', 'mio', 'obo', 'seh', 'toc', 'zav', 'azg', 'cle', 'gux', 'kue', 'mit', 'omw', 'sey', 'tos', 'zaw', 'azz', 'cme', 'gvc', 'kvn',
-                    'miz', 'ood', 'sgb', 'tpi', 'zca', 'bao', 'cni', 'gwi', 'kwd', 'mkl', 'shp', 'tpt', 'zga', 'bba', 'cnl', 'gym', 'kwf', 'mkn', 'ote', 'sja', 'trc', 'ziw', 'bbb', 'cnt', 'gyr', 'kwi', 'mop', 'otq', 'snn', 'ttc', 'zlm', 'cof', 'hat', 'kyc', 'mox', 'pab', 'snp', 'tte', 'zos', 'bgt', 'con', 'kyf', 'mpm', 'pad',
-                    'tue', 'zpc', 'bjr', 'cot', 'kyg', 'mpp', 'soy', 'tuf', 'zpl', 'bjv', 'cpa', 'kyq', 'mpx', 'pao', 'tuo', 'zpm', 'bjz', 'cpb', 'hlt', 'kyz', 'mqb', 'pib', 'spp', 'zpo', 'bkd', 'cpu', 'hns', 'lac', 'mqj', 'pir', 'spy', 'txq', 'zpu', 'blz', 'crn', 'hto', 'lat', 'msy', 'pjt', 'sri', 'txu', 'zpz', 'bmr', 'cso',
-                    'hub', 'lex', 'mto', 'pls', 'srm', 'udu', 'ztq', 'bmu', 'ctu', 'lgl', 'muy', 'poi', 'srn', 'zty', 'bnp', 'cuc', 'lid', 'mxb', 'stp', 'upv', 'zyp', 'boa', 'cui', 'huu', 'mxq', 'sus', 'ura', 'boj', 'cuk', 'huv', 'llg', 'mxt', 'poy', 'suz', 'urb', 'box', 'cwe', 'hvn', 'prf', 'urt', 'bpr', 'cya', 'ign', 'lww',
-                    'myk', 'ptu', 'usp', 'bps', 'daa', 'ikk', 'maj', 'myy', 'vid', 'bqc', 'dah', 'nab', 'qub', 'tac', 'bqp', 'ded', 'imo', 'maq', 'nas', 'quf', 'taj', 'vmy'],
-                    k=5)
-
-    ss.find_closest("tree", 
-                    "aym", 
-                    ['eng', 'deu', 'fra', 'spa', 'cmn', 'por', 'pol', 'ita', 'nld', 'ell', 'fin', 'vie', 'rus', 'hun', 'bem', 'swh', 'amh', 'wol', 'mal', 'chv', 'iba', 'jav', 'fon', 'hau', 'lbb', 'kik', 'lin', 'lug', 'luo', 'sxb', 'yor', 'nya', 'loz', 'toi', 'afr', 'arb', 'asm', 'ast', 'azj', 'bel', 'bul', 'ben', 'bos', 'cat',
-                    'ceb', 'sdh', 'ces', 'cym', 'dan', 'ekk', 'pes', 'fil', 'gle', 'glg', 'guj', 'heb', 'hin', 'hrv', 'hye', 'ind', 'ibo', 'isl', 'kat', 'kam', 'kea', 'kaz', 'khm', 'kan', 'kor', 'ltz', 'lao', 'lit', 'lvs', 'mri', 'mkd', 'xng', 'mar', 'zsm', 'mlt', 'oci', 'ory', 'pan', 'pst', 'ron', 'snd', 'slk', 'slv', 'sna',
-                    'som', 'srp', 'swe', 'tam', 'tel', 'tgk', 'tur', 'ukr', 'umb', 'urd', 'uzn', 'bhd', 'kfs', 'dgo', 'gbk', 'bgc', 'xnr', 'kfx', 'mjl', 'bfz', 'acf', 'bss', 'inb', 'nca', 'quh', 'wap', 'acr', 'bus', 'dgr', 'maz', 'nch', 'qul', 'tav', 'wmw', 'acu', 'byr', 'dik', 'iou', 'mbb', 'ncj', 'qvc', 'tbc', 'xed', 'agd',
-                    'bzh', 'djk', 'ipi', 'mbc', 'ncl', 'qve', 'tbg', 'xon', 'agg', 'bzj', 'dop', 'jac', 'mbh', 'ncu', 'qvh', 'tbl', 'xtd', 'agn', 'caa', 'jic', 'mbj', 'ndj', 'qvm', 'tbz', 'xtm', 'agr', 'cab', 'emp', 'jiv', 'mbt', 'nfa', 'qvn', 'tca', 'yaa', 'agu', 'cap', 'jvn', 'mca', 'ngp', 'qvs', 'tcs', 'yad', 'aia', 'car',
-                    'ese', 'mcb', 'ngu', 'qvw', 'yal', 'cax', 'kaq', 'mcd', 'nhe', 'qvz', 'tee', 'ycn', 'ake', 'cbc', 'far', 'mco', 'qwh', 'yka', 'alp', 'cbi', 'kdc', 'mcp', 'nhu', 'qxh', 'ame', 'cbr', 'gai', 'kde', 'mcq', 'nhw', 'qxn', 'tew', 'yre', 'amf', 'cbs', 'gam', 'kdl', 'mdy', 'nhy', 'qxo', 'tfr', 'yva', 'amk', 'cbt',
-                    'geb', 'kek', 'med', 'nin', 'rai', 'zaa', 'apb', 'cbu', 'glk', 'ken', 'mee', 'nko', 'rgu', 'zab', 'apr', 'cbv', 'meq', 'tgo', 'zac', 'arl', 'cco', 'gng', 'kje', 'met', 'nlg', 'rop', 'tgp', 'zad', 'grc', 'klv', 'mgh', 'nnq', 'rro', 'zai', 'ata', 'cek', 'gub', 'kmu', 'mib', 'noa', 'ruf', 'tna', 'zam', 'atb',
-                    'cgc', 'guh', 'kne', 'mie', 'not', 'rug', 'tnk', 'zao', 'atg', 'chf', 'knf', 'mih', 'npl', 'tnn', 'zar', 'awb', 'chz', 'gum', 'knj', 'mil', 'sab', 'tnp', 'zas', 'cjo', 'guo', 'ksr', 'mio', 'obo', 'seh', 'toc', 'zav', 'azg', 'cle', 'gux', 'kue', 'mit', 'omw', 'sey', 'tos', 'zaw', 'azz', 'cme', 'gvc', 'kvn',
-                    'miz', 'ood', 'sgb', 'tpi', 'zca', 'bao', 'cni', 'gwi', 'kwd', 'mkl', 'shp', 'tpt', 'zga', 'bba', 'cnl', 'gym', 'kwf', 'mkn', 'ote', 'sja', 'trc', 'ziw', 'bbb', 'cnt', 'gyr', 'kwi', 'mop', 'otq', 'snn', 'ttc', 'zlm', 'cof', 'hat', 'kyc', 'mox', 'pab', 'snp', 'tte', 'zos', 'bgt', 'con', 'kyf', 'mpm', 'pad',
-                    'tue', 'zpc', 'bjr', 'cot', 'kyg', 'mpp', 'soy', 'tuf', 'zpl', 'bjv', 'cpa', 'kyq', 'mpx', 'pao', 'tuo', 'zpm', 'bjz', 'cpb', 'hlt', 'kyz', 'mqb', 'pib', 'spp', 'zpo', 'bkd', 'cpu', 'hns', 'lac', 'mqj', 'pir', 'spy', 'txq', 'zpu', 'blz', 'crn', 'hto', 'lat', 'msy', 'pjt', 'sri', 'txu', 'zpz', 'bmr', 'cso',
-                    'hub', 'lex', 'mto', 'pls', 'srm', 'udu', 'ztq', 'bmu', 'ctu', 'lgl', 'muy', 'poi', 'srn', 'zty', 'bnp', 'cuc', 'lid', 'mxb', 'stp', 'upv', 'zyp', 'boa', 'cui', 'huu', 'mxq', 'sus', 'ura', 'boj', 'cuk', 'huv', 'llg', 'mxt', 'poy', 'suz', 'urb', 'box', 'cwe', 'hvn', 'prf', 'urt', 'bpr', 'cya', 'ign', 'lww',
-                    'myk', 'ptu', 'usp', 'bps', 'daa', 'ikk', 'maj', 'myy', 'vid', 'bqc', 'dah', 'nab', 'qub', 'tac', 'bqp', 'ded', 'imo', 'maq', 'nas', 'quf', 'taj', 'vmy'],
-                     k=10, find_furthest=True)

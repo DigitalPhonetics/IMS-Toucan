@@ -1,18 +1,22 @@
-import os
-
+import librosa
 import numpy
 import soundfile as sf
 import torch
+from huggingface_hub import hf_hub_download
 
 from Modules.Aligner.Aligner import Aligner
 from Modules.ToucanTTS.DurationCalculator import DurationCalculator
 from Modules.ToucanTTS.EnergyCalculator import EnergyCalculator
 from Modules.ToucanTTS.PitchCalculator import Parselmouth
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
+from Modules.Aligner.Aligner import Aligner
+from Modules.ToucanTTS.DurationCalculator import DurationCalculator
+from Modules.ToucanTTS.EnergyCalculator import EnergyCalculator
+from Modules.ToucanTTS.PitchCalculator import Parselmouth
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from Utility.storage_config import MODELS_DIR
+from Utility.storage_config import MODEL_DIR
 from Utility.utils import float2pcm
 
 
@@ -28,7 +32,7 @@ class UtteranceCloner:
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language=language, device=device)
         self.device = device
-        acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
+        acoustic_checkpoint_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="Aligner.pt")
         self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location=device)["asr_model"]
         torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
         # careful: assumes 16kHz or 8kHz audio
@@ -54,6 +58,10 @@ class UtteranceCloner:
             self.acoustic_model.eval()
 
         wave, sr = sf.read(ref_audio_path)
+        if len(wave.shape) > 1:  # oh no, we found a stereo audio!
+            if len(wave[0]) == 2:  # let's figure out whether we need to switch the axes
+                wave = wave.transpose()  # if yes, we switch the axes.
+        wave = librosa.to_mono(wave)
         if self.tf.language != lang:
             self.tf = ArticulatoryCombinedTextFrontend(language=lang, device=self.device)
         if self.ap.input_sr != sr:
@@ -151,7 +159,7 @@ class UtteranceCloner:
         self.tts.set_language(lang)
         start_sil = numpy.zeros([int(silence_frames_start * 1.5)])  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
         end_sil = numpy.zeros([int(silence_frames_end * 1.5)])  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
-        cloned_speech, sr = self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy)
+        cloned_speech, sr = self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch.transpose(0, 1), energy=energy.transpose(0, 1))
         cloned_utt = numpy.concatenate([start_sil, cloned_speech, end_sil], axis=0)
         if filename_of_result is not None:
             sf.write(file=filename_of_result, data=float2pcm(cloned_utt), samplerate=sr, subtype="PCM_16")

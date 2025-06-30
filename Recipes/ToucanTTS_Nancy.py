@@ -1,16 +1,23 @@
 import time
 
+import torch
 import wandb
 
 from Modules.ToucanTTS.ToucanTTS import ToucanTTS
 from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
-from Utility.storage_config import PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
+    from torch.utils.data import ConcatDataset
+
+    from Modules.ToucanTTS.ToucanTTS import ToucanTTS
+    from Modules.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+    from Utility.corpus_preparation import prepare_tts_corpus
+    from Utility.storage_config import MODEL_DIR
+    from Utility.storage_config import PREPROCESSING_DIR
+
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:
@@ -21,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_Nancy")
+        save_dir = os.path.join(MODEL_DIR, "ToucanTTS_Nancy")
     os.makedirs(save_dir, exist_ok=True)
 
     if gpu_count > 1:
@@ -31,7 +38,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         rank = 0
 
-    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_nancy(),
                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                    lang="eng",
                                    save_imgs=False,
@@ -61,6 +68,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     train_loop(net=model,
                datasets=[train_set],
                device=device,
+               warmup_steps=4000,
+               steps=200000,
+               batch_size=16,
                save_directory=save_dir,
                eval_lang="eng",
                path_to_checkpoint=resume_checkpoint,

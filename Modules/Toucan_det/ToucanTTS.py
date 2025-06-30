@@ -15,7 +15,6 @@ from Modules.ToucanTTS.StochasticToucanTTSLoss import StochasticToucanTTSLoss
 from Modules.ToucanTTS.flow_matching import CFMDecoder
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import initialize
-from Utility.utils import integrate_with_utt_embed
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
@@ -96,7 +95,7 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # cfm decoder
-                 cfm_filter_channels=512,
+                 cfm_filter_channels=256,
                  cfm_heads=4,
                  cfm_layers=3,
                  cfm_kernel_size=5,
@@ -105,8 +104,8 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
-                 lang_emb_size=16,  # lower dimensions seem to work better
-                 integrate_language_embedding_into_encoder_out=False,
+                 lang_emb_size=32,  # lower dimensions seem to work better
+                 integrate_language_embedding_into_encoder_out=True,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
         super().__init__()
@@ -169,6 +168,12 @@ class ToucanTTS(torch.nn.Module):
             "integrate_language_embedding_into_encoder_out": integrate_language_embedding_into_encoder_out
         }
 
+        if lang_embs is None or lang_embs == 0:
+            lang_embs = None
+            integrate_language_embedding_into_encoder_out = False
+        if integrate_language_embedding_into_encoder_out:
+            utt_embed_dim = utt_embed_dim + lang_emb_size
+
         self.input_feature_dimensions = input_feature_dimensions
         self.attention_dimension = attention_dimension
         self.use_scaled_pos_enc = use_scaled_positional_encoding
@@ -199,16 +204,6 @@ class ToucanTTS(torch.nn.Module):
                                  lang_emb_size=lang_emb_size,
                                  use_output_norm=True,
                                  embedding_integration=embedding_integration)
-
-        if self.integrate_language_embedding_into_encoder_out:
-            self.language_embedding_projection = torch.nn.Linear(lang_emb_size, attention_dimension)
-            self.language_emb_norm = LayerNorm(attention_dimension)
-            if embedding_integration == "AdaIN":
-                self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
-            elif embedding_integration == "ConditionalLayerNorm":
-                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
-            else:
-                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                     out_channels=attention_dimension,
@@ -363,13 +358,18 @@ class ToucanTTS(torch.nn.Module):
         text_tensors = torch.clamp(text_tensors, max=1.0)
         # this is necessary, because of the way we represent modifiers to keep them identifiable.
 
-        utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
-
         if not self.multilingual_model:
             lang_ids = None
 
         if not self.multispeaker_model:
             utterance_embedding = None
+
+        if utterance_embedding is not None:
+            utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
+            if self.integrate_language_embedding_into_encoder_out and lang_ids is not None:
+                lang_embs = self.encoder.language_embedding(lang_ids)
+                lang_embs = torch.nn.functional.normalize(lang_embs)
+                utterance_embedding = torch.cat([lang_embs, utterance_embedding], dim=1).detach()
 
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
@@ -467,6 +467,7 @@ class ToucanTTS(torch.nn.Module):
                                                                   temperature=0.2,
                                                                   c=utterance_embedding)
                 refined_codec_frames = refined_codec_frames.transpose(1, 2)
+
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
@@ -477,8 +478,8 @@ class ToucanTTS(torch.nn.Module):
             if run_stochastic:
                 stochastic_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2),
                                                                              mask=decoder_masks.float(),
-                                                                             mu=self.cfm_projection(decoded_speech).transpose(1, 2),
-                                                                             c=utterance_embedding)
+                                                                             mu=preliminary_spectrogram.transpose(1, 2).detach(),
+                                                                             c=None)
             else:
                 stochastic_loss = None
             return preliminary_spectrogram, \

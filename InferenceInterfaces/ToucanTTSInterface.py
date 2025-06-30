@@ -7,6 +7,7 @@ import pyloudnorm
 import sounddevice
 import soundfile
 import torch
+from huggingface_hub import hf_hub_download
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
@@ -17,7 +18,7 @@ from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
-from Utility.storage_config import MODELS_DIR
+from Utility.storage_config import MODEL_DIR
 from Utility.utils import cumsum_durations
 from Utility.utils import float2pcm
 
@@ -26,16 +27,20 @@ class ToucanTTSInterface(torch.nn.Module):
 
     def __init__(self,
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
-                 tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
-                 vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
+                 tts_model_path=None,  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
+                 vocoder_model_path=None,  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
                  architecture = "CFM"
                  ):
         super().__init__()
         self.device = device
-        if not tts_model_path.endswith(".pt"):
+        if tts_model_path is None:
+            tts_model_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt")
+        elif not tts_model_path.endswith(".pt"):
             # default to shorthand system
-            tts_model_path = os.path.join(MODELS_DIR, f"{tts_model_path}", "best.pt")
+            tts_model_path = os.path.join(MODEL_DIR, f"{tts_model_path}", "best.pt")
+        if vocoder_model_path is None:
+            vocoder_model_path = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="Vocoder.pt")
         
         ################################
         #   build text to phone        #
@@ -64,7 +69,7 @@ class ToucanTTSInterface(torch.nn.Module):
         ######################################
         self.speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                            run_opts={"device": str(device)},
-                                                                           savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
+                                                                           savedir=os.path.join(MODEL_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
 
         ################################
         #  load mel to wave model      #
@@ -86,6 +91,8 @@ class ToucanTTSInterface(torch.nn.Module):
         self.lang_id = get_language_id(language)
         self.to(torch.device(device))
         self.eval()
+
+        self.language = language
 
     def set_utterance_embedding(self, path_to_reference_audio="", embedding=None):
         if embedding is not None:
@@ -113,8 +120,10 @@ class ToucanTTSInterface(torch.nn.Module):
         """
         The id parameter actually refers to the shorthand. This has become ambiguous with the introduction of the actual language IDs
         """
-        self.set_phonemizer_language(lang_id=lang_id)
-        self.set_accent_language(lang_id=lang_id)
+        if self.language != lang_id:
+            self.set_phonemizer_language(lang_id=lang_id)
+            self.set_accent_language(lang_id=lang_id)
+            self.language = lang_id
 
     def set_phonemizer_language(self, lang_id):
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True, device=self.device)
@@ -178,6 +187,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                                            prosody_creativity=prosody_creativity)
 
             wave = self.vocoder(mel.unsqueeze(0))
+            wave = self.vocoder(mel.unsqueeze(0))
             wave = wave.squeeze().cpu()
         wave = wave.numpy()
         sr = 24000
@@ -202,6 +212,8 @@ class ToucanTTSInterface(torch.nn.Module):
                 plt.savefig("audios/spectogram.svg", bbox_inches='tight', pad_inches=0, transparent=True, format="svg")
                 plt.close()
                 return wave, sr, "tmp.png"
+        if return_everything:
+            return wave, mel, durations, pitch
         return wave, sr
 
     def read_to_file(self,

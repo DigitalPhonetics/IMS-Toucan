@@ -11,12 +11,14 @@ import statistics
 
 import torch
 import torch.multiprocessing
+from huggingface_hub import hf_hub_download
 from tqdm import tqdm
 
 from Modules.ToucanTTS.ToucanTTS import ToucanTTS
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.corpus_preparation import prepare_tts_corpus
+from Utility.storage_config import MODEL_DIR
 
 
 class TTSScorer:
@@ -31,6 +33,8 @@ class TTSScorer:
         self.nans = list()
         self.nan_indexes = list()
         self.tts = ToucanTTS()
+        if path_to_model is None:
+            path_to_model = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="ToucanTTS.pt")
         checkpoint = torch.load(path_to_model, map_location='cpu')
         weights = checkpoint["model"]
         self.tts.load_state_dict(weights)

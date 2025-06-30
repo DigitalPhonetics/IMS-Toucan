@@ -4,6 +4,7 @@
 import json
 import logging
 import re
+from pathlib import Path
 
 import torch
 from dragonmapper.transcriptions import pinyin_to_ipa
@@ -779,6 +780,8 @@ class ArticulatoryCombinedTextFrontend:
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
         if text == "":
             return ""
+        text = text.replace("|", ".") # Hindi uses this symbol to indicate the end of a sentence.
+
         # expand abbreviations
         utt = self.expand_abbreviations(text)
 
@@ -848,7 +851,7 @@ class ArticulatoryCombinedTextFrontend:
         # languages use different tones denoted by different numbering
         # systems. At this point in the script, it is attempted to unify
         # them all to the tones in the IPA standard.
-        if self.g2p_lang == "vi":
+        if self.g2p_lang == "vi" or self.g2p_lang == "vi-vn-x-central" or self.g2p_lang == "vi-vn-x-south":
             phones = phones.replace('1', "˧")
             phones = phones.replace('2', "˨˩")
             phones = phones.replace('ɜ', "˧˥")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
@@ -1052,10 +1055,48 @@ def english_text_expansion(text):
     _abbreviations = [(re.compile('\\b%s\\.' % x[0], re.IGNORECASE), x[1]) for x in
                       [('Mrs.', 'misess'), ('Mr.', 'mister'), ('Dr.', 'doctor'), ('St.', 'saint'), ('Co.', 'company'), ('Jr.', 'junior'), ('Maj.', 'major'),
                        ('Gen.', 'general'), ('Drs.', 'doctors'), ('Rev.', 'reverend'), ('Lt.', 'lieutenant'), ('Hon.', 'honorable'), ('Sgt.', 'sergeant'),
-                       ('Capt.', 'captain'), ('Esq.', 'esquire'), ('Ltd.', 'limited'), ('Col.', 'colonel'), ('Ft.', 'fort')]]
+                       ('Capt.', 'captain'), ('Esq.', 'esquire'), ('Ltd.', 'limited'), ('Col.', 'colonel'), ('Ft.', 'fort'), ('e.g.', ', for example, '), ('TTS', 'text to speech')]]
     for regex, replacement in _abbreviations:
         text = re.sub(regex, replacement, text)
     return text
+
+
+def chinese_number_conversion(text):
+    # https://gist.github.com/gumblex/0d65cad2ba607fd14de7?permalink_comment_id=4063512#gistcomment-4063512
+    import bisect
+    zhdigits = '零一二三四五六七八九'
+    zhplaces = {
+        0: '',
+        1: '十',
+        2: '百',
+        3: '千',
+        4: '万',
+        8: '亿',
+    }
+    zhplace_keys = sorted(zhplaces.keys())
+
+    def numdigits(n):
+        return len(str(abs(n)))
+
+    def _zhnum(n):
+        if n < 10:
+            return zhdigits[n]
+        named_place_len = zhplace_keys[bisect.bisect_right(zhplace_keys,
+                                                           numdigits(n) - 1) - 1]
+        left_part, right_part = n // 10 ** named_place_len, n % 10 ** named_place_len
+        return (_zhnum(left_part) +
+                zhplaces[named_place_len] +
+                ((zhdigits[0] if numdigits(right_part) != named_place_len else '') +
+                 _zhnum(right_part)
+                 if right_part else ''))
+
+    def zhnum(n):
+        answer = ('负' if n < 0 else '') + _zhnum(abs(n))
+        answer = re.sub(r'^一十', '十', answer)
+        answer = re.sub(r'(?<![零十])二(?=[千万亿])', r'两', answer)
+        return answer
+
+    return re.sub(r'\d+', lambda x: zhnum(int(x.group())), text)
 
 
 def remove_french_spacing(text):
@@ -1066,6 +1107,7 @@ def remove_french_spacing(text):
 
 
 def convert_kanji_to_pinyin_mandarin(text):
+    text = chinese_number_conversion(text)
     return " ".join([x[0] for x in pinyin(text)])
 
 
@@ -1074,7 +1116,7 @@ def get_language_id(language):
         iso_codes_to_ids = load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[-1]
     except FileNotFoundError:
         try:
-            iso_codes_to_ids = load_json_from_path("multilinguality/iso_lookup.json")[-1]
+            iso_codes_to_ids = load_json_from_path(str(Path(__file__).parent / "multilinguality/iso_lookup.json"))[-1]
         except FileNotFoundError:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
     if language not in iso_codes_to_ids:
@@ -1090,7 +1132,7 @@ if __name__ == '__main__':
 
     print("\n\nChinese Test")
     tf = ArticulatoryCombinedTextFrontend(language="cmn")
-    tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
+    tf.string_to_tensor("这是一个复杂的句子，19423 它甚至包含一个停顿。", view=True)
     tf.string_to_tensor("李绅 《悯农》 锄禾日当午， 汗滴禾下土。 谁知盘中餐， 粒粒皆辛苦。", view=True)
     tf.string_to_tensor("巴 拔 把 爸 吧", view=True)
 

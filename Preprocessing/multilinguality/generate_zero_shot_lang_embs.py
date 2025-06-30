@@ -1,11 +1,15 @@
-import torch
+import argparse
+import json
+import os
+
 import numpy as np
 import pandas as pd
-import json
-import argparse
+import torch
+from huggingface_hub import hf_hub_download
 from tqdm import tqdm
-import os
-from Utility.storage_config import MODELS_DIR
+
+from Utility.storage_config import MODEL_DIR
+
 
 def approximate_and_inject_language_embeddings(model_path, df, iso_lookup, min_n_langs=5, max_n_langs=25, threshold_percentile=50):
     # load pretrained language_embeddings
@@ -14,7 +18,7 @@ def approximate_and_inject_language_embeddings(model_path, df, iso_lookup, min_n
 
     features_per_closest_lang = 2
     # for combined, df has up to 5 features (if containing individual distances) per closest lang + 1 target lang column
-    if "combined_dist_0" in df.columns: 
+    if "combined_dist_0" in df.columns:
         if "map_dist_0" in df.columns:
             features_per_closest_lang += 1
         if "asp_dist_0" in df.columns:
@@ -48,14 +52,14 @@ def approximate_and_inject_language_embeddings(model_path, df, iso_lookup, min_n
     threshold = np.percentile(df[closest_dist_columns[-1]], threshold_percentile)
     print(f"threshold: {threshold:.4f}")
     for row in tqdm(df.itertuples(), total=df.shape[0], desc="Approximating language embeddings"):
-        avg_emb = torch.zeros([16])
+        avg_emb = torch.zeros([32])  # If you change the size of the language embedding in the model, you need to change the size here as well.
         dists = [getattr(row, d) for i, d in enumerate(closest_dist_columns) if i < min_n_langs or getattr(row, d) < threshold]
         langs = [getattr(row, l) for l in closest_lang_columns[:len(dists)]]
 
         for lang in langs:
             lang_emb = lang_embs[iso_lookup[-1][str(lang)]]
             avg_emb += lang_emb
-        avg_emb /= len(langs) # normalize
+        avg_emb /= len(langs)  # normalize
         lang_embs[iso_lookup[-1][str(row.target_lang)]] = avg_emb
 
     # inject language embeddings into Toucan model and save
@@ -66,7 +70,7 @@ def approximate_and_inject_language_embeddings(model_path, df, iso_lookup, min_n
 
 
 if __name__ == "__main__":
-    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location
+    default_model_path = os.path.join(MODEL_DIR, "ToucanTTS_Meta", "best.pt")  # MODEL_DIR must be absolute path, the relative path will fail at this location
     default_csv_path = "distance_datasets/dataset_learned_top30.csv"
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default=default_model_path, help="path of the model for which the language embeddings should be modified")
@@ -75,16 +79,15 @@ if __name__ == "__main__":
     parser.add_argument("--max_n_langs", type=int, default=25, help="maximum amount of languages used for averaging")
     parser.add_argument("--threshold_percentile", type=int, default=50, help="percentile of the furthest used languages \
                         used as cutoff threshold (no langs >= the threshold are used for averaging)")
-    args = parser.parse_args() 
-    ISO_LOOKUP_PATH = "iso_lookup.json"
+    args = parser.parse_args()
+    ISO_LOOKUP_PATH = hf_hub_download(cache_dir=MODEL_DIR, repo_id="Flux9665/ToucanTTS", filename="iso_lookup.json")
     with open(ISO_LOOKUP_PATH, "r") as f:
-        iso_lookup = json.load(f) # iso_lookup[-1] = iso2id mapping
+        iso_lookup = json.load(f)  # iso_lookup[-1] = iso2id mapping
     # load language distance dataset
     distance_df = pd.read_csv(args.dataset_path, sep="|")
     approximate_and_inject_language_embeddings(model_path=args.model_path,
-                                  df=distance_df,
-                                  iso_lookup=iso_lookup,
-                                  min_n_langs=args.min_n_langs,
-                                  max_n_langs=args.max_n_langs,
-                                  threshold_percentile=args.threshold_percentile)
-    
+                                               df=distance_df,
+                                               iso_lookup=iso_lookup,
+                                               min_n_langs=args.min_n_langs,
+                                               max_n_langs=args.max_n_langs,
+                                               threshold_percentile=args.threshold_percentile)

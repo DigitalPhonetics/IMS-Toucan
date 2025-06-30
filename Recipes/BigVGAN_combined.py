@@ -4,17 +4,13 @@ import soundfile as sf
 import torch
 import wandb
 
-from Modules.Vocoder.HiFiGAN_Dataset import HiFiGANDataset
-from Modules.Vocoder.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
-from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
-from Modules.Vocoder.HiFiGAN_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
 
 
 def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb_resume_id, gpu_count):
+    from Modules.Vocoder.BigVGAN import BigVGAN
+    from Modules.Vocoder.HiFiGAN_Dataset import HiFiGANDataset
     from Modules.Vocoder.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
-    from Modules.Vocoder.HiFiGAN_E2E_Dataset import HiFiGANDataset
-    from Modules.Vocoder.HiFiGAN_Generator import HiFiGAN
     from Modules.Vocoder.HiFiGAN_train_loop import train_loop
     from Utility.storage_config import MODEL_DIR
 
@@ -24,7 +20,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
         device = torch.device("cuda")
 
     if gpu_count > 1:
-        print("Multi GPU training not supported for HiFiGAN!")
+        print("Multi GPU training not supported for BigVGAN!")
         import sys
         sys.exit()
 
@@ -32,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = os.path.join(MODEL_DIR, "HiFiGAN_clean_data_and_augmentation")
+        model_save_dir = os.path.join(MODEL_DIR, "BigVGAN_cleaner_data")
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")
@@ -267,7 +263,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
 
     train_set = HiFiGANDataset(list_of_paths=selection, use_random_corruption=False)
 
-    generator = HiFiGAN()
+    generator = BigVGAN()
     discriminator = AvocodoHiFiGANJointDiscriminator()
 
     print("Training model")
@@ -276,7 +272,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
-    train_loop(batch_size=64,
+    train_loop(batch_size=16,
                epochs=180000,
                generator=generator,
                discriminator=discriminator,

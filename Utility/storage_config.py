@@ -1,2 +1,2 @@
-MODELS_DIR = "Models/"
+MODEL_DIR = "Models/"
 PREPROCESSING_DIR = "Corpora/"
