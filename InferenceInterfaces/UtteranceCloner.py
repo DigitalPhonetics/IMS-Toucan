@@ -4,10 +4,10 @@ import numpy
 import soundfile as sf
 import torch
 
-from Architectures.Aligner.Aligner import Aligner
-from Architectures.ToucanTTS.DurationCalculator import DurationCalculator
-from Architectures.ToucanTTS.EnergyCalculator import EnergyCalculator
-from Architectures.ToucanTTS.PitchCalculator import Parselmouth
+from Modules.Aligner.Aligner import Aligner
+from Modules.ToucanTTS.DurationCalculator import DurationCalculator
+from Modules.ToucanTTS.EnergyCalculator import EnergyCalculator
+from Modules.ToucanTTS.PitchCalculator import Parselmouth
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend

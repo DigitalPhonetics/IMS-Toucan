@@ -13,7 +13,7 @@ import torch
 import torch.multiprocessing
 from tqdm import tqdm
 
-from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
+from Modules.ToucanTTS.ToucanTTS import ToucanTTS
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.corpus_preparation import prepare_tts_corpus

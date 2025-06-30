@@ -136,7 +136,7 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
                         inner_bar.refresh()
                         if multi_speaker:
                             reference_speaker = [f"audios/RAVDESS_all/{file}" for file in os.listdir("audios/RAVDESS_all") if os.path.isfile(os.path.join("audios/RAVDESS_all", file))]
-                            print(reference_speaker)
+                            
                         else:
                             reference_speaker="audios/RAVDESS_one/Actor_19/03-01-01-01-01-01-19.wav"
                         with HiddenPrints():
@@ -319,11 +319,10 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
     scorer = Scorer(config=None, path=path_to_predictor)
     score = scorer.predict(df)
     pd.set_option('display.max_columns', 60)
-    print(df)
+
     with_variance = True if score[0].shape[-1] == 2 else False
 
     torch.set_default_dtype(default_type)
-    print(with_variance)
     if with_variance:
         df["predicted"] = score[:,0].detach().numpy()
         df["predicted_var"] = score[:,1].detach().numpy()
@@ -370,7 +369,6 @@ def run_eval(path_to_models, version, use_wandb=True, gpu_id=None, per_sample=Fa
     # Filter data to only include numeric_part values from 0.0 to 1.0
     df_sorted = df_sorted[df_sorted['numeric_part'] <= 1.0]
     for agg in aggregations:
-        print(agg)
         df_current = df_sorted.copy()
         if agg == 'all':
             if per_sample:

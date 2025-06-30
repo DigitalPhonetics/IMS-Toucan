@@ -101,11 +101,9 @@ class Scorer():
         data = table_data['data']
         df = pd.DataFrame(data=data, columns=columns)
         if with_variances:
-            print(df['self_test_variance'])
             labels = df[['self_test', 'self_test_variance']].values
 
             labels = torch.tensor(labels.astype(np.float64)) # convert to tensor
-            print(labels.shape)
         else:
             labels = df['self_test'].values
             #labels[labels == '-'] = '0' # replace missing values
@@ -171,8 +169,6 @@ class Scorer():
         last_loss = 1000000
         metrics = []
         for train_index, test_index in kf.split(dataset['train_input']):
-            print("new fold")
-            print("#"*50)
             train_input, test_input = dataset['train_input'][train_index], dataset['train_input'][test_index]
             train_label, test_label = dataset['train_label'][train_index], dataset['train_label'][test_index]
             k_dataset = {

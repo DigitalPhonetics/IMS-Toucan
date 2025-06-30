@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 
-from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Modules.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Utility.utils import load_json_from_path
 
 
