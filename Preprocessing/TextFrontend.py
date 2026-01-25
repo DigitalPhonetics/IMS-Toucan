@@ -579,6 +579,11 @@ class ArticulatoryCombinedTextFrontend:
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
+        elif language == "tir":
+            self.g2p_lang = "ti"  # Tigrinya
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
         else:
             # blanket solution for the rest
             print("Using Transphone. A specialized phonemizer might work better.")
